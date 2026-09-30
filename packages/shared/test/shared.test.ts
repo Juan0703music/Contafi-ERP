@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aCentavos, aDecimal, aplicarTarifa, dividirRedondeado, formatoCOP, prorratear,
+  aCentavos, leerMontoUsuario, aDecimal, aplicarTarifa, dividirRedondeado, formatoCOP, prorratear,
   hoyBogota, periodoDe, esFechaValida, diasEntre,
   calcularDV, validarNitConDV, formatearNit,
   PUC_SEMILLA, aceptaMovimientoEnPlantilla, codigoPadre, CUENTAS_POR_DEFECTO,
@@ -41,6 +41,22 @@ describe('dinero', () => {
   it('prorratea sin perder centavos', () => {
     const partes = prorratear(10000n, [1n, 1n, 1n]);
     expect(partes).toEqual([3333n, 3333n, 3334n]);
+  });
+});
+
+describe('montos escritos por el usuario', () => {
+  it('interpreta el punto como separador de miles cuando corresponde', () => {
+    expect(leerMontoUsuario('1.234')).toBe(123400n);
+    expect(leerMontoUsuario('1.234.567')).toBe(123456700n);
+    expect(leerMontoUsuario('$ 1.234.567,89')).toBe(123456789n);
+    expect(leerMontoUsuario('1234567,89')).toBe(123456789n);
+    expect(leerMontoUsuario('1234567.89')).toBe(123456789n);
+    expect(leerMontoUsuario('1.5')).toBe(150n);
+    expect(leerMontoUsuario('250000')).toBe(25000000n);
+    expect(leerMontoUsuario('0,5')).toBe(50n);
+  });
+  it('rechaza lo que no es un monto', () => {
+    for (const x of ['', 'abc', '1,2,3', '12.34.5', '1.23.456', '--5']) expect(leerMontoUsuario(x), x).toBeNull();
   });
 });
 

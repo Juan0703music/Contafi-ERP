@@ -1,0 +1,36 @@
+{
+  "name": "@contafi/escritorio",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Contafi — aplicación de escritorio (Tauri + React). En el navegador corre en modo demostración.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p . && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p .",
+    "tauri": "tauri",
+    "e2e": "node e2e/recorrido.mjs"
+  },
+  "dependencies": {
+    "@contafi/local": "workspace:*",
+    "@contafi/motor": "workspace:*",
+    "@contafi/shared": "workspace:*",
+    "@contafi/sync": "workspace:*",
+    "@contafi/ui": "workspace:*",
+    "@sqlite.org/sqlite-wasm": "3.53.4-build1",
+    "@supabase/supabase-js": "^2.117.0",
+    "@tauri-apps/api": "^2.12.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.12.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^8.3.0",
+    "puppeteer-core": "^24.0.0"
+  }
+}

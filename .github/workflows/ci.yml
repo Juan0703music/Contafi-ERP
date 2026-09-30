@@ -25,6 +25,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm --filter @contafi/web build
+      - run: pnpm --filter @contafi/escritorio build
 
   poc-windows:
     name: Instalador Windows de la prueba de concepto (sin firmar)
@@ -52,4 +53,34 @@ jobs:
           path: |
             apps/poc-escritorio/src-tauri/target/release/bundle/nsis/*.exe
             apps/poc-escritorio/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+
+  escritorio-windows:
+    name: Instalador Windows de Contafi (sin firmar)
+    runs-on: windows-latest
+    needs: pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/escritorio/src-tauri
+      # SQLCipher compila OpenSSL dentro del ejecutable; en Windows necesita Perl (ya viene) y NASM.
+      - uses: ilammy/setup-nasm@v1
+      - run: pnpm install --frozen-lockfile
+      - uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: apps/escritorio
+          tauriScript: pnpm tauri
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contafi-windows
+          path: |
+            apps/escritorio/src-tauri/target/release/bundle/nsis/*.exe
+            apps/escritorio/src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: error

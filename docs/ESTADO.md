@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 30 de septiembre de 2026 (tarde).
+Última actualización: 30 de septiembre de 2026 (noche).
 
 Leyenda: ✅ hecho · 🟡 avanzado, falta una parte · ⬜ pendiente · 👤 lo tienes que hacer tú (o con el asesor o el abogado)
 
@@ -40,6 +40,20 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 
 **Criterio de salida:** 100 % de los casos del asesor correctos, pruebas por propiedades sin fallas (✅) y RLS probado en todas las tablas (🟡 probado en las contables, en invitaciones y en dispositivos).
 
+## Fase 3 — Aplicación de escritorio (semanas 12–19) · adelantada
+
+| Tarea | Estado |
+|---|---|
+| Proyecto Tauri + React; diseño Liquid Glass en componentes | ✅ `apps/escritorio`, mismo CSS del prototipo, fuentes locales, tema claro/oscuro y "reducir transparencia" |
+| Capa local: SQLite cifrado, migraciones, cola de salida, autoguardado, respaldo diario, integridad | ✅ lógica en `@contafi/local` (probada) · 🟡 Rust con SQLCipher + llave en Windows + respaldos: escrito, **falta compilarlo en Windows (CI)** |
+| Sincronización con indicadores (en línea, sin conexión, pendientes, rechazados) | ✅ automática al abrir, cada minuto, al volver la red y al guardar |
+| Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros, sincronización · ⬜ libros diario y mayor, estados financieros |
+| Inicio de sesión con MFA | ✅ pantalla lista · ⬜ probar contra un Supabase real |
+| Modo demostración para pilotos (sin servidor) | ✅ `?demo`, con servidor simulado que asigna números |
+| Instalador firmado, actualizaciones automáticas y Sentry | 🟡 instalador sin firmar en CI · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
+
+**Criterio de salida:** pasan las pruebas de cortes de red y de energía (✅ en `@contafi/local`) e instalación limpia en Windows 10 y 11 (⬜ requiere el instalador del CI y un PC con Windows).
+
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
 2. Usaba la cuenta **135515** como "IVA descontable". En el PUC, 135515 es *Retención en la fuente*; el IVA descontable va en **240810**.
@@ -48,14 +62,20 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 5. Consecutivos del lado del cliente → los asigna solo el servidor, sin huecos.
 6. Carga Chart.js y las fuentes desde internet: sin conexión no hay gráficas. En la Fase 3 se empaquetan dentro de la app.
 
-## Hallazgos en el servidor (corregidos)
+## Hallazgos en el servidor y en la app (corregidos)
 1. Con los privilegios por defecto de Supabase, cualquier usuario podía ejecutar `contabilizar_interno` y contabilizar borradores ajenos saltándose los permisos. Corregido en la migración `0200` (D-011).
 2. Dos usuarios que comparten un PC no podían sincronizar. Corregido en la migración `0300` (D-010).
+3. Un tercero creado sin conexión y usado en un comprobante habría sido rechazado por el servidor. Ahora viaja en el lote (D-014).
+4. "1.234" escrito por el usuario se leía como 1,23. Ahora `leerMontoUsuario` lo lee como 1.234 pesos.
+5. En la Fase 0 se había copiado el prototipo equivocado (sin Liquid Glass). Corregido (D-016).
 
-## Pruebas automáticas (30/09/2026) — 94 en total
-- `@contafi/shared`: 12 ✓
+## Pruebas automáticas (30/09/2026) — 116 en total
+- `@contafi/shared`: 14 ✓
 - `@contafi/motor`: 28 ✓ (incluye propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, todo documento genera un asiento válido, el kardex no pierde centavos)
 - `@contafi/dian-xml`: 11 ✓
-- `@contafi/sync`: 15 ✓ (envío en orden, reintentos sin duplicar, rechazos del motor por línea sin huecos en la numeración, período cerrado después del envío, borradores del auxiliar, acceso entre firmas, montos de 16 dígitos, descarga paginada e incremental, PC compartido)
-- `supabase` (PGlite con privilegios de Supabase): 28 ✓ (consecutivos, idempotencia, inmutabilidad, auditoría, RLS entre firmas, anon sin acceso, MFA para administradores, alta de empresas con PUC, DV en SQL = TypeScript, invitaciones)
-- `apps/web`: compila con `next build`; rutas probadas por HTTP (401, 400, 413, 502, 503, encabezados de seguridad)
+- `@contafi/sync`: 19 ✓ (orden, reintentos, rechazos por línea, período cerrado, borradores, acceso entre firmas, montos de 16 dígitos, descarga paginada, PC compartido, terceros sin conexión y duplicados entre PC)
+- `@contafi/local`: 16 ✓ (sección 13: dos PC sin conexión, corte de red a mitad del envío, apagón a mitad de un lote, apagón real con el proceso muerto, reinstalación; período cerrado, aprobación, anulación, saldos provisionales, aviso de 7 días, transporte HTTP)
+- `supabase` (PGlite con privilegios de Supabase): 28 ✓
+- `apps/web`: compila con `next build`; rutas probadas por HTTP
+- `apps/escritorio`: compila; recorrido de punta a punta en Firefox (`pnpm --filter @contafi/escritorio e2e`): acceso, panel, comprobante nuevo → pendiente → número oficial, autoguardado, balance, terceros, plan de cuentas, sincronización, tema oscuro, sin transparencia y pantalla angosta, sin errores en consola
+- Verificación de las pruebas: al sabotear la idempotencia del servidor, las pruebas de `sync` y `local` fallan (como deben)

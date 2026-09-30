@@ -16,8 +16,11 @@ packages/motor      Motor contable puro: reglas de la sección 8, impuestos, doc
                     kardex por costo promedio, reportes y cierre anual
 packages/dian-xml   Lectura de XML/ZIP de la DIAN (UBL 2.1 / AttachedDocument) y propuesta de asiento
 packages/sync       Protocolo de sincronización (zod) y servicio: revalida con el motor y registra
+packages/local      Base local del PC, cola de salida y cliente de sincronización (probado con SQLite real)
+packages/ui         Sistema visual Liquid Glass del prototipo: estilos, íconos y fuentes locales
 supabase/           Migraciones SQL: esquema, RLS, triggers, autenticación/MFA, invitaciones, sincronización
 apps/web            Next.js en Vercel: /api/sync/enviar, /api/sync/cambios, /api/invitaciones, /api/salud
+apps/escritorio     App de escritorio: Tauri (SQLCipher, llave en Windows, respaldos) + React
 apps/poc-escritorio Fase 0: Tauri + prototipo actual + SQLite (WAL/FULL), script de prueba de IA
 docs/               Plan, estado, decisiones, material de la Fase 0 y referencia (prototipo, diseño)
 ```
@@ -39,11 +42,24 @@ pnpm typecheck        # verificación de tipos
 pnpm --filter @contafi/dian-xml leer ~/facturas 900123456
 ```
 
-App de escritorio (en Windows, con Rust instalado):
+App de escritorio en el navegador (modo demostración, sin servidor):
+
+```bash
+pnpm --filter @contafi/escritorio dev      # abre http://localhost:1420/?demo
+```
+
+Instalador de Windows (en Windows con Rust y NASM, o descargándolo del CI):
+
+```powershell
+cd apps/escritorio
+pnpm tauri build
+```
+
+Prueba de concepto de la Fase 0 (en Windows, con Rust instalado):
 
 ```powershell
 cd apps/poc-escritorio
-pnpm tauri build                  # genera el instalador .exe (NSIS) y .msi
+pnpm tauri build                  # genera el instalador .exe (NSIS) y .msi de la prueba
 .\scripts\probar-ia.ps1           # prueba llama.cpp + modelo de 4B en el PC de 8 GB
 ```
 

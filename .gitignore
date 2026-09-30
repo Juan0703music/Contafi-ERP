@@ -13,3 +13,5 @@ coverage/
 next-env.d.ts
 *.tsbuildinfo
 .vercel
+apps/escritorio/e2e/capturas/
+apps/escritorio/src-tauri/gen/

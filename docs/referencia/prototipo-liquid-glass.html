@@ -4,285 +4,725 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Contafi ERP — Núcleo Contable</title>
+<meta name="theme-color" content="#0B7A68">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
+/* =========================================================================
+   CONTAFI — SISTEMA VISUAL "LIQUID GLASS"
+   Vidrio en el marco de la app (menú, barra superior, tarjetas, ventanas);
+   superficies densas para tablas y formularios. Tipografía Geist + Geist Mono.
+   ========================================================================= */
 :root{
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
-
-  --paper:#F2F4EF;
+  --paper:#DCE6E3;
+  --solid:#F7FAF9;
   --surface:#FFFFFF;
-  --surface-2:#E9ECE4;
-  --ink:#16211B;
-  --ink-soft:#4B5750;
-  --ink-faint:#7C877F;
-  --line:#D7DACE;
-  --line-strong:#B9BEAE;
-  --accent:#1F5D4E;
-  --accent-ink:#F2F4EF;
-  --accent-soft:#DCE7E1;
-  --warn:#8A5A1E;
-  --warn-soft:#F1E3CC;
-  --danger:#8E332B;
-  --danger-soft:#F3DAD6;
-  --debit:#1F5D4E;
-  --credit:#7A3B12;
-  --shadow: 0 1px 0 rgba(22,33,27,0.04);
+  --surface-2:rgba(255,255,255,.55);
+  --neutral-soft:rgba(8,38,33,.07);
+  --ink:#0B1A17;
+  --ink-soft:#33463F;
+  --ink-faint:#55655F;
+  --line:rgba(8,38,33,.09);
+  --line-strong:rgba(8,38,33,.18);
+  --accent:#0B7A68;
+  --accent-ink:#FFFFFF;
+  --accent-soft:rgba(11,122,104,.12);
+  --accent-text:#0B7A68;
+  --accent-border:rgba(11,122,104,.3);
+  --accent-glow:rgba(11,122,104,.5);
+  --focus-ring:rgba(11,122,104,.18);
+  --warn:#9A5B0B;
+  --warn-soft:rgba(217,138,30,.15);
+  --warn-dot:#D98A1E;
+  --warn-border:rgba(217,138,30,.35);
+  --danger:#B42318;
+  --danger-soft:rgba(180,35,24,.09);
+  --danger-border:rgba(180,35,24,.3);
+  --debit:#0B7A68;
+  --credit:#E0901F;
+  --indigo:#7C82EE;
+  --indigo-soft:rgba(124,130,238,.16);
+  --indigo-text:#4B50C8;
+  --sky:#38A0DC;
+  --sky-soft:rgba(56,160,220,.15);
+  --sky-text:#1F6F9E;
+  --glass:linear-gradient(155deg,rgba(255,255,255,.66),rgba(255,255,255,.36));
+  --glass-border:rgba(255,255,255,.72);
+  --glass-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.3),0 1px 1px rgba(8,38,33,.04),0 14px 36px -12px rgba(8,38,33,.22);
+  --dense:linear-gradient(160deg,rgba(255,255,255,.86),rgba(255,255,255,.72));
+  --dense-border:rgba(255,255,255,.85);
+  --dense-shadow:inset 0 1px 0 #fff,0 1px 1px rgba(8,38,33,.04),0 14px 36px -12px rgba(8,38,33,.2);
+  --sheet:linear-gradient(160deg,rgba(255,255,255,.93),rgba(255,255,255,.82));
+  --sheet-shadow:inset 0 1px 0 #fff,0 40px 100px -30px rgba(8,38,33,.45);
+  --scrim:rgba(15,28,25,.32);
+  --blur:26px;
+  --chip-bg:rgba(255,255,255,.5);
+  --chip-border:rgba(255,255,255,.8);
+  --btn-bg:linear-gradient(180deg,rgba(255,255,255,.85),rgba(255,255,255,.55));
+  --btn-border:rgba(255,255,255,.9);
+  --btn-hover:rgba(255,255,255,.95);
+  --btn-shadow:inset 0 1px 0 #fff,0 1px 2px rgba(8,38,33,.08),0 6px 14px -6px rgba(8,38,33,.2);
+  --field-bg:rgba(255,255,255,.62);
+  --field-border:rgba(8,38,33,.14);
+  --field-inset:inset 0 1px 2px rgba(8,38,33,.08);
+  --seg-bg:rgba(8,38,33,.06);
+  --seg-on:rgba(255,255,255,.94);
+  --seg-on-border:rgba(255,255,255,.95);
+  --seg-on-shadow:inset 0 1px 0 #fff,0 2px 6px -2px rgba(8,38,33,.22);
+  --nav-active:rgba(255,255,255,.88);
+  --nav-active-border:rgba(255,255,255,.95);
+  --nav-active-ink:#0B7A68;
+  --nav-active-shadow:inset 0 1px 0 #fff,0 4px 12px -4px rgba(8,38,33,.2);
+  --row-hover:rgba(255,255,255,.6);
+  --well:rgba(8,38,33,.04);
+  --toast-bg:rgba(11,26,23,.88);
+  --toast-ink:#F2F6F4;
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2355655F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --ambient:radial-gradient(900px 640px at 4% -6%,rgba(16,163,137,.45),rgba(16,163,137,0) 70%),radial-gradient(900px 700px at 104% 4%,rgba(104,112,240,.36),rgba(104,112,240,0) 70%),radial-gradient(900px 700px at 70% 106%,rgba(245,166,35,.32),rgba(245,166,35,0) 70%),radial-gradient(760px 600px at -6% 100%,rgba(56,189,248,.28),rgba(56,189,248,0) 70%);
+  color-scheme:light;
 }
 :root[data-theme="dark"]{
-  --paper:#10150F;
-  --surface:#161C15;
-  --surface-2:#1E2620;
-  --ink:#E7ECE4;
-  --ink-soft:#AEB8AC;
-  --ink-faint:#7C877F;
-  --line:#2B342C;
-  --line-strong:#3B453C;
-  --accent:#4E9A85;
-  --accent-ink:#0C1410;
-  --accent-soft:#1D332C;
-  --warn:#D8A868;
-  --warn-soft:#332816;
-  --danger:#D98D82;
-  --danger-soft:#3A211D;
-  --debit:#5FAF9A;
-  --credit:#D3A06E;
+  --paper:#060B0B;
+  --solid:#121A19;
+  --surface:#121A19;
+  --surface-2:rgba(255,255,255,.07);
+  --neutral-soft:rgba(255,255,255,.08);
+  --ink:#EAF2EF;
+  --ink-soft:#B6C5C0;
+  --ink-faint:#8FA19B;
+  --line:rgba(255,255,255,.07);
+  --line-strong:rgba(255,255,255,.15);
+  --accent:#3DD9B8;
+  --accent-ink:#04231D;
+  --accent-soft:rgba(61,217,184,.14);
+  --accent-text:#7CE9D1;
+  --accent-border:rgba(61,217,184,.35);
+  --accent-glow:rgba(61,217,184,.42);
+  --focus-ring:rgba(61,217,184,.2);
+  --warn:#F6CB8C;
+  --warn-soft:rgba(242,180,90,.14);
+  --warn-dot:#F2B45A;
+  --warn-border:rgba(242,180,90,.35);
+  --danger:#FF9C8F;
+  --danger-soft:rgba(255,138,122,.12);
+  --danger-border:rgba(255,138,122,.35);
+  --debit:#3DD9B8;
+  --credit:#F2B45A;
+  --indigo:#9CA0FF;
+  --indigo-soft:rgba(156,160,255,.16);
+  --indigo-text:#C3C6FF;
+  --sky:#7CC8F8;
+  --sky-soft:rgba(124,200,248,.16);
+  --sky-text:#A9DBFB;
+  --glass:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.035));
+  --glass-border:rgba(255,255,255,.11);
+  --glass-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.03),0 24px 60px -24px rgba(0,0,0,.7);
+  --dense:linear-gradient(160deg,rgba(30,41,39,.74),rgba(16,22,21,.7));
+  --dense-border:rgba(255,255,255,.1);
+  --dense-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 24px 60px -24px rgba(0,0,0,.7);
+  --sheet:linear-gradient(160deg,rgba(34,46,44,.92),rgba(16,22,21,.94));
+  --sheet-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 40px 100px -20px rgba(0,0,0,.8);
+  --scrim:rgba(2,6,6,.55);
+  --chip-bg:rgba(255,255,255,.06);
+  --chip-border:rgba(255,255,255,.1);
+  --btn-bg:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05));
+  --btn-border:rgba(255,255,255,.14);
+  --btn-hover:rgba(255,255,255,.16);
+  --btn-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -6px rgba(0,0,0,.5);
+  --field-bg:rgba(255,255,255,.05);
+  --field-border:rgba(255,255,255,.12);
+  --field-inset:inset 0 1px 2px rgba(0,0,0,.35);
+  --seg-bg:rgba(0,0,0,.25);
+  --seg-on:rgba(255,255,255,.14);
+  --seg-on-border:rgba(255,255,255,.16);
+  --seg-on-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+  --nav-active:rgba(61,217,184,.14);
+  --nav-active-border:rgba(61,217,184,.28);
+  --nav-active-ink:#7CE9D1;
+  --nav-active-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  --row-hover:rgba(255,255,255,.04);
+  --well:rgba(0,0,0,.22);
+  --toast-bg:rgba(30,41,39,.92);
+  --toast-ink:#EAF2EF;
+  --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA19B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --ambient:radial-gradient(900px 640px at 4% -6%,rgba(24,190,160,.28),rgba(24,190,160,0) 70%),radial-gradient(900px 700px at 104% 4%,rgba(99,102,241,.24),rgba(99,102,241,0) 70%),radial-gradient(900px 700px at 66% 108%,rgba(245,158,11,.13),rgba(245,158,11,0) 70%),radial-gradient(760px 600px at -6% 100%,rgba(56,189,248,.15),rgba(56,189,248,0) 70%);
+  color-scheme:dark;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --paper:#10150F;
-    --surface:#161C15;
-    --surface-2:#1E2620;
-    --ink:#E7ECE4;
-    --ink-soft:#AEB8AC;
-    --ink-faint:#7C877F;
-    --line:#2B342C;
-    --line-strong:#3B453C;
-    --accent:#4E9A85;
-    --accent-ink:#0C1410;
-    --accent-soft:#1D332C;
-    --warn:#D8A868;
-    --warn-soft:#332816;
-    --danger:#D98D82;
-    --danger-soft:#3A211D;
-    --debit:#5FAF9A;
-    --credit:#D3A06E;
+    --paper:#060B0B; --solid:#121A19; --surface:#121A19; --surface-2:rgba(255,255,255,.07); --neutral-soft:rgba(255,255,255,.08);
+    --ink:#EAF2EF; --ink-soft:#B6C5C0; --ink-faint:#8FA19B; --line:rgba(255,255,255,.07); --line-strong:rgba(255,255,255,.15);
+    --accent:#3DD9B8; --accent-ink:#04231D; --accent-soft:rgba(61,217,184,.14); --accent-text:#7CE9D1; --accent-border:rgba(61,217,184,.35); --accent-glow:rgba(61,217,184,.42); --focus-ring:rgba(61,217,184,.2);
+    --warn:#F6CB8C; --warn-soft:rgba(242,180,90,.14); --warn-dot:#F2B45A; --warn-border:rgba(242,180,90,.35);
+    --danger:#FF9C8F; --danger-soft:rgba(255,138,122,.12); --danger-border:rgba(255,138,122,.35);
+    --debit:#3DD9B8; --credit:#F2B45A; --indigo:#9CA0FF; --indigo-soft:rgba(156,160,255,.16); --indigo-text:#C3C6FF; --sky:#7CC8F8; --sky-soft:rgba(124,200,248,.16); --sky-text:#A9DBFB;
+    --glass:linear-gradient(155deg,rgba(255,255,255,.10),rgba(255,255,255,.035)); --glass-border:rgba(255,255,255,.11);
+    --glass-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.03),0 24px 60px -24px rgba(0,0,0,.7);
+    --dense:linear-gradient(160deg,rgba(30,41,39,.74),rgba(16,22,21,.7)); --dense-border:rgba(255,255,255,.1);
+    --dense-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 24px 60px -24px rgba(0,0,0,.7);
+    --sheet:linear-gradient(160deg,rgba(34,46,44,.92),rgba(16,22,21,.94)); --sheet-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 40px 100px -20px rgba(0,0,0,.8);
+    --scrim:rgba(2,6,6,.55); --chip-bg:rgba(255,255,255,.06); --chip-border:rgba(255,255,255,.1);
+    --btn-bg:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.05)); --btn-border:rgba(255,255,255,.14); --btn-hover:rgba(255,255,255,.16);
+    --btn-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -6px rgba(0,0,0,.5);
+    --field-bg:rgba(255,255,255,.05); --field-border:rgba(255,255,255,.12); --field-inset:inset 0 1px 2px rgba(0,0,0,.35);
+    --seg-bg:rgba(0,0,0,.25); --seg-on:rgba(255,255,255,.14); --seg-on-border:rgba(255,255,255,.16); --seg-on-shadow:inset 0 1px 0 rgba(255,255,255,.2);
+    --nav-active:rgba(61,217,184,.14); --nav-active-border:rgba(61,217,184,.28); --nav-active-ink:#7CE9D1; --nav-active-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    --row-hover:rgba(255,255,255,.04); --well:rgba(0,0,0,.22); --toast-bg:rgba(30,41,39,.92); --toast-ink:#EAF2EF;
+    --chev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238FA19B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --ambient:radial-gradient(900px 640px at 4% -6%,rgba(24,190,160,.28),rgba(24,190,160,0) 70%),radial-gradient(900px 700px at 104% 4%,rgba(99,102,241,.24),rgba(99,102,241,0) 70%),radial-gradient(900px 700px at 66% 108%,rgba(245,158,11,.13),rgba(245,158,11,0) 70%),radial-gradient(760px 600px at -6% 100%,rgba(56,189,248,.15),rgba(56,189,248,0) 70%);
+    color-scheme:dark;
   }
 }
-html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+/* "Reducir transparencia": superficies sólidas, sin desenfoque (equipos lentos o preferencia del usuario). */
+:root[data-glass="off"]{
+  --glass:var(--solid);
+  --dense:var(--solid);
+  --sheet:var(--solid);
+  --glass-border:var(--line-strong);
+  --dense-border:var(--line-strong);
+  --glass-shadow:0 1px 2px rgba(0,0,0,.06);
+  --dense-shadow:0 1px 2px rgba(0,0,0,.06);
+  --btn-bg:var(--solid);
+  --btn-border:var(--line-strong);
+  --btn-shadow:none;
+  --toast-bg:#0B1A17;
+}
+:root[data-glass="off"] *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important;}
+:root[data-glass="off"] body::before{background-image:none;}
+
+/* ---- Base ---- */
 *{box-sizing:border-box;}
+html{height:100%; scroll-padding-top:96px;}
 body{
-  margin:0; height:100%; background:var(--paper); color:var(--ink);
-  font-family:'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  margin:0; min-height:100%; color:var(--ink); background-color:var(--paper);
+  font-family:'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
 }
-h1,h2,h3,.serif{font-family:'Source Serif 4', Georgia, 'Times New Roman', serif;}
-.mono, .num, td.num, .code{font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums;}
-a{color:var(--accent);}
+body::before{content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background-color:var(--paper); background-image:var(--ambient);}
+h1,h2,h3{font-family:inherit; letter-spacing:-.02em;}
+.mono, .num, td.num, .code{font-family:'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric:tabular-nums;}
+.tnum{font-variant-numeric:tabular-nums;}
+a{color:var(--accent-text);}
 button{font-family:inherit;}
 ::selection{background:var(--accent-soft);}
+:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+.ic{width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0;}
+.ic.sm{width:14px; height:14px;}
+.hint{font-size:12.5px; color:var(--ink-faint);}
 
-/* ---- Layout shell ---- */
-#app{min-height:100%; display:flex;}
-.sidebar{
-  width:250px; flex:0 0 250px; background:var(--surface); border-right:1px solid var(--line);
-  padding:0; position:sticky; top:0; height:100vh; overflow-y:auto; z-index:20;
-  padding-top:env(safe-area-inset-top,0px);
+/* ---- Materiales ---- */
+.glass, .sidebar, .topbar, .kpi-card, .ledger-strip, .login-card, .tabbar, .panel.glass, .feature-chip, .eq-card{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(var(--blur)) saturate(180%); backdrop-filter:blur(var(--blur)) saturate(180%);
+  border:1px solid var(--glass-border); box-shadow:var(--glass-shadow);
 }
-.brand{padding:20px 20px 14px; border-bottom:1px solid var(--line);}
-.brand-mark{display:flex; align-items:baseline; gap:8px;}
-.brand-mark .glyph{font-family:'Source Serif 4',serif; font-weight:700; font-size:22px; color:var(--accent); letter-spacing:-0.5px;}
-.brand-mark .name{font-family:'Source Serif 4',serif; font-weight:600; font-size:18px;}
-.brand-sub{font-size:11px; color:var(--ink-faint); margin-top:3px; letter-spacing:.02em;}
+.panel{
+  background:var(--dense);
+  -webkit-backdrop-filter:blur(30px) saturate(160%); backdrop-filter:blur(30px) saturate(160%);
+  border:1px solid var(--dense-border); box-shadow:var(--dense-shadow);
+  border-radius:24px; margin-bottom:20px; overflow:hidden;
+}
 
-.nav-group{padding:14px 12px 4px;}
-.nav-group-label{font-size:11px; color:var(--ink-faint); padding:6px 10px 4px; letter-spacing:.03em;}
+/* ---- Estructura ---- */
+#app{
+  min-height:100vh; display:flex; gap:16px; padding:16px;
+  padding-top:calc(16px + env(safe-area-inset-top,0px)); padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+}
+.sidebar{
+  width:264px; flex:0 0 264px; position:sticky; top:16px; height:calc(100vh - 32px);
+  border-radius:28px; padding:20px 12px 12px; display:flex; flex-direction:column; gap:14px;
+  overflow-y:auto; z-index:30; scrollbar-width:thin;
+}
+.brand{display:flex; align-items:center; gap:12px; padding:0 8px;}
+.logo{
+  width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  color:var(--accent-ink); background-color:var(--accent);
+  background-image:linear-gradient(160deg,rgba(255,255,255,.4),rgba(255,255,255,0) 62%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 6px 14px -4px var(--accent-glow);
+}
+.logo .ic{width:22px; height:22px; stroke-width:2.2;}
+.brand-name{font-size:18px; font-weight:700; letter-spacing:-.02em; line-height:1.2;}
+.brand-sub{font-size:12px; color:var(--ink-faint);}
+.side-search{
+  display:flex; align-items:center; gap:10px; height:40px; padding:0 8px 0 12px; margin:2px 2px 0; border-radius:12px;
+  background:var(--chip-bg); border:1px solid var(--chip-border); box-shadow:var(--field-inset); color:var(--ink-faint); cursor:text;
+}
+.side-search .ic{width:16px; height:16px;}
+.sidebar .side-search input{flex:1; min-width:0; height:auto; padding:0; border:none; border-radius:0; background:transparent; box-shadow:none; font-size:13px; color:var(--ink);}
+.sidebar .side-search input:focus{box-shadow:none;}
+.side-search:focus-within{border-color:var(--accent-border); box-shadow:var(--field-inset),0 0 0 3px var(--focus-ring);}
+.kbd{font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; padding:3px 6px; border-radius:6px; background:var(--chip-bg); border:1px solid var(--line-strong); color:var(--ink-soft); white-space:nowrap;}
+#navHost{display:flex; flex-direction:column; gap:12px; flex:1;}
+.nav-group{display:flex; flex-direction:column; gap:1px;}
+.nav-group-label{font-size:11px; font-weight:600; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint); padding:0 12px 4px;}
+.nav-empty{font-size:13px; color:var(--ink-faint); padding:8px 12px;}
 .nav-item{
-  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer;
-  color:var(--ink-soft); font-size:13.5px; font-weight:500; margin-bottom:1px; border:1px solid transparent;
-  user-select:none;
+  display:flex; align-items:center; gap:12px; width:100%; min-height:36px; padding:0 12px; border-radius:12px;
+  color:var(--ink-soft); font-size:14px; font-weight:500; text-align:left; cursor:pointer; user-select:none;
+  background:none; border:1px solid transparent;
 }
 .nav-item:hover{background:var(--surface-2); color:var(--ink);}
-.nav-item.active{background:var(--accent-soft); color:var(--accent); font-weight:600;}
-.nav-item .ic{width:16px; text-align:center; font-size:14px; opacity:.85;}
+.nav-item.active{background:var(--nav-active); border-color:var(--nav-active-border); color:var(--nav-active-ink); font-weight:600; box-shadow:var(--nav-active-shadow);}
+.nav-item .lbl{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .nav-item.locked{opacity:.4; cursor:not-allowed;}
 .nav-item.locked:hover{background:transparent; color:var(--ink-soft);}
+.nav-badge{font-family:'Geist Mono',monospace; font-size:11px; font-weight:600; padding:2px 7px; border-radius:999px; background:var(--neutral-soft); color:var(--ink-soft);}
+.nav-badge.warn{background:var(--warn-soft); color:var(--warn);}
+.nav-dot{width:8px; height:8px; border-radius:50%; background:var(--warn-dot); box-shadow:0 0 0 3px var(--warn-soft); flex-shrink:0;}
+.side-foot{display:flex; align-items:center; gap:12px; padding:12px; border-radius:18px; background:var(--chip-bg); border:1px solid var(--chip-border);}
+.side-foot .badge-ic{width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--accent-soft); color:var(--accent-text);}
+.side-foot.bad .badge-ic{background:var(--danger-soft); color:var(--danger);}
+.side-foot b{display:block; font-size:13px; font-weight:600; line-height:1.3;}
+.side-foot span{font-size:12px; color:var(--ink-faint);}
+.side-scrim{display:none;}
+.side-actions{display:none;}
 
+.main{flex:1; min-width:0; display:flex; flex-direction:column; gap:20px;}
 .topbar{
-  position:sticky; top:0; z-index:15; background:var(--paper); border-bottom:1px solid var(--line);
-  padding:10px 22px; padding-top:calc(10px + env(safe-area-inset-top,0px));
-  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  position:sticky; top:16px; z-index:25; min-height:64px; border-radius:22px; padding:10px;
+  display:flex; align-items:center; gap:10px;
 }
-.selector{
-  display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft);
-  border:1px solid var(--line); border-radius:6px; padding:5px 9px; background:var(--surface);
-}
-.selector select{border:none; background:transparent; font-family:inherit; font-size:12.5px; color:var(--ink); outline:none; max-width:170px;}
 .spacer{flex:1;}
-.role-badge{font-size:11.5px; padding:4px 10px; border-radius:20px; background:var(--accent-soft); color:var(--accent); font-weight:600; letter-spacing:.02em;}
-.hamburger{display:none; border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:6px 10px; cursor:pointer;}
+.chip{
+  margin:0; font-weight:400;
+  position:relative; display:inline-flex; align-items:center; gap:10px; height:44px; padding:0 14px 0 8px; border-radius:999px;
+  background:var(--btn-bg); border:1px solid var(--btn-border); box-shadow:var(--btn-shadow); color:var(--ink); min-width:0; cursor:pointer;
+}
+.chip:focus-within{box-shadow:var(--btn-shadow),0 0 0 3px var(--focus-ring);}
+.chip-ic{width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--accent-soft); color:var(--accent-text);}
+.chip-ic .ic{width:16px; height:16px;}
+.chip-col{display:flex; flex-direction:column; align-items:stretch; gap:2px; min-width:0; overflow:hidden;}
+.company-chip{flex-shrink:1; max-width:300px;}
+.role-switch, .seg, .period{flex-shrink:0;}
+.chip select{
+  width:auto; max-width:100%; height:auto; padding:0 22px 0 0; border:none; border-radius:0; box-shadow:none; background-color:transparent;
+  background-image:var(--chev); background-position:right 0 center; background-size:16px; font-size:13px; font-weight:600; color:var(--ink); cursor:pointer;
+  text-overflow:ellipsis;
+}
+.chip select:focus{box-shadow:none;}
+.chip .sub{font-family:'Geist Mono',monospace; font-size:11px; font-weight:500; color:var(--ink-faint); line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.chip > .ic{color:var(--ink-faint); width:16px; height:16px;}
+.role-switch{padding:0 12px 0 6px;}
+.role-switch select{position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; background:none; padding:0;}
+.role-switch .who{display:flex; align-items:center; gap:5px; font-size:13px; font-weight:600; line-height:1.2; white-space:nowrap;}
+.role-switch .role{font-size:11.5px; font-weight:500; color:var(--ink-faint); line-height:1.2; white-space:nowrap;}
+.avatar{width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:12px; font-weight:700; color:#fff; background:linear-gradient(135deg,#F2B35A,#DA6E3A); box-shadow:inset 0 1px 0 rgba(255,255,255,.5);}
+.seg{display:flex; gap:2px; padding:4px; border-radius:999px; background:var(--seg-bg); box-shadow:inset 0 1px 2px rgba(0,0,0,.08); max-width:100%; overflow-x:auto; scrollbar-width:none;}
+.seg button{height:36px; padding:0 14px; border-radius:999px; border:1px solid transparent; background:transparent; font-size:13px; font-weight:500; color:var(--ink-soft); cursor:pointer; white-space:nowrap;}
+.seg button:hover{color:var(--ink);}
+.seg button[aria-pressed="true"]{background:var(--seg-on); border-color:var(--seg-on-border); color:var(--ink); font-weight:600; box-shadow:var(--seg-on-shadow);}
+.period{display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 12px; border-radius:999px; background:var(--chip-bg); border:1px solid var(--chip-border); font-size:13px; color:var(--ink-soft); white-space:nowrap;}
+.period .ic{width:16px; height:16px;}
+.period .dot{width:6px; height:6px; border-radius:50%; background:var(--accent);}
+.period b{color:var(--accent-text); font-weight:600;}
+.period.closed .dot{background:var(--danger);}
+.period.closed b{color:var(--danger);}
 
-.main{flex:1; min-width:0; padding-bottom:60px;}
-.content{padding:26px 30px; max-width:1320px;}
-.page-head{margin-bottom:20px;}
-.page-head h1{font-size:23px; margin:0 0 4px; font-weight:600;}
-.page-head p{margin:0; color:var(--ink-soft); font-size:13px; max-width:640px;}
-.crumb{font-size:11.5px; color:var(--ink-faint); margin-bottom:6px; letter-spacing:.02em;}
+.content{padding:4px 8px 0; min-width:0;}
+.crumb{font-size:13px; color:var(--ink-soft); margin-bottom:6px;}
+.page-head{margin-bottom:22px;}
+.page-head.split{display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap;}
+.page-head h1{font-size:34px; line-height:1.1; margin:0 0 6px; font-weight:600; letter-spacing:-.03em;}
+.page-head p{margin:0; color:var(--ink-soft); font-size:14.5px; max-width:680px;}
 
-/* ---- ledger strip (KPI) ---- */
-.ledger-strip{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); margin-bottom:22px; flex-wrap:wrap;}
-.ledger-cell{flex:1; min-width:150px; padding:14px 18px; border-right:1px solid var(--line);}
+/* ---- Indicadores ---- */
+.kpi-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; margin-bottom:16px;}
+.kpi-card{border-radius:24px; padding:20px 22px; display:flex; flex-direction:column; gap:14px; min-width:0;}
+.kpi-top{display:flex; align-items:center; gap:10px; min-width:0;}
+.kpi-ic{width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--accent-soft); color:var(--accent-text);}
+.kpi-ic .ic{width:17px; height:17px;}
+.kpi-ic.indigo{background:var(--indigo-soft); color:var(--indigo-text);}
+.kpi-ic.sky{background:var(--sky-soft); color:var(--sky-text);}
+.kpi-ic.danger{background:var(--danger-soft); color:var(--danger);}
+.kpi-ic.warn{background:var(--warn-soft); color:var(--warn);}
+.kpi-label{flex:1; min-width:0; font-size:13.5px; font-weight:500; color:var(--ink-soft); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.kpi-value{font-size:28px; line-height:1.05; font-weight:600; letter-spacing:-.025em; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.kpi-value .cur{font-size:.62em; font-weight:500; color:var(--ink-faint); margin-right:5px;}
+.kpi-value.pos{color:var(--accent-text);}
+.kpi-value.neg{color:var(--danger);}
+.kpi-value.pos .cur, .kpi-value.neg .cur{color:inherit;}
+.kpi-foot{display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0;}
+.kpi-sub{font-size:12.5px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0;}
+
+.ledger-strip{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); border-radius:22px; padding:6px; margin-bottom:20px;}
+.ledger-strip.four{grid-template-columns:repeat(4,minmax(0,1fr));}
+.ledger-cell{display:flex; flex-direction:column; justify-content:center; gap:3px; padding:12px 16px; border-right:1px solid var(--line); min-width:0;}
 .ledger-cell:last-child{border-right:none;}
-.ledger-cell .l{font-size:11px; color:var(--ink-faint); margin-bottom:6px;}
-.ledger-cell .v{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; font-variant-numeric:tabular-nums;}
-.ledger-cell .v.pos{color:var(--debit);}
+.ledger-cell.with-ic{flex-direction:row; align-items:center; justify-content:flex-start; gap:12px;}
+.ledger-txt{display:flex; flex-direction:column; gap:3px; min-width:0;}
+.ledger-cell .l{font-size:12.5px; color:var(--ink-faint);}
+.ledger-cell .v{font-size:17px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+.ledger-cell .v.pos{color:var(--accent-text);}
 .ledger-cell .v.neg{color:var(--danger);}
+.ledger-cell .s{font-size:12px; color:var(--ink-faint);}
+.ledger-ic{width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--chip-bg); border:1px solid var(--chip-border); color:var(--accent-text);}
+.ledger-ic.warn{color:var(--warn);}
+.ledger-ic.sky{color:var(--sky-text);}
 
-/* ---- panels / sections ---- */
-.panel{background:var(--surface); border:1px solid var(--line); border-radius:8px; margin-bottom:22px;}
-.panel-head{display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;}
-.panel-head h2{font-size:15.5px; margin:0; font-weight:600;}
-.panel-head .hint{font-size:12px; color:var(--ink-faint);}
-.panel-body{padding:16px 18px;}
-.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
-@media (max-width:980px){.two-col{grid-template-columns:1fr;}}
+/* ---- Paneles ---- */
+.panel-head{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 20px 14px; flex-wrap:wrap; border-bottom:1px solid var(--line);}
+.panel.glass .panel-head{border-bottom:none; padding-bottom:4px;}
+.panel-head h2{font-size:17px; margin:0; font-weight:600; letter-spacing:-.01em;}
+.panel-head select{width:auto;}
+.panel-sub{font-size:12.5px; color:var(--ink-faint); margin-top:3px;}
+.panel-body{padding:18px 20px;}
+.two-col{display:grid; grid-template-columns:minmax(0,1.3fr) minmax(0,1fr); gap:16px; margin-bottom:20px;}
+.two-col > .panel{margin-bottom:0;}
 
-/* ---- tables ---- */
-.table-wrap{overflow-x:auto; border-radius:6px;}
+/* ---- Tablas ---- */
+.table-wrap{overflow-x:auto;}
 table{width:100%; border-collapse:collapse; font-size:13px;}
 thead th{
-  text-align:left; font-size:10.5px; color:var(--ink-faint); font-weight:600; letter-spacing:.04em;
-  padding:8px 12px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+  text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint);
+  padding:0 12px; height:42px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
 }
-tbody td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap;}
+table thead th.num{font-family:inherit;}
+tbody td{padding:12px 12px; border-bottom:1px solid var(--line); vertical-align:middle; white-space:nowrap;}
+th:first-child, td:first-child{padding-left:20px;}
+th:last-child, td:last-child{padding-right:20px;}
 tbody tr:last-child td{border-bottom:none;}
-tbody tr:hover{background:var(--surface-2);}
-td.wrap, th.wrap{white-space:normal;}
+tbody tr:hover{background:var(--row-hover);}
+td.wrap, th.wrap{white-space:normal; min-width:140px;}
+td.cut{max-width:0; width:100%;}
+td.cut > div{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+td.btn-row{display:table-cell; text-align:right; white-space:nowrap;}
+td.btn-row .btn{margin-left:4px;}
 .num{text-align:right; font-variant-numeric:tabular-nums;}
+.panel-body table td.mono:first-child{width:110px;}
 .t-right{text-align:right;}
+.modal .table-wrap{border:1px solid var(--line); border-radius:16px; background:var(--well);}
+.modal th:first-child, .modal td:first-child{padding-left:14px;}
+.modal th:last-child, .modal td:last-child{padding-right:14px;}
 
-/* ---- badges / pills ---- */
-.pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:.01em;}
-.pill.posted{background:var(--accent-soft); color:var(--accent);}
-.pill.draft{background:var(--warn-soft); color:var(--warn);}
-.pill.annulled{background:var(--danger-soft); color:var(--danger);}
-.pill.paid{background:var(--accent-soft); color:var(--accent);}
-.pill.partial{background:var(--warn-soft); color:var(--warn);}
-.pill.open{background:var(--surface-2); color:var(--ink-soft);}
-.pill.closed{background:var(--danger-soft); color:var(--danger);}
+/* ---- Estados ---- */
+.pill{display:inline-flex; align-items:center; gap:6px; height:24px; padding:0 10px; border-radius:999px; font-size:12px; font-weight:600; letter-spacing:.01em; white-space:nowrap; background:var(--neutral-soft); color:var(--ink-soft);}
+.pill::before{content:""; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.9;}
+.pill.posted, .pill.paid{background:var(--accent-soft); color:var(--accent-text);}
+.pill.draft, .pill.partial{background:var(--warn-soft); color:var(--warn);}
+.pill.annulled, .pill.closed{background:var(--danger-soft); color:var(--danger);}
+.pill.open{background:var(--neutral-soft); color:var(--ink-soft);}
+.vtag{display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:22px; padding:0 6px; border-radius:7px; font-family:'Geist Mono',monospace; font-size:11px; font-weight:600; background:var(--neutral-soft); color:var(--ink-soft);}
+.vtag.t-FV{background:var(--accent-soft); color:var(--accent-text);}
+.vtag.t-FC{background:var(--warn-soft); color:var(--warn);}
+.vtag.t-CI{background:var(--sky-soft); color:var(--sky-text);}
+.vtag.t-CE{background:var(--indigo-soft); color:var(--indigo-text);}
 
-/* ---- forms ---- */
-label{display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; font-weight:500;}
-input[type=text], input[type=number], input[type=date], input[type=email], select, textarea{
-  width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface);
-  color:var(--ink); font-family:inherit; font-size:13px; outline:none;
+/* ---- Formularios ---- */
+label{display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; font-weight:500;}
+input[type=text], input[type=number], input[type=date], input[type=email], input[type=password], input[type=search], select, textarea{
+  width:100%; height:44px; padding:0 14px; border:1px solid var(--field-border); border-radius:14px;
+  background-color:var(--field-bg); box-shadow:var(--field-inset); color:var(--ink);
+  font-family:inherit; font-size:14px; outline:none; transition:border-color .15s ease, box-shadow .15s ease;
 }
-input:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
-.field{margin-bottom:12px;}
-.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
-.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;}
+textarea{height:auto; padding:10px 14px;}
+select{-webkit-appearance:none; appearance:none; padding-right:38px; background-image:var(--chev); background-repeat:no-repeat; background-position:right 12px center; background-size:16px; cursor:pointer;}
+input[type=number]{font-family:'Geist Mono', ui-monospace, monospace; font-variant-numeric:tabular-nums;}
+input::placeholder, textarea::placeholder{color:var(--ink-faint); opacity:.85;}
+input:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:var(--field-inset),0 0 0 4px var(--focus-ring);}
+input:disabled, select:disabled{opacity:.55; cursor:not-allowed;}
+input[type=checkbox]{width:18px; height:18px; accent-color:var(--accent); vertical-align:-3px;}
+.field{margin-bottom:14px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;}
 @media (max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
 
-button.btn{
-  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); padding:8px 14px;
-  border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
+/* ---- Botones ---- */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px; height:44px; padding:0 18px; border-radius:999px;
+  font-size:14px; font-weight:600; line-height:1; white-space:nowrap; cursor:pointer; text-decoration:none;
+  color:var(--ink); background:var(--btn-bg); border:1px solid var(--btn-border); box-shadow:var(--btn-shadow);
+  transition:transform .15s ease, background-color .15s ease, filter .15s ease, box-shadow .15s ease;
 }
-button.btn:hover{background:var(--surface-2);}
-button.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
-button.btn.primary:hover{filter:brightness(1.08);}
-button.btn.danger{background:var(--surface); border-color:var(--danger); color:var(--danger);}
-button.btn.ghost{border-color:transparent; background:transparent;}
-button.btn.sm{padding:5px 10px; font-size:12px;}
-button.btn:disabled{opacity:.4; cursor:not-allowed;}
+.btn:hover{background:var(--btn-hover);}
+.btn:active{transform:scale(.97);}
+.btn .ic{width:17px; height:17px;}
+.btn.primary{
+  color:var(--accent-ink); background-color:var(--accent);
+  background-image:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 55%);
+  border-color:rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -1px 0 rgba(0,0,0,.14),0 8px 18px -6px var(--accent-glow);
+}
+.btn.primary:hover{background-color:var(--accent); filter:brightness(1.07);}
+.btn.danger{background:var(--danger-soft); border-color:var(--danger-border); color:var(--danger); box-shadow:none;}
+.btn.danger:hover{background:var(--danger-soft); filter:brightness(1.05); border-color:var(--danger);}
+.btn.ghost{background:transparent; border-color:transparent; box-shadow:none; color:var(--ink-soft);}
+.btn.ghost:hover{background:var(--surface-2); color:var(--ink);}
+.btn.sm{height:34px; padding:0 13px; font-size:12.5px; gap:6px;}
+.btn.sm .ic{width:15px; height:15px;}
+.btn.icon{width:44px; padding:0;}
+.btn.icon.on{background:var(--accent-soft); color:var(--accent-text);}
+.btn.block{width:100%; height:52px; font-size:15px;}
+.btn:disabled{opacity:.42; cursor:not-allowed; transform:none; filter:none; box-shadow:none;}
 .btn-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+.hamburger{display:none;}
 
-.empty{padding:34px 20px; text-align:center; color:var(--ink-faint); font-size:13px;}
-.empty .big{font-size:26px; margin-bottom:8px; opacity:.5;}
+.empty{padding:40px 20px; text-align:center; color:var(--ink-faint); font-size:13.5px;}
+.empty .big{margin-bottom:10px; display:flex; justify-content:center;}
+.empty .big .ic{width:30px; height:30px; opacity:.7;}
 
-.tag-line{border-left:3px solid var(--line-strong); padding-left:10px; margin:10px 0; font-size:12.5px; color:var(--ink-soft);}
-.notice{padding:11px 14px; border-radius:6px; font-size:12.5px; margin-bottom:14px; border:1px solid;}
-.notice.info{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
-.notice.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn);}
-.notice.danger{background:var(--danger-soft); border-color:var(--danger); color:var(--danger);}
+.tag-line{margin:12px 0; padding:10px 14px; border-radius:12px; background:var(--well); font-size:13px; color:var(--ink-soft);}
+.notice{padding:12px 14px; border-radius:14px; font-size:13px; line-height:1.5; margin-bottom:14px; border:1px solid; color:var(--ink);}
+.notice.info{background:var(--accent-soft); border-color:var(--accent-border);}
+.notice.info b{color:var(--accent-text);}
+.notice.warn{background:var(--warn-soft); border-color:var(--warn-border);}
+.notice.warn b{color:var(--warn);}
+.notice.danger{background:var(--danger-soft); border-color:var(--danger-border);}
+.notice.danger b{color:var(--danger);}
 
-/* toast */
-#toastHost{position:fixed; bottom:calc(18px + env(safe-area-inset-bottom,0px)); right:18px; z-index:100; display:flex; flex-direction:column; gap:8px;}
-.toast{background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:7px; font-size:12.5px; box-shadow:0 6px 18px rgba(0,0,0,.18); max-width:320px;}
-:root[data-theme="dark"] .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong);}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong);}}
+/* ---- Notificaciones ---- */
+#toastHost{position:fixed; bottom:calc(20px + env(safe-area-inset-bottom,0px)); right:20px; z-index:100; display:flex; flex-direction:column; gap:8px; align-items:flex-end;}
+.toast{
+  display:flex; align-items:center; gap:10px; max-width:380px; padding:12px 16px; border-radius:16px; font-size:13px;
+  background:var(--toast-bg); color:var(--toast-ink); border:1px solid rgba(255,255,255,.12);
+  -webkit-backdrop-filter:blur(20px) saturate(160%); backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:0 18px 40px -12px rgba(0,0,0,.35); animation:toastIn .25s ease;
+}
+.toast::before{content:""; width:8px; height:8px; border-radius:50%; flex-shrink:0; background:rgba(255,255,255,.5);}
+.toast.ok::before{background:#3DD9B8;}
+.toast.danger::before{background:#FF8A7A;}
 
-/* modal */
-.modal-back{position:fixed; inset:0; background:rgba(15,20,16,.45); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; z-index:60; overflow-y:auto;}
-.modal{background:var(--surface); border:1px solid var(--line); border-radius:10px; width:100%; max-width:620px; box-shadow:0 20px 50px rgba(0,0,0,.2);}
-.modal.wide{max-width:840px;}
-.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line);}
-.modal-head h3{margin:0; font-size:16px; font-weight:600;}
-.modal-body{padding:18px 20px; max-height:70vh; overflow-y:auto;}
-.modal-foot{display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid var(--line);}
-.close-x{cursor:pointer; color:var(--ink-faint); font-size:18px; border:none; background:none; line-height:1;}
+/* ---- Ventanas modales ---- */
+.modal-back{
+  position:fixed; inset:0; z-index:60; overflow-y:auto; display:flex; align-items:flex-start; justify-content:center;
+  padding:6vh 16px; background:var(--scrim); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); animation:fadeIn .18s ease;
+}
+.modal{
+  width:100%; max-width:640px; border-radius:28px; background:var(--sheet);
+  -webkit-backdrop-filter:blur(40px) saturate(180%); backdrop-filter:blur(40px) saturate(180%);
+  border:1px solid var(--glass-border); box-shadow:var(--sheet-shadow); animation:popIn .22s cubic-bezier(.2,.8,.2,1);
+}
+.modal.wide{max-width:900px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 20px 16px 28px; border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0; font-size:20px; font-weight:600; letter-spacing:-.02em;}
+.modal-body{padding:22px 28px; max-height:70vh; overflow-y:auto;}
+.modal-foot{display:flex; justify-content:flex-end; gap:10px; padding:16px 20px 20px 28px; border-top:1px solid var(--line);}
+.close-x{color:var(--ink-faint);}
 
-.entry-lines-table input, .entry-lines-table select{padding:6px 8px; font-size:12.5px;}
-.total-bar{display:flex; gap:22px; padding:10px 4px 0; font-size:12.5px; border-top:1px dashed var(--line-strong); margin-top:8px;}
-.total-bar b{font-family:'IBM Plex Mono',monospace;}
-.balance-ok{color:var(--debit); font-weight:600;}
-.balance-bad{color:var(--danger); font-weight:600;}
+.entry-lines-table td input, .entry-lines-table td select{height:38px; padding:0 10px; font-size:13px; border-radius:10px;}
+.entry-lines-table td select{padding-right:32px; background-position:right 8px center;}
+.entry-lines-table td input[type=number]{text-align:right;}
+.entry-lines-table td, .entry-lines-table th{padding-top:6px; padding-bottom:6px;}
+.total-bar{
+  display:flex; align-items:center; gap:10px 28px; flex-wrap:wrap; margin-top:12px; padding:14px 18px; border-radius:16px;
+  background:var(--well); border:1px solid var(--line); box-shadow:var(--field-inset); font-size:13px; color:var(--ink-soft);
+}
+.total-bar b{font-family:'Geist Mono',monospace; font-size:14.5px; color:var(--ink); font-variant-numeric:tabular-nums;}
+.balance-ok, .balance-bad{margin-left:auto; display:inline-flex; align-items:center; height:30px; padding:0 14px; border-radius:999px; font-weight:600;}
+.balance-ok{background:var(--accent-soft); color:var(--accent-text); border:1px solid var(--accent-border);}
+.balance-bad{background:var(--danger-soft); color:var(--danger); border:1px solid var(--danger-border);}
 
 .kpi-mini{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
 .kpi-mini:last-child{border-bottom:none;}
 .kpi-mini .dot{width:8px; height:8px; border-radius:50%; flex:0 0 8px;}
-.kpi-mini .lab{flex:1; font-size:12.5px; color:var(--ink-soft);}
-.kpi-mini .val{font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600;}
+.kpi-mini .lab{flex:1; font-size:13px; color:var(--ink-soft);}
+.kpi-mini .val{font-family:'Geist Mono',monospace; font-size:13px; font-weight:600;}
 
-.chat-box{border:1px solid var(--line); border-radius:8px; overflow:hidden;}
-.chat-log{max-height:320px; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px;}
-.msg{max-width:82%; padding:9px 12px; border-radius:9px; font-size:13px; line-height:1.45;}
-.msg.user{align-self:flex-end; background:var(--accent); color:var(--accent-ink);}
-.msg.bot{align-self:flex-start; background:var(--surface-2); color:var(--ink);}
-.chat-input{display:flex; border-top:1px solid var(--line);}
-.chat-input input{border:none; border-radius:0; flex:1; padding:12px 14px;}
-.chat-input button{border:none; background:var(--accent); color:var(--accent-ink); padding:0 18px; font-weight:600; cursor:pointer;}
-.suggest-row{display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 12px;}
-.suggest-chip{font-size:11.5px; padding:4px 10px; border:1px solid var(--line-strong); border-radius:20px; cursor:pointer; color:var(--ink-soft); background:var(--surface);}
-.suggest-chip:hover{background:var(--surface-2);}
+/* ---- Panel general ---- */
+.dash-grid{display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:16px; margin-bottom:16px;}
+.dash-grid .panel{margin-bottom:0;}
+.dash-col{display:flex; flex-direction:column; gap:16px; min-width:0;}
+.dash-col .panel{flex:1 0 auto;}
+.chart-legend{display:flex; gap:16px; font-size:12.5px; color:var(--ink-soft);}
+.legend-item{display:inline-flex; align-items:center; gap:7px;}
+.sw{display:inline-block; width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+.chart-box{position:relative; height:250px;}
+.donut-wrap{display:flex; align-items:center; gap:20px;}
+.donut-box{position:relative; width:168px; height:168px; flex-shrink:0;}
+.donut-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none;}
+.donut-center b{font-size:18px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums;}
+.donut-center span{font-size:11.5px; color:var(--ink-faint);}
+.exp-legend{flex:1; display:flex; flex-direction:column; gap:12px; min-width:0;}
+.exp-row{display:flex; align-items:flex-start; gap:10px;}
+.exp-row .sw{margin-top:4px;}
+.exp-row .tx{flex:1; min-width:0;}
+.exp-row .nm{display:block; font-size:13px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.exp-row .am{font-size:12px; color:var(--ink-faint);}
+.exp-row .pc{font-size:12.5px; font-weight:600;}
+.big-num{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;}
+.big-num .tnum{font-size:26px; font-weight:600; letter-spacing:-.02em;}
+.stack-bar{display:flex; gap:3px; height:8px; margin:14px 0 16px;}
+.stack-bar span{border-radius:999px; min-width:4px;}
+.list-rows{display:flex; flex-direction:column; gap:12px;}
+.list-row{display:flex; align-items:center; gap:12px; min-width:0;}
+.list-row .dotc{width:8px; height:8px; border-radius:50%; flex-shrink:0;}
+.list-row .tx{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+.list-row .nm{font-size:13.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.list-row .sb{font-size:11.5px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.list-row .am{font-size:13px; font-weight:600; white-space:nowrap;}
+.alert-row{display:flex; align-items:center; gap:12px; padding:12px; border-radius:16px; background:var(--chip-bg); border:1px solid var(--chip-border);}
+.alert-ic{width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--warn-soft); color:var(--warn);}
+.alert-ic.danger{background:var(--danger-soft); color:var(--danger);}
+.alert-row .am.warn{color:var(--warn);}
+.alert-row .am.danger{color:var(--danger);}
+.stack-gap{display:flex; flex-direction:column; gap:10px;}
 
-.acct-tree-row{display:flex; gap:10px; padding:7px 12px; border-bottom:1px solid var(--line); font-size:12.5px; align-items:center;}
+/* ---- Asistente ---- */
+.chat-box{overflow:hidden;}
+.chat-log{max-height:420px; overflow-y:auto; padding:18px 20px; display:flex; flex-direction:column; gap:10px;}
+.msg{max-width:78%; padding:10px 14px; border-radius:18px; font-size:13.5px; line-height:1.5;}
+.msg.user{align-self:flex-end; background:var(--accent); color:var(--accent-ink); border-bottom-right-radius:6px;}
+.msg.bot{align-self:flex-start; background:var(--surface-2); color:var(--ink); border:1px solid var(--line); border-bottom-left-radius:6px;}
+.suggest-row{display:flex; gap:8px; flex-wrap:wrap; padding:0 20px 14px;}
+.suggest-chip{font-size:12.5px; padding:7px 12px; border-radius:999px; cursor:pointer; color:var(--ink-soft); background:var(--btn-bg); border:1px solid var(--btn-border); box-shadow:var(--btn-shadow);}
+.suggest-chip:hover{color:var(--ink); background:var(--btn-hover);}
+.chat-input{display:flex; gap:10px; padding:14px 16px; border-top:1px solid var(--line);}
+.chat-input input{flex:1;}
+.chat-input button{
+  height:44px; padding:0 20px; border-radius:999px; font-weight:600; cursor:pointer; color:var(--accent-ink); background-color:var(--accent);
+  background-image:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,0) 55%); border:1px solid rgba(255,255,255,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),0 8px 18px -6px var(--accent-glow);
+}
+
+/* ---- Plan de cuentas ---- */
+.acct-tree-row{display:flex; gap:10px; padding:9px 20px; border-bottom:1px solid var(--line); font-size:13px; align-items:center;}
+.acct-tree-row:last-child{border-bottom:none;}
 .acct-tree-row .code{width:76px; flex:0 0 76px; color:var(--ink-faint);}
 .acct-tree-row .nm{flex:1;}
-.acct-tree-row.lvl1{font-weight:700; background:var(--surface-2);}
-.acct-tree-row.lvl2{font-weight:600; padding-left:24px;}
-.acct-tree-row.lvl3{padding-left:40px; color:var(--ink-soft);}
+.acct-tree-row.lvl1{font-weight:700; background:var(--well);}
+.acct-tree-row.lvl2{font-weight:600; padding-left:34px;}
+.acct-tree-row.lvl3{padding-left:50px; color:var(--ink-soft);}
 
-footer.appfoot{padding:20px 30px 40px; color:var(--ink-faint); font-size:11.5px; max-width:1320px;}
+footer.appfoot{padding:8px 8px 24px; color:var(--ink-faint); font-size:12px;}
 
-/* ---- login screen ---- */
-.login-wrap{
-  min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center;
-  background:var(--paper); padding:24px; padding-top:calc(24px + env(safe-area-inset-top,0px));
-  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+/* ---- Acceso ---- */
+.login-wrap{position:relative; flex:1; min-height:calc(100vh - 32px); display:flex; align-items:center; justify-content:center; gap:72px; padding:40px 48px 72px;}
+.login-tools{position:absolute; top:0; right:0; display:flex; gap:6px;}
+.login-hero{flex:1; max-width:620px; min-width:0; display:flex; flex-direction:column; gap:26px;}
+.login-hero .logo{width:52px; height:52px; border-radius:16px;}
+.login-hero .logo .ic{width:28px; height:28px;}
+.login-hero .brand{padding:0;}
+.login-hero .brand-name{font-size:26px;}
+.login-hero h1{margin:0 0 12px; font-size:clamp(40px,5vw,64px); line-height:1.02; letter-spacing:-.045em; font-weight:600;}
+.login-hero p{margin:0; font-size:17px; color:var(--ink-soft);}
+.feature-chips{display:flex; flex-wrap:wrap; gap:10px;}
+.feature-chip{display:inline-flex; align-items:center; gap:10px; height:44px; padding:0 16px 0 12px; border-radius:999px; font-size:14px; font-weight:500; color:var(--ink-soft);}
+.feature-chip .ic{color:var(--accent-text);}
+.eq-card{align-self:flex-start; border-radius:24px; padding:18px 22px; display:flex; flex-direction:column; gap:12px; transform:rotate(-2deg);}
+.eq-head{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft);}
+.eq-head .dot{width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft);}
+.eq-row{display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+.eq-row .t{display:block; font-size:12px; color:var(--ink-faint);}
+.eq-row .n{font-family:'Geist Mono',monospace; font-size:17px; font-weight:600; font-variant-numeric:tabular-nums;}
+.eq-op{font-size:20px; color:var(--ink-faint);}
+.eq-ok{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--accent-soft); color:var(--accent-text);}
+.eq-ok.bad{background:var(--danger-soft); color:var(--danger);}
+.login-card{width:100%; max-width:480px; flex-shrink:0; border-radius:32px; padding:34px 36px; display:flex; flex-direction:column; gap:20px;}
+.login-card h2{margin:0 0 6px; font-size:28px; font-weight:600; letter-spacing:-.025em;}
+.login-lead{margin:0; font-size:14px; color:var(--ink-soft);}
+.lbl-inline{display:block; font-size:12.5px; font-weight:500; color:var(--ink-soft); margin-bottom:8px;}
+.login-card .field{margin-bottom:0;}
+.login-card .notice{margin-bottom:0;}
+.role-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px;}
+.role-tile{
+  display:flex; align-items:center; gap:10px; min-height:60px; padding:8px 10px; border-radius:16px; min-width:0; text-align:left; cursor:pointer;
+  color:var(--ink); background:var(--chip-bg); border:1px solid var(--chip-border); transition:background-color .15s ease, box-shadow .15s ease;
 }
-.login-card{
-  width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
-  padding:32px 30px; box-shadow:0 12px 40px rgba(22,33,27,.08);
-}
+.role-tile:hover{background:var(--btn-hover);}
+.role-tile[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent-border); box-shadow:0 0 0 3px var(--focus-ring);}
+.role-tile .av{width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:11px; font-weight:700; background:var(--neutral-soft); color:var(--ink-soft);}
+.role-tile[aria-pressed="true"] .av{background:var(--accent); color:var(--accent-ink);}
+.role-tile .rt{flex:1; min-width:0; display:flex; flex-direction:column; gap:1px;}
+.role-tile .rn{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.role-tile .ru{font-size:12px; color:var(--ink-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.role-tile > .ic{color:var(--ink-faint);}
+.help-note{display:flex; gap:10px; padding:12px 14px; border-radius:16px; background:var(--well); border:1px solid var(--line); font-size:12.5px; line-height:1.5; color:var(--ink-soft);}
+.help-note .ic{width:16px; height:16px; margin-top:1px; color:var(--ink-faint);}
+.login-foot{position:absolute; left:0; right:0; bottom:8px; text-align:center; font-size:12px; color:var(--ink-faint); padding:0 16px;}
 .pw-wrap{position:relative;}
-.pw-wrap input{padding-right:38px;}
-.pw-eye{
-  position:absolute; right:4px; top:50%; transform:translateY(-50%); background:none; border:none;
-  cursor:pointer; font-size:15px; line-height:1; color:var(--ink-faint); padding:6px; border-radius:5px;
-}
+.pw-wrap input[type]{padding-right:50px;}
+.pw-eye{position:absolute; right:4px; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:11px; border:none; background:none; color:var(--ink-faint); display:flex; align-items:center; justify-content:center; cursor:pointer;}
 .pw-eye:hover{color:var(--ink); background:var(--surface-2);}
 
+/* ---- Barra de pestañas (móvil) ---- */
+.tabbar{display:none;}
+.tab{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; width:64px; height:52px; border-radius:26px; border:none; background:transparent; color:var(--ink-soft); font-size:11px; font-weight:600; cursor:pointer;}
+.tab .ic{width:20px; height:20px;}
+.tab.active{background:var(--nav-active); color:var(--nav-active-ink); box-shadow:var(--nav-active-shadow);}
+.tab:disabled{opacity:.4; cursor:not-allowed;}
+.tab-fab{width:54px; height:54px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  color:var(--accent-ink); background-color:var(--accent); background-image:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,0) 55%);
+  border:1px solid rgba(255,255,255,.3); box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 18px -6px var(--accent-glow);}
+.tab-fab .ic{width:24px; height:24px; stroke-width:2.2;}
+.tab-fab:disabled{opacity:.45; cursor:not-allowed; box-shadow:none;}
+
+/* ---- Animación ---- */
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0; transform:translateY(8px) scale(.98)}to{opacity:1; transform:none}}
+@keyframes toastIn{from{opacity:0; transform:translateY(8px)}to{opacity:1; transform:none}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important; transition:none!important;}}
+
+/* ---- Adaptable ---- */
+@media (max-height:940px){ .side-foot{display:none;} }
+@media (max-width:1500px){ .period{display:none;} }
+@media (max-width:1280px){
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .company-chip .sub{display:none;}
+  .ledger-strip.four{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .ledger-strip.four .ledger-cell:nth-child(2n){border-right:none;}
+  .ledger-strip.four .ledger-cell:nth-child(-n+2){border-bottom:1px solid var(--line);}
+  .role-switch .chip-col{display:none;}
+}
+@media (max-width:1100px){
+  .dash-grid, .two-col{grid-template-columns:minmax(0,1fr);}
+}
+@media (max-width:980px){
+  .login-wrap{flex-direction:column; align-items:stretch; gap:28px; padding:56px 4px 64px;}
+  .login-hero{max-width:none; gap:18px;}
+  .login-hero h1{font-size:40px;}
+  .eq-card{display:none;}
+  .login-card{max-width:none; padding:26px 22px;}
+}
 @media (max-width:880px){
-  .sidebar{position:fixed; left:0; top:0; transform:translateX(-100%); transition:transform .18s ease; box-shadow:0 0 0 rgba(0,0,0,0);}
-  .sidebar.open{transform:translateX(0); box-shadow:20px 0 40px rgba(0,0,0,.25);}
-  .hamburger{display:inline-block;}
-  .content{padding:18px 16px;}
-  .topbar{padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top,0px));}
+  #app{padding:10px; gap:0;}
+  .sidebar{position:fixed; left:10px; top:10px; bottom:10px; height:auto; transform:translateX(calc(-100% - 24px)); transition:transform .22s ease; z-index:50;}
+  .sidebar.open{transform:none;}
+  .side-scrim.show{display:block; position:fixed; inset:0; z-index:45; background:var(--scrim);}
+  .hamburger{display:inline-flex;}
+  .main{gap:16px;}
+  .topbar{position:relative; top:auto; flex-wrap:wrap; border-radius:20px; padding:8px;}
+  #branchHost{order:10; width:100%;}
+  .topbar .seg{width:100%;}
+  .seg button{padding:0 11px;}
+  .topbar .hide-sm, .topbar .spacer{display:none;}
+  .company-chip{flex:1; max-width:none;}
+  .kpi-foot{flex-direction:column; align-items:flex-start;}
+  .ledger-strip.four{grid-template-columns:minmax(0,1fr);}
+  .ledger-strip.four .ledger-cell{border-right:none;}
+  .side-actions{display:flex; gap:6px; justify-content:space-between; padding-top:4px;}
+  .side-actions .btn{flex:1;}
+  .company-chip .sub{display:none;}
+  .company-chip select{max-width:150px;}
+  .content{padding:0 2px 100px;}
+  .page-head h1{font-size:28px;}
+  .kpi-grid{gap:10px;}
+  .kpi-card{padding:14px; gap:8px; border-radius:20px;}
+  .kpi-ic{display:none;}
+  .kpi-value{font-size:19px;}
+  .kpi-sub{white-space:normal;}
+  .ledger-cell{border-right:none; border-bottom:1px solid var(--line);}
+  .ledger-cell:last-child{border-bottom:none;}
+  .donut-wrap{flex-direction:column; align-items:stretch;}
+  .donut-box{align-self:center;}
+  .tabbar{display:flex; position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom,0px)); height:68px; border-radius:34px; padding:0 8px; align-items:center; justify-content:space-between; z-index:40;}
+  #toastHost{left:16px; right:16px; bottom:calc(96px + env(safe-area-inset-bottom,0px)); align-items:stretch;}
+  .toast{max-width:none;}
+  footer.appfoot{padding-bottom:100px;}
+  .modal-back{padding:12px;}
+  .modal{border-radius:24px;}
+  .modal-body{padding:18px;}
+  .modal-head, .modal-foot{padding-left:18px; padding-right:14px;}
+}
+
+/* ---- Impresión: reportes limpios y opacos ---- */
+@media print{
+  body::before{display:none;}
+  body{background:#fff; color:#000;}
+  .sidebar, .topbar, .tabbar, #toastHost, .appfoot, .side-scrim, .page-head .btn-row{display:none!important;}
+  #app{padding:0; display:block;}
+  .panel, .kpi-card, .ledger-strip, .panel.glass{background:#fff!important; box-shadow:none!important; border:1px solid #ccc!important; -webkit-backdrop-filter:none!important; backdrop-filter:none!important; break-inside:avoid;}
 }
 </style>
 </head>
@@ -301,9 +741,73 @@ function todayISO(){ return new Date().toISOString().slice(0,10); }
 function isoDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
 function fmtMoney(n){ n = Math.round(Number(n)||0); return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n); }
 function fmtNum(n){ return new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(Math.round(Number(n)||0)); }
-function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDate(s){ if(!s) return '—'; const [y,m,d]=String(s).slice(0,10).split('-'); const mm=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'][parseInt(m,10)-1]; return mm ? d+' '+mm+' '+y : s; }
 function fmtDateTime(s){ const d=new Date(s); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------------------------- Íconos (trazo, estilo Lucide) ---------------------- */
+const ICONS = {
+  ledger:'<path d="M5 7h14"/><path d="M12 7v11"/><path d="M6.5 11h3"/><path d="M14.5 14h3"/>',
+  dashboard:'<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+  tree:'<path d="M21 12h-8"/><path d="M21 6H8"/><path d="M21 18h-8"/><path d="M3 6v4c0 1.1.9 2 2 2h3"/><path d="M3 10v6c0 1.1.9 2 2 2h3"/>',
+  file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>',
+  fileCheck:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+  bookOpen:'<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>',
+  book:'<path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/>',
+  scale:'<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  lock:'<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  package:'<path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+  receipt:'<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+  cart:'<circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
+  bank:'<path d="M3 22h18"/><path d="M6 18v-7"/><path d="M10 18v-7"/><path d="M14 18v-7"/><path d="M18 18v-7"/><path d="M12 2 20 7H4Z"/>',
+  barChart:'<path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
+  pie:'<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+  sparkles:'<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/><path d="M5 3v4"/><path d="M3 5h4"/>',
+  shield:'<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+  sliders:'<path d="M21 4h-7"/><path d="M10 4H3"/><path d="M21 12h-9"/><path d="M8 12H3"/><path d="M21 20h-5"/><path d="M12 20H3"/><path d="M14 2v4"/><path d="M8 10v4"/><path d="M16 18v4"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  chevronDown:'<path d="m6 9 6 6 6-6"/>',
+  plus:'<path d="M5 12h14"/><path d="M12 5v14"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+  droplet:'<path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  building:'<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  calendar:'<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  x:'<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  circleCheck:'<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',
+  alert:'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+  eye:'<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+  eyeOff:'<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="m2 2 20 20"/>',
+  printer:'<path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
+  arrowRight:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  arrowDownLeft:'<path d="M17 7 7 17"/><path d="M17 17H7V7"/>',
+  arrowUpRight:'<path d="M7 7h10v10"/><path d="M7 17 17 7"/>',
+  wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+  card:'<rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/>',
+  trendingDown:'<path d="m22 17-8.5-8.5-5 5L2 7"/><path d="M16 17h6v-6"/>',
+  trendingUp:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  menu:'<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>',
+  more:'<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+};
+function icon(name, cls){ return `<svg class="ic${cls?' '+cls:''}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name]||''}</svg>`; }
+/* Monto con el signo de pesos en tamaño menor (tarjetas de indicadores). */
+function moneyHtml(n){ return fmtMoney(n).replace(/^(-?)\$\s*/, (m,neg)=>`<span class="cur">${neg?'−':''}$</span>`); }
+function fmtPct(v){ return (Number(v)||0).toLocaleString('es-CO',{maximumFractionDigits:1})+' %'; }
+function fmtCompact(n){
+  const a = Math.abs(n);
+  if(a>=1e6) return (n<0?'−':'')+'$ '+(a/1e6).toLocaleString('es-CO',{maximumFractionDigits:1})+' M';
+  return fmtMoney(n);
+}
+function initials(name){ return String(name||'').replace(/\./g,'').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function normTxt(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+/* Paleta de series (mismo orden en gráficas y leyendas). */
+const SERIES_VARS = ['--accent','--credit','--indigo','--sky','--warn-dot','--ink-faint'];
 /* Hash simple y determinístico (no criptográfico) para el bloqueo de roles en el navegador.
    No sustituye autenticación real de servidor — ver nota en Configuración > Seguridad. */
 function simpleHash(str){
@@ -325,7 +829,7 @@ function pwFieldHtml(id, label, placeholder, opts){
   return `<div class="field"><label>${esc(label)}</label>
     <div class="pw-wrap">
       <input type="password" id="${id}" autocomplete="off" placeholder="${esc(placeholder||'')}" ${opts.onEnter?`onkeydown="if(event.key==='Enter'){${opts.onEnter}}"`:''}>
-      <button type="button" class="pw-eye" tabindex="-1" title="Mostrar u ocultar contraseña" onclick="App.togglePwVisibility('${id}', this)">👁</button>
+      <button type="button" class="pw-eye" tabindex="-1" title="Mostrar contraseña" aria-label="Mostrar contraseña" onclick="App.togglePwVisibility('${id}', this)">${icon('eye')}</button>
     </div>
   </div>`;
 }
@@ -339,16 +843,15 @@ function migrateRoleAuth(){
 function monthLabel(ym){ const [y,m]=ym.split('-'); const names=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return names[parseInt(m,10)-1]+' '+y; }
 function toast(msg, kind){
   const host=document.getElementById('toastHost');
-  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
-  if(kind==='danger'){ el.style.borderLeft='3px solid var(--danger)'; }
-  if(kind==='ok'){ el.style.borderLeft='3px solid var(--accent)'; }
+  const el=document.createElement('div'); el.className='toast'+(kind?' '+kind:''); el.textContent=msg;
+  el.setAttribute('role', kind==='danger'?'alert':'status');
   host.appendChild(el);
   setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),320); }, 3200);
 }
 
 /* ---------------------------- RBAC -------------------------------------- */
 const ROLES = ['SuperAdmin','Contador','AuxContable','Tesorero','Gerente','Auditor'];
-const ROLE_LABELS = {SuperAdmin:'Super Administrador', Contador:'Contador', AuxContable:'Auxiliar Contable', Tesorero:'Tesorero', Gerente:'Gerente', Auditor:'Auditor'};
+const ROLE_LABELS = {SuperAdmin:'Super administrador', Contador:'Contador', AuxContable:'Auxiliar contable', Tesorero:'Tesorero', Gerente:'Gerente', Auditor:'Auditor'};
 const ROLE_USER = {SuperAdmin:'A. Salcedo', Contador:'C. Núñez Vargas', AuxContable:'D. Peña Ríos', Tesorero:'M. Buitrago', Gerente:'S. Camacho', Auditor:'F. Osorio'};
 const LEVELS = {NONE:0, READ:1, CREATE:2, APPROVE:3, FULL:4};
 const PERMS = {
@@ -416,6 +919,9 @@ let UI = {       // estado de interfaz (no persistente)
   role:'SuperAdmin',
   sidebarOpen:false,
   theme:'light',
+  glass:'on',     // 'off' = reducir transparencia
+  navFilter:'',
+  loginRole:null,
   chartRef:null,
   chartRef2:null,
   unlockedRoles:null, // Set — roles ya autenticados en esta sesión de navegador
@@ -831,35 +1337,35 @@ function seedDemoTransactions(){
    ========================================================================= */
 const NAV = [
   {group:'General', items:[
-    {route:'dashboard', label:'Panel General', code:'PG', module:null},
+    {route:'dashboard', label:'Panel general', icon:'dashboard', module:null},
   ]},
   {group:'Contabilidad', items:[
-    {route:'puc', label:'Plan de Cuentas (PUC)', code:'CU', module:'contabilidad'},
-    {route:'comprobantes', label:'Comprobantes', code:'CG', module:'contabilidad'},
-    {route:'libroDiario', label:'Libro Diario', code:'LD', module:'contabilidad'},
-    {route:'libroMayor', label:'Libro Mayor', code:'LM', module:'contabilidad'},
-    {route:'balanceComprobacion', label:'Balance de Comprobación', code:'BC', module:'contabilidad'},
-    {route:'cierres', label:'Cierres de Período', code:'CP', module:'cierres'},
+    {route:'puc', label:'Plan de cuentas (PUC)', icon:'tree', module:'contabilidad'},
+    {route:'comprobantes', label:'Comprobantes', icon:'file', module:'contabilidad'},
+    {route:'libroDiario', label:'Libro diario', icon:'bookOpen', module:'contabilidad'},
+    {route:'libroMayor', label:'Libro mayor', icon:'book', module:'contabilidad'},
+    {route:'balanceComprobacion', label:'Balance de comprobación', icon:'scale', module:'contabilidad'},
+    {route:'cierres', label:'Cierres de período', icon:'lock', module:'cierres'},
   ]},
   {group:'Operación', items:[
-    {route:'terceros', label:'Terceros', code:'TE', module:'ventas'},
-    {route:'inventario', label:'Productos e Inventario', code:'KX', module:'inventario'},
-    {route:'ventas', label:'Ventas y Cartera', code:'VE', module:'ventas'},
-    {route:'compras', label:'Compras y CxP', code:'CO', module:'compras'},
+    {route:'terceros', label:'Terceros', icon:'users', module:'ventas'},
+    {route:'inventario', label:'Productos e inventario', icon:'package', module:'inventario'},
+    {route:'ventas', label:'Ventas y cartera', icon:'receipt', module:'ventas'},
+    {route:'compras', label:'Compras y CxP', icon:'cart', module:'compras'},
   ]},
   {group:'Tesorería', items:[
-    {route:'tesoreria', label:'Bancos y Movimientos', code:'TS', module:'tesoreria'},
+    {route:'tesoreria', label:'Bancos y movimientos', icon:'bank', module:'tesoreria'},
   ]},
   {group:'Reportes financieros', items:[
-    {route:'estadoResultados', label:'Estado de Resultados', code:'ER', module:'contabilidad'},
-    {route:'balanceGeneral', label:'Balance General', code:'BG', module:'contabilidad'},
+    {route:'estadoResultados', label:'Estado de resultados', icon:'barChart', module:'contabilidad'},
+    {route:'balanceGeneral', label:'Balance general', icon:'pie', module:'contabilidad'},
   ]},
   {group:'Inteligencia', items:[
-    {route:'asistente', label:'Asistente Financiero IA', code:'IA', module:null},
+    {route:'asistente', label:'Asistente financiero IA', icon:'sparkles', module:null},
   ]},
   {group:'Sistema', items:[
-    {route:'auditoria', label:'Auditoría', code:'AU', module:'auditoria'},
-    {route:'configuracion', label:'Configuración', code:'CF', module:'configuracion'},
+    {route:'auditoria', label:'Auditoría', icon:'shield', module:'auditoria'},
+    {route:'configuracion', label:'Configuración', icon:'sliders', module:'configuracion'},
   ]},
 ];
 
@@ -871,88 +1377,202 @@ function currentBranches(){ return branchesOf(UI.companyId); }
 function renderShell(){
   const app = document.getElementById('app');
   app.innerHTML = `
-    <div class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Menú principal">
       <div class="brand">
-        <div class="brand-mark"><span class="glyph">§</span><span class="name">Contafi ERP</span></div>
-        <div class="brand-sub">Núcleo Financiero-Contable</div>
+        <div class="logo">${icon('ledger')}</div>
+        <div><div class="brand-name">Contafi</div><div class="brand-sub">Núcleo financiero-contable</div></div>
       </div>
-      <div id="navHost"></div>
-      <div style="padding:14px 20px; border-top:1px solid var(--line); margin-top:8px;">
-        <div style="font-size:10.5px; color:var(--ink-faint); line-height:1.6;">
-          Partida doble validada · Trazabilidad absoluta<br>Multi-empresa · Multi-sucursal
-        </div>
+      <label class="side-search">${icon('search')}
+        <input type="search" id="navSearch" placeholder="Buscar módulo…" aria-label="Buscar módulo" autocomplete="off"
+          oninput="App.filterNav(this.value)"
+          onkeydown="if(event.key==='Enter'){App.navFirstMatch();} if(event.key==='Escape'){this.value=''; App.filterNav('');}">
+        <span class="kbd">Ctrl K</span>
+      </label>
+      <nav id="navHost"></nav>
+      <div id="sideFoot"></div>
+      <div class="side-actions">
+        <button class="btn icon" data-glass-btn onclick="App.toggleGlass()"></button>
+        <button class="btn icon" data-theme-btn onclick="App.toggleTheme()"></button>
+        <button class="btn" onclick="App.logout()">${icon('logout')}Cerrar sesión</button>
       </div>
-    </div>
+    </aside>
+    <div class="side-scrim" id="sideScrim" onclick="App.toggleSidebar()"></div>
     <div class="main">
-      <div class="topbar">
-        <button class="hamburger" onclick="App.toggleSidebar()">☰</button>
-        <div class="selector">
-          <span style="color:var(--ink-faint);">Empresa</span>
-          <select id="companySelect" onchange="App.setCompany(this.value)"></select>
-        </div>
-        <div class="selector">
-          <span style="color:var(--ink-faint);">Sucursal</span>
-          <select id="branchSelect" onchange="App.setBranch(this.value)"></select>
-        </div>
+      <header class="topbar">
+        <button class="btn ghost icon hamburger" aria-label="Abrir menú" onclick="App.toggleSidebar()">${icon('menu')}</button>
+        <label class="chip company-chip" title="Empresa activa">
+          <span class="chip-ic">${icon('building')}</span>
+          <span class="chip-col"><select id="companySelect" aria-label="Empresa" onchange="App.setCompany(this.value)"></select><span class="sub" id="companyNit"></span></span>
+        </label>
+        <div id="branchHost"></div>
         <div class="spacer"></div>
-        <div class="selector">
-          <span style="color:var(--ink-faint);">Rol activo</span>
-          <select id="roleSelect" onchange="App.requestRoleSwitch(this.value)"></select>
-        </div>
-        <span class="role-badge" id="roleBadge"></span>
-        <button class="btn ghost sm" title="Cerrar sesión y volver a la pantalla de acceso" onclick="App.logout()">Cerrar sesión</button>
-        <button class="btn ghost sm" title="Cambiar tema" onclick="App.toggleTheme()">◐</button>
-      </div>
+        <span class="period" id="periodChip"></span>
+        <button class="btn ghost icon hide-sm" data-glass-btn onclick="App.toggleGlass()"></button>
+        <button class="btn ghost icon hide-sm" data-theme-btn onclick="App.toggleTheme()"></button>
+        <label class="chip role-switch" title="Rol activo">
+          <span class="avatar" id="roleAvatar"></span>
+          <span class="chip-col"><span class="who" id="roleWho"></span><span class="role" id="roleName"></span></span>
+          ${icon('chevronDown')}
+          <select id="roleSelect" aria-label="Rol activo" onchange="App.requestRoleSwitch(this.value)"></select>
+        </label>
+        <button class="btn ghost icon hide-sm" aria-label="Cerrar sesión" title="Cerrar sesión y volver a la pantalla de acceso" onclick="App.logout()">${icon('logout')}</button>
+      </header>
       <div class="content" id="content"></div>
       <footer class="appfoot">Contafi ERP — Prototipo funcional de arquitectura API-First · Motor de partida doble en memoria del navegador · Datos de demostración, no reemplaza software certificado ante la DIAN.</footer>
     </div>
+    <nav class="tabbar" id="tabbar" aria-label="Navegación rápida"></nav>
   `;
   document.getElementById('sidebar').addEventListener('click', (e)=>{
-    if(window.innerWidth<=880 && e.target.closest('.nav-item')) UI.sidebarOpen=false;
+    if(window.innerWidth<=880 && e.target.closest('.nav-item:not(.locked)')) App.toggleSidebar(false);
   });
   renderNav();
   renderTopbarSelectors();
+  applyAppearance();
   renderContent();
+}
+
+/* Contadores del menú: solo lo que requiere acción (borradores, facturas abiertas, stock bajo). */
+function navBadges(){
+  const cid = UI.companyId;
+  const drafts = DB.entries.filter(e=>e.companyId===cid && e.status==='DRAFT').length;
+  const openInv = DB.invoices.filter(i=>i.companyId===cid && invoiceBalance(i)>0).length;
+  const openBills = DB.bills.filter(b=>b.companyId===cid && billBalance(b)>0).length;
+  const low = productsOf(cid).filter(p=>p.type==='PRODUCT' && p.stock<=15).length;
+  return {
+    comprobantes: drafts ? `<span class="nav-badge warn" title="${drafts} en borrador">${drafts}</span>` : '',
+    ventas: openInv ? `<span class="nav-badge" title="${openInv} factura(s) por cobrar">${openInv}</span>` : '',
+    compras: openBills ? `<span class="nav-badge" title="${openBills} factura(s) por pagar">${openBills}</span>` : '',
+    inventario: low ? `<span class="nav-dot" title="${low} producto(s) con stock bajo"></span>` : '',
+  };
 }
 
 function renderNav(){
   const host = document.getElementById('navHost');
-  host.innerHTML = NAV.map(g=>`
-    <div class="nav-group">
-      <div class="nav-group-label">${esc(g.group)}</div>
-      ${g.items.map(it=>{
+  if(!host) return;
+  const badges = navBadges();
+  const q = normTxt(UI.navFilter).trim();
+  const html = NAV.map(g=>{
+    const items = g.items.filter(it=>!q || normTxt(it.label).includes(q) || normTxt(g.group).includes(q));
+    if(!items.length) return '';
+    return `<div class="nav-group">
+      ${g.group!=='General' && !q ? `<div class="nav-group-label">${esc(g.group)}</div>` : ''}
+      ${items.map(it=>{
         const locked = it.module && !can(UI.role, it.module, 'READ');
         const active = UI.route===it.route;
-        return `<div class="nav-item ${active?'active':''} ${locked?'locked':''}"
-          title="${locked?'Sin acceso para el rol '+ROLE_LABELS[UI.role]:''}"
+        return `<button type="button" class="nav-item ${active?'active':''} ${locked?'locked':''}" data-route="${it.route}"
+          ${active?'aria-current="page"':''} ${locked?`aria-disabled="true" title="Sin acceso para el rol ${ROLE_LABELS[UI.role]}"`:''}
           onclick="${locked?'':'App.navigate(\''+it.route+'\')'}">
-          <span class="ic mono">${it.code}</span><span>${esc(it.label)}</span>
-        </div>`;
+          ${icon(it.icon)}<span class="lbl">${esc(it.label)}</span>${locked?icon('lock','sm'):(badges[it.route]||'')}
+        </button>`;
       }).join('')}
-    </div>
-  `).join('');
-  document.getElementById('sidebar').classList.toggle('open', UI.sidebarOpen);
+    </div>`;
+  }).join('');
+  host.innerHTML = html || '<div class="nav-empty">Sin coincidencias.</div>';
+
+  const foot = document.getElementById('sideFoot');
+  if(foot){
+    const bs = balanceSheet(UI.companyId, 'ALL');
+    foot.innerHTML = `<div class="side-foot ${bs.cuadra?'':'bad'}">
+      <span class="badge-ic">${icon(bs.cuadra?'circleCheck':'alert')}</span>
+      <div><b>${bs.cuadra?'Ecuación contable cuadra':'La ecuación no cuadra'}</b><span>Activo = Pasivo + Patrimonio</span></div>
+    </div>`;
+  }
+
+  const tb = document.getElementById('tabbar');
+  if(tb){
+    const tab = (route, label, ic, mod)=>{
+      const locked = mod && !can(UI.role, mod, 'READ');
+      return `<button type="button" class="tab ${UI.route===route?'active':''}" ${UI.route===route?'aria-current="page"':''} ${locked?'disabled':''} onclick="App.navigate('${route}')">${icon(ic)}${label}</button>`;
+    };
+    const canEntry = can(UI.role,'contabilidad','CREATE');
+    tb.innerHTML = tab('dashboard','Panel','dashboard',null)
+      + tab('comprobantes','Asientos','file','contabilidad')
+      + `<button type="button" class="tab-fab" aria-label="Nuevo comprobante" ${canEntry?'':'disabled'} onclick="App.openEntryModal()">${icon('plus')}</button>`
+      + tab('tesoreria','Bancos','bank','tesoreria')
+      + `<button type="button" class="tab" onclick="App.toggleSidebar(true)">${icon('more')}Más</button>`;
+  }
+  const sb = document.getElementById('sidebar'); if(sb) sb.classList.toggle('open', UI.sidebarOpen);
+  const sc = document.getElementById('sideScrim'); if(sc) sc.classList.toggle('show', UI.sidebarOpen);
 }
 
 function renderTopbarSelectors(){
   const cs = document.getElementById('companySelect');
+  if(!cs) return;
   cs.innerHTML = DB.companies.map(c=>`<option value="${c.id}" ${c.id===UI.companyId?'selected':''}>${esc(c.name)}</option>`).join('');
-  const bs = document.getElementById('branchSelect');
-  bs.innerHTML = `<option value="ALL">Todas las sucursales</option>` + currentBranches().map(b=>`<option value="${b.id}" ${b.id===UI.branchId?'selected':''}>${esc(b.name)}</option>`).join('');
+  const co = company();
+  document.getElementById('companyNit').textContent = co ? 'NIT '+co.nit : '';
+
+  const brs = currentBranches();
+  const bh = document.getElementById('branchHost');
+  if(brs.length<=3){
+    const opts = [{id:'ALL', name:'Consolidado'}].concat(brs);
+    bh.innerHTML = `<div class="seg" role="group" aria-label="Sucursal">${opts.map(b=>
+      `<button type="button" aria-pressed="${UI.branchId===b.id}" onclick="App.setBranch('${b.id}')">${esc(b.name)}</button>`).join('')}</div>`;
+  }else{
+    bh.innerHTML = `<label class="chip"><span class="chip-ic">${icon('mapPin')}</span>
+      <select id="branchSelect" aria-label="Sucursal" onchange="App.setBranch(this.value)">
+        <option value="ALL">Todas las sucursales</option>
+        ${brs.map(b=>`<option value="${b.id}" ${b.id===UI.branchId?'selected':''}>${esc(b.name)}</option>`).join('')}
+      </select></label>`;
+  }
+
   const rs = document.getElementById('roleSelect');
   rs.innerHTML = ROLES.map(r=>`<option value="${r}" ${r===UI.role?'selected':''}>${ROLE_LABELS[r]}</option>`).join('');
-  document.getElementById('roleBadge').textContent = (roleHasPassword(UI.role)?'🔒 ':'')+ROLE_USER[UI.role]+' · '+ROLE_LABELS[UI.role];
+  document.getElementById('roleAvatar').textContent = initials(ROLE_USER[UI.role]);
+  document.getElementById('roleWho').innerHTML = esc(ROLE_USER[UI.role]) + (roleHasPassword(UI.role)?icon('lock','sm'):'');
+  document.getElementById('roleName').textContent = ROLE_LABELS[UI.role];
+
+  const ym = todayISO().slice(0,7);
+  const closed = isPeriodClosed(UI.companyId, ym);
+  const pc = document.getElementById('periodChip');
+  pc.className = 'period'+(closed?' closed':'');
+  pc.title = 'Período contable actual';
+  pc.innerHTML = `${icon('calendar')}<span>${monthLabel(ym)}</span><span class="dot"></span><b>${closed?'Cerrado':'Abierto'}</b>`;
 }
 
-App.toggleSidebar = function(){ UI.sidebarOpen = !UI.sidebarOpen; document.getElementById('sidebar').classList.toggle('open', UI.sidebarOpen); };
-App.toggleTheme = function(){
+/* ---------------------------- Apariencia (tema y transparencia) ------------------- */
+const PREFS_KEY = 'contafi_ui_prefs';
+function loadPrefs(){ try{ return JSON.parse(localStorage.getItem(PREFS_KEY)) || {}; }catch(e){ return {}; } }
+function savePrefs(){ try{ localStorage.setItem(PREFS_KEY, JSON.stringify({theme:UI.theme, glass:UI.glass})); }catch(e){ /* sin almacenamiento */ } }
+function applyAppearance(){
   const root = document.documentElement;
-  UI.theme = UI.theme==='dark' ? 'light' : 'dark';
   root.setAttribute('data-theme', UI.theme);
-  refreshCharts();
+  root.setAttribute('data-glass', UI.glass);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', UI.theme==='dark' ? '#060B0B' : '#DCE6E3');
+  document.querySelectorAll('[data-theme-btn]').forEach(b=>{
+    const l = UI.theme==='dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+    b.innerHTML = icon(UI.theme==='dark'?'sun':'moon'); b.title = l; b.setAttribute('aria-label', l);
+  });
+  document.querySelectorAll('[data-glass-btn]').forEach(b=>{
+    const off = UI.glass==='off';
+    const l = off ? 'Activar efecto de vidrio' : 'Reducir transparencia';
+    b.innerHTML = icon('droplet'); b.title = l; b.setAttribute('aria-label', l);
+    b.setAttribute('aria-pressed', off?'true':'false'); b.classList.toggle('on', off);
+  });
+}
+
+App.toggleSidebar = function(force){
+  UI.sidebarOpen = typeof force==='boolean' ? force : !UI.sidebarOpen;
+  const sb = document.getElementById('sidebar'); if(sb) sb.classList.toggle('open', UI.sidebarOpen);
+  const sc = document.getElementById('sideScrim'); if(sc) sc.classList.toggle('show', UI.sidebarOpen);
+};
+App.toggleTheme = function(){
+  UI.theme = UI.theme==='dark' ? 'light' : 'dark';
+  applyAppearance(); savePrefs(); refreshCharts();
+};
+App.toggleGlass = function(){
+  UI.glass = UI.glass==='off' ? 'on' : 'off';
+  applyAppearance(); savePrefs();
+  toast(UI.glass==='off' ? 'Transparencia reducida: superficies sólidas activadas.' : 'Efecto de vidrio activado.');
+};
+App.filterNav = function(q){ UI.navFilter = q||''; renderNav(); };
+App.navFirstMatch = function(){
+  const first = document.querySelector('#navHost .nav-item:not(.locked)');
+  if(first) App.navigate(first.dataset.route);
 };
 App.setCompany = function(id){ UI.companyId=id; UI.branchId='ALL'; renderTopbarSelectors(); renderNav(); renderContent(); };
-App.setBranch = function(id){ UI.branchId=id; renderContent(); };
+App.setBranch = function(id){ UI.branchId=id; renderTopbarSelectors(); renderContent(); };
 App.setRole = function(role){
   UI.role = role;
   if(UI.route!=='dashboard' && UI.route!=='asistente'){
@@ -977,7 +1597,7 @@ App.openRolePasswordModal = function(role){
     <div class="notice info">El rol <b>${ROLE_LABELS[role]}</b> está protegido con contraseña. Ingrésala para continuar; se te pedirá una sola vez por sesión de navegador.</div>
     ${pwFieldHtml('fRolePass','Contraseña','Contraseña del rol '+ROLE_LABELS[role], {onEnter:"App.submitRolePassword('"+role+"')"})}
     <div id="rolePassError" class="notice danger" style="display:none;"></div>
-    <div class="tag-line">¿La olvidaste? Pide a un Super Administrador que la consulte o la reinicie en Configuración → Seguridad de Roles.</div>
+    <div class="tag-line">¿La olvidaste? Pide a un Super administrador que la consulte o la reinicie en Configuración → Seguridad de roles.</div>
   `, `<button class="btn" onclick="App.cancelRoleSwitch()">Cancelar</button><button class="btn primary" onclick="App.submitRolePassword('${role}')">Ingresar</button>`);
   setTimeout(()=>{ const i=document.getElementById('fRolePass'); if(i) i.focus(); }, 30);
 };
@@ -1013,7 +1633,11 @@ App.logout = function(){
   toast('Sesión finalizada.');
   renderLogin();
 };
-App.navigate = function(route){ UI.route = route; UI.sidebarOpen=false; renderNav(); renderContent(); window.scrollTo(0,0); };
+App.navigate = function(route){
+  UI.route = route; UI.sidebarOpen=false; UI.navFilter='';
+  const ns = document.getElementById('navSearch'); if(ns) ns.value='';
+  renderNav(); renderContent(); window.scrollTo(0,0);
+};
 
 const ROUTE_RENDER = {}; // se completa más abajo
 
@@ -1023,11 +1647,11 @@ function renderContent(){
   el.innerHTML = fn();
   refreshCharts();
 }
-function rerender(){ renderContent(); }
+function rerender(){ renderTopbarSelectors(); renderNav(); renderContent(); }
 
 function renderLocked(moduleLabel){
   return `<div class="page-head"><h1>Acceso restringido</h1></div>
-  <div class="panel"><div class="empty"><div class="big">◇</div>
+  <div class="panel"><div class="empty"><div class="big">${icon('lock')}</div>
   El rol <b>${ROLE_LABELS[UI.role]}</b> no tiene permisos de lectura sobre <b>${esc(moduleLabel)}</b>.<br>
   Cambia de rol en la barra superior para explorar este módulo.</div></div>`;
 }
@@ -1046,20 +1670,24 @@ App.openModal = function(title, bodyHtml, footHtml, opts){
   opts = opts||{};
   const host = ensureModalHost();
   host.innerHTML = `<div class="modal-back" id="modalBack" onmousedown="if(event.target.id==='modalBack')App.closeModal()">
-    <div class="modal ${opts.wide?'wide':''}">
-      <div class="modal-head"><h3>${esc(title)}</h3><button class="close-x" onclick="App.closeModal()">✕</button></div>
+    <div class="modal ${opts.wide?'wide':''}" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head"><h3 id="modalTitle">${esc(title)}</h3><button class="btn ghost icon close-x" aria-label="Cerrar" onclick="App.closeModal()">${icon('x')}</button></div>
       <div class="modal-body" id="modalBody">${bodyHtml}</div>
       <div class="modal-foot">${footHtml||''}</div>
     </div>
   </div>`;
 };
-App.closeModal = function(){ const h=document.getElementById('modalHost'); if(h) h.innerHTML=''; };
+App.closeModal = function(){
+  const h=document.getElementById('modalHost'); if(h) h.innerHTML='';
+  const sel=document.getElementById('roleSelect'); if(sel) sel.value=UI.role; // el selector de rol nunca queda mostrando un rol no autorizado
+};
 function modalBody(){ return document.getElementById('modalBody'); }
 App.togglePwVisibility = function(id, btn){
   const el = document.getElementById(id);
   if(!el) return;
-  if(el.type==='password'){ el.type='text'; btn.textContent='🙈'; btn.title='Ocultar contraseña'; }
-  else{ el.type='password'; btn.textContent='👁'; btn.title='Mostrar contraseña'; }
+  if(el.type==='password'){ el.type='text'; btn.innerHTML=icon('eyeOff'); btn.title='Ocultar contraseña'; }
+  else{ el.type='password'; btn.innerHTML=icon('eye'); btn.title='Mostrar contraseña'; }
+  btn.setAttribute('aria-label', btn.title);
 };
 
 /* ---------------------------- Componentes compartidos ------------------------ */
@@ -1071,78 +1699,154 @@ function pill(status){
   return `<span class="pill ${m[0]}">${m[1]}</span>`;
 }
 function emptyRow(colspan, text){ return `<tr><td colspan="${colspan}"><div class="empty">${esc(text)}</div></td></tr>`; }
+/* Tarjetas de indicadores. Cada ítem: {label, value | money, cls, icon, tone, sub, badge:[clase, texto]} */
 function kpiStrip(items){
-  return `<div class="ledger-strip">${items.map(i=>`
-    <div class="ledger-cell"><div class="l">${esc(i.label)}</div><div class="v ${i.cls||''}">${i.value}</div></div>
-  `).join('')}</div>`;
+  return `<div class="kpi-grid">${items.map(i=>{
+    const val = i.money!==undefined ? moneyHtml(i.money) : String(i.value).replace(/^(-?)\$\s*/, (m,neg)=>`<span class="cur">${neg?'−':''}$</span>`);
+    return `<div class="kpi-card">
+      <div class="kpi-top">${i.icon?`<span class="kpi-ic ${i.tone||''}">${icon(i.icon)}</span>`:''}<span class="kpi-label">${esc(i.label)}</span></div>
+      <div class="kpi-value ${i.cls||''}">${val}</div>
+      ${i.sub||i.badge?`<div class="kpi-foot"><span class="kpi-sub">${esc(i.sub||'')}</span>${i.badge?`<span class="pill ${i.badge[0]}">${esc(i.badge[1])}</span>`:''}</div>`:''}
+    </div>`;
+  }).join('')}</div>`;
+}
+function vtag(t){ return `<span class="vtag t-${esc(t)}">${esc(t)}</span>`; }
+
+/* Composición de costos (clase 6) y gastos (clase 5) por cuenta, mayores primero. */
+function expenseComposition(cid, branchId){
+  return leafAccounts(cid).filter(a=>a.code.startsWith('5')||a.code.startsWith('6'))
+    .map(a=>({code:a.code, name:(a.code.startsWith('6')?'Costo de ventas · ':'')+a.name, val:accountBalance(cid,a.code,branchId).balance}))
+    .filter(x=>x.val>0).sort((a,b)=>b.val-a.val).slice(0,6);
 }
 
 /* ============================== DASHBOARD ================================= */
 ROUTE_RENDER.dashboard = function(){
   const cid = UI.companyId;
+  const inScope = x=> UI.branchId==='ALL' || x.branchId===UI.branchId;
   const bs = balanceSheet(cid, UI.branchId);
   const is = incomeStatement(cid, UI.branchId);
-  const cxc = DB.invoices.filter(i=>i.companyId===cid && (UI.branchId==='ALL'||i.branchId===UI.branchId)).reduce((s,i)=>s+invoiceBalance(i),0);
-  const cxp = DB.bills.filter(b=>b.companyId===cid && (UI.branchId==='ALL'||b.branchId===UI.branchId)).reduce((s,b)=>s+billBalance(b),0);
-  const cash = bankAccountsOf(cid).reduce((s,b)=>s+bankBalance(b.id),0) + accountBalance(cid,'1105').balance;
-  const lowStock = productsOf(cid).filter(p=>p.type==='PRODUCT' && p.stock<=15);
-  const recentEntries = DB.entries.filter(e=>e.companyId===cid && (UI.branchId==='ALL'||e.branchId===UI.branchId)).slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,7);
+  const invs = DB.invoices.filter(i=>i.companyId===cid && inScope(i));
+  const bills = DB.bills.filter(b=>b.companyId===cid && inScope(b));
+  const cxc = invs.reduce((s,i)=>s+invoiceBalance(i),0);
+  const cxp = bills.reduce((s,b)=>s+billBalance(b),0);
+  const openInv = invs.filter(i=>invoiceBalance(i)>0).length;
+  const openBills = bills.filter(b=>billBalance(b)>0).length;
+  const banks = bankAccountsOf(cid);
+  const caja = accountBalance(cid,'1105').balance;
+  const cash = banks.reduce((s,b)=>s+bankBalance(b.id),0) + caja;
+  const goods = productsOf(cid).filter(p=>p.type==='PRODUCT');
+  const lowStock = goods.filter(p=>p.stock<=15).sort((a,b)=>a.stock-b.stock);
+  const healthy = goods.filter(p=>p.stock>15);
+  const recentEntries = DB.entries.filter(e=>e.companyId===cid && inScope(e)).slice().sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt)).slice(0,6);
   const drafts = DB.entries.filter(e=>e.companyId===cid && e.status==='DRAFT').length;
+  const capital = (()=>{ const s=sumClass(cid,'31',UI.branchId); return s.credit-s.debit; })();
+  const pct = (a,b)=> b ? a/b*100 : 0;
+  const exp = expenseComposition(cid, UI.branchId);
+  const expTotal = exp.reduce((s,x)=>s+x.val,0);
+  const treas = banks.map(b=>({name:b.bank, sub:b.name+' · '+b.number, val:bankBalance(b.id)}))
+    .concat([{name:'Caja general', sub:'Cuenta 1105', val:caja}]).sort((a,b)=>b.val-a.val);
+  const treasPos = treas.reduce((s,t)=>s+Math.max(0,t.val),0);
+  const canEntry = can(UI.role,'contabilidad','CREATE');
+  const plural = (n, one, many)=> n===1 ? one : n+' '+many;
 
   return `
-  <div class="crumb">${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado todas las sucursales':branchName(UI.branchId)}</div>
-  <div class="page-head"><h1>Panel General</h1><p>Visión en tiempo real del núcleo contable, cartera, tesorería e inventarios de la compañía.</p></div>
-
-  ${kpiStrip([
-    {label:'Total Activos', value:fmtMoney(bs.activo)},
-    {label:'Total Pasivos', value:fmtMoney(bs.pasivo)},
-    {label:'Patrimonio', value:fmtMoney(bs.patrimonio)},
-    {label:'Utilidad del período', value:fmtMoney(is.utilidadNeta), cls:is.utilidadNeta>=0?'pos':'neg'},
-  ])}
-  ${kpiStrip([
-    {label:'Cartera por cobrar (CxC)', value:fmtMoney(cxc)},
-    {label:'Cuentas por pagar (CxP)', value:fmtMoney(cxp)},
-    {label:'Efectivo y bancos', value:fmtMoney(cash)},
-    {label:'Comprobantes en borrador', value:fmtNum(drafts), cls: drafts>0?'neg':''},
-  ])}
-
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-head"><h2>Ingresos vs. Costo y Gastos — últimos 6 meses</h2></div>
-      <div class="panel-body"><canvas id="chartRevenue" height="230"></canvas></div>
+  <div class="page-head split">
+    <div>
+      <div class="crumb">${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado todas las sucursales':esc(branchName(UI.branchId))}</div>
+      <h1>Panel general</h1>
+      <p>Visión en tiempo real del núcleo contable, cartera, tesorería e inventarios.</p>
     </div>
-    <div class="panel">
-      <div class="panel-head"><h2>Composición de Gastos por Cuenta</h2></div>
-      <div class="panel-body"><canvas id="chartExpense" height="230"></canvas></div>
+    <div class="btn-row">
+      <button class="btn" onclick="window.print()">${icon('printer')}Imprimir</button>
+      <button class="btn primary" ${canEntry?'':'disabled title="Tu rol no puede crear comprobantes"'} onclick="App.openEntryModal()">${icon('plus')}Nuevo comprobante</button>
     </div>
   </div>
 
-  <div class="two-col">
-    <div class="panel">
-      <div class="panel-head"><h2>Últimos Comprobantes</h2><span class="hint">${recentEntries.length} recientes</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Número</th><th>Fecha</th><th class="wrap">Concepto</th><th>Estado</th><th class="num">Valor</th></tr></thead><tbody>
-      ${recentEntries.length? recentEntries.map(e=>`<tr><td class="mono">${e.number}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td><td>${pill(e.status)}</td><td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td></tr>`).join('') : emptyRow(5,'Aún no hay comprobantes registrados.')}
-      </tbody></table></div>
-    </div>
-    <div class="panel">
-      <div class="panel-head"><h2>Alertas de Inventario</h2><span class="hint">stock ≤ 15 und.</span></div>
-      <div class="panel-body">
-        ${lowStock.length? lowStock.map(p=>`
-          <div class="kpi-mini"><span class="dot" style="background:${p.stock<=5?'var(--danger)':'var(--warn)'}"></span>
-          <span class="lab">${esc(p.name)} <span class="mono" style="color:var(--ink-faint)">${p.sku}</span></span>
-          <span class="val">${fmtNum(p.stock)} und.</span></div>`).join('')
-          : '<div class="empty">Niveles de inventario saludables.</div>'}
+  ${kpiStrip([
+    {label:'Total activos', money:bs.activo, icon:'wallet', sub: bs.activo ? fmtPct(pct(cash,bs.activo))+' en efectivo y bancos' : 'Sin movimientos'},
+    {label:'Total pasivos', money:bs.pasivo, icon:'card', tone:'indigo', sub:'Endeudamiento '+fmtPct(pct(bs.pasivo,bs.activo))},
+    {label:'Patrimonio', money:bs.patrimonio, icon:'pie', tone:'sky', sub:'Capital social '+fmtMoney(capital)},
+    {label:'Utilidad del período', money:is.utilidadNeta, icon:is.utilidadNeta<0?'trendingDown':'trendingUp', tone:is.utilidadNeta<0?'danger':'',
+      cls:is.utilidadNeta<0?'neg':'pos', badge:is.utilidadNeta<0?['annulled','Pérdida']:['posted','Utilidad'],
+      sub: is.ingresos ? 'Margen bruto '+fmtPct(pct(is.utilidadBruta,is.ingresos)) : 'Sin ingresos en el período'},
+  ])}
+
+  <div class="ledger-strip four">
+    <div class="ledger-cell with-ic"><span class="ledger-ic">${icon('arrowDownLeft')}</span><div class="ledger-txt"><div class="l">Cartera por cobrar</div><div class="v">${fmtMoney(cxc)}</div><div class="s">${openInv?plural(openInv,'1 factura abierta','facturas abiertas'):'Sin facturas pendientes'}</div></div></div>
+    <div class="ledger-cell with-ic"><span class="ledger-ic warn">${icon('arrowUpRight')}</span><div class="ledger-txt"><div class="l">Cuentas por pagar</div><div class="v">${fmtMoney(cxp)}</div><div class="s">${openBills?plural(openBills,'1 factura de compra','facturas de compra'):'Sin saldos con proveedores'}</div></div></div>
+    <div class="ledger-cell with-ic"><span class="ledger-ic sky">${icon('bank')}</span><div class="ledger-txt"><div class="l">Efectivo y bancos</div><div class="v">${fmtMoney(cash)}</div><div class="s">${plural(banks.length,'1 banco','bancos')} + caja general</div></div></div>
+    <div class="ledger-cell with-ic"><span class="ledger-ic ${drafts?'warn':''}">${icon(drafts?'file':'fileCheck')}</span><div class="ledger-txt"><div class="l">Comprobantes en borrador</div><div class="v ${drafts?'neg':''}">${fmtNum(drafts)}</div><div class="s">${drafts?'Pendientes de aprobación':'Todo contabilizado'}</div></div></div>
+  </div>
+
+  <div class="dash-grid">
+    <section class="panel glass">
+      <div class="panel-head">
+        <div><h2>Ingresos vs. costo y gastos</h2><div class="panel-sub">Últimos 6 meses · COP</div></div>
+        <div class="chart-legend"><span class="legend-item"><span class="sw" style="background:var(--accent)"></span>Ingresos</span><span class="legend-item"><span class="sw" style="background:var(--credit)"></span>Costo + gastos</span></div>
       </div>
+      <div class="panel-body"><div class="chart-box"><canvas id="chartRevenue" role="img" aria-label="Gráfica de barras: ingresos frente a costo y gastos de los últimos 6 meses"></canvas></div></div>
+    </section>
+    <section class="panel glass">
+      <div class="panel-head"><div><h2>Composición de costos y gastos</h2><div class="panel-sub">Acumulado · por cuenta</div></div></div>
+      <div class="panel-body">
+      ${exp.length ? `<div class="donut-wrap">
+          <div class="donut-box"><canvas id="chartExpense" role="img" aria-label="Gráfica circular de costos y gastos por cuenta"></canvas>
+            <div class="donut-center"><b>${fmtCompact(expTotal)}</b><span>total</span></div></div>
+          <div class="exp-legend">${exp.map((x,i)=>`<div class="exp-row"><span class="sw" style="background:var(${SERIES_VARS[i]})"></span>
+            <div class="tx"><span class="nm" title="${esc(x.code+' — '+x.name)}">${esc(x.name)}</span><span class="am mono">${fmtMoney(x.val)}</span></div>
+            <span class="pc mono">${fmtPct(pct(x.val,expTotal))}</span></div>`).join('')}</div>
+        </div>` : '<div class="empty">Aún no hay costos ni gastos registrados.</div>'}
+      </div>
+    </section>
+  </div>
+
+  <div class="dash-grid">
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>Últimos comprobantes</h2><div class="panel-sub">${recentEntries.length} más recientes</div></div>
+        ${can(UI.role,'contabilidad','READ')?`<button class="btn ghost sm" onclick="App.navigate('comprobantes')">Ver todos${icon('arrowRight')}</button>`:''}
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Número</th><th>Fecha</th><th>Concepto</th><th>Estado</th><th class="num">Valor</th></tr></thead><tbody>
+      ${recentEntries.length? recentEntries.map(e=>`<tr><td class="mono">${e.number}</td><td>${fmtDate(e.date)}</td><td class="cut"><div title="${esc(e.concept)}">${esc(e.concept)}</div></td><td>${pill(e.status)}</td><td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td></tr>`).join('') : emptyRow(5,'Aún no hay comprobantes registrados.')}
+      </tbody></table></div>
+    </section>
+    <div class="dash-col">
+      <section class="panel glass">
+        <div class="panel-head"><h2>Tesorería</h2>${can(UI.role,'tesoreria','READ')?`<button class="btn ghost sm" onclick="App.navigate('tesoreria')">Ver bancos</button>`:''}</div>
+        <div class="panel-body" style="padding-top:8px;">
+          <div class="big-num"><span class="tnum">${fmtMoney(cash)}</span><span class="hint">disponible</span></div>
+          <div class="stack-bar">${treas.map((t,i)=>t.val>0&&treasPos?`<span style="flex:${t.val} 1 0; background:var(${SERIES_VARS[i]})" title="${esc(t.name)}: ${fmtMoney(t.val)}"></span>`:'').join('')}</div>
+          <div class="list-rows">${treas.map((t,i)=>`<div class="list-row"><span class="dotc" style="background:var(${SERIES_VARS[i]})"></span>
+            <div class="tx"><span class="nm">${esc(t.name)}</span><span class="sb mono">${esc(t.sub)}</span></div><span class="am mono">${fmtMoney(t.val)}</span></div>`).join('')}</div>
+        </div>
+      </section>
+      <section class="panel glass">
+        <div class="panel-head"><h2>Alertas de inventario</h2>${lowStock.length?`<span class="pill draft">${plural(lowStock.length,'1 alerta','alertas')}</span>`:''}</div>
+        <div class="panel-body stack-gap" style="padding-top:8px;">
+        ${lowStock.length ? lowStock.map(p=>{ const crit = p.stock<=5; return `<div class="alert-row">
+            <span class="alert-ic ${crit?'danger':''}">${icon('alert')}</span>
+            <div class="list-row" style="flex:1;"><div class="tx"><span class="nm">${esc(p.name)}</span><span class="sb mono">${esc(p.sku)} · umbral 15 und.</span></div>
+            <span class="am mono ${crit?'danger':'warn'}">${fmtNum(p.stock)} und.</span></div></div>`; }).join('')
+          : `<div class="empty" style="padding:18px 8px;">Niveles de inventario saludables.</div>`}
+        ${lowStock.length && healthy.length ? `<div class="hint">${healthy.map(p=>esc(p.name)+' ('+fmtNum(p.stock)+' und.)').join(', ')} en niveles saludables.</div>` : ''}
+        </div>
+      </section>
     </div>
   </div>
   `;
 };
 
+function fmtAxis(v){
+  const a = Math.abs(v);
+  if(a>=1e6) return (v/1e6).toLocaleString('es-CO',{maximumFractionDigits:1})+' M';
+  if(a>=1e3) return (v/1e3).toLocaleString('es-CO',{maximumFractionDigits:0})+' mil';
+  return String(v);
+}
 function refreshCharts(){
-  if(UI.route!=='dashboard') return;
+  if(UI.route!=='dashboard' || !window.Chart) return;
   const cid = UI.companyId;
   const months = [];
-  for(let i=5;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
+  for(let i=5;i>=0;i--){ const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
   const rev = months.map(ym=>{
     let ingresos=0, costosGastos=0;
     DB.entries.filter(e=>e.companyId===cid && e.status==='POSTED' && e.date.slice(0,7)===ym && (UI.branchId==='ALL'||e.branchId===UI.branchId))
@@ -1152,35 +1856,35 @@ function refreshCharts(){
       }));
     return {ym, ingresos, costosGastos};
   });
-  const styles = getComputedStyle(document.documentElement);
-  const inkSoft = styles.getPropertyValue('--ink-soft').trim();
-  const line = styles.getPropertyValue('--line').trim();
-  const accent = styles.getPropertyValue('--accent').trim();
-  const credit = styles.getPropertyValue('--credit').trim();
+  const inkSoft = cssVar('--ink-soft'), line = cssVar('--line'), accent = cssVar('--accent'), credit = cssVar('--credit');
+  const tooltip = {backgroundColor:cssVar('--toast-bg'), titleColor:cssVar('--toast-ink'), bodyColor:cssVar('--toast-ink'), padding:10, cornerRadius:12, boxPadding:4,
+    callbacks:{label:ctx=>' '+(ctx.dataset.label||ctx.label)+': '+fmtMoney(ctx.parsed.y!==undefined?ctx.parsed.y:ctx.parsed)}};
+  Chart.defaults.font.family = "'Geist', ui-sans-serif, system-ui, sans-serif";
+  Chart.defaults.color = inkSoft;
 
   const c1 = document.getElementById('chartRevenue');
-  if(c1 && window.Chart){
+  if(c1){
     if(UI.chartRef) UI.chartRef.destroy();
+    const bar = {borderRadius:6, borderSkipped:false, maxBarThickness:26, categoryPercentage:.6, barPercentage:.82};
     UI.chartRef = new Chart(c1, {
-      type:'line',
-      data:{ labels:rev.map(r=>monthLabel(r.ym)), datasets:[
-        {label:'Ingresos', data:rev.map(r=>r.ingresos), borderColor:accent, backgroundColor:accent+'33', tension:.3, fill:true},
-        {label:'Costo + Gastos', data:rev.map(r=>r.costosGastos), borderColor:credit, backgroundColor:credit+'22', tension:.3, fill:true},
+      type:'bar',
+      data:{ labels:rev.map(r=>monthLabel(r.ym).split(' ')[0]), datasets:[
+        Object.assign({label:'Ingresos', data:rev.map(r=>r.ingresos), backgroundColor:accent}, bar),
+        Object.assign({label:'Costo + gastos', data:rev.map(r=>r.costosGastos), backgroundColor:credit}, bar),
       ]},
-      options:{ plugins:{legend:{labels:{color:inkSoft, font:{family:"IBM Plex Sans", size:11}}}},
-        scales:{ x:{ticks:{color:inkSoft, font:{size:10}}, grid:{color:line}}, y:{ticks:{color:inkSoft, font:{size:10}}, grid:{color:line}} } }
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip},
+        scales:{ x:{grid:{display:false}, border:{display:false}, ticks:{font:{size:12}}},
+                 y:{beginAtZero:true, grid:{color:line}, border:{display:false}, ticks:{font:{size:11}, maxTicksLimit:5, callback:v=>fmtAxis(v)}} } }
     });
   }
-  const expenseAccounts = leafAccounts(cid).filter(a=>a.code.startsWith('5')||a.code.startsWith('6'));
-  const expData = expenseAccounts.map(a=>({name:a.name, val:accountBalance(cid,a.code,UI.branchId).balance})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val).slice(0,6);
   const c2 = document.getElementById('chartExpense');
-  if(c2 && window.Chart){
+  if(c2){
     if(UI.chartRef2) UI.chartRef2.destroy();
-    const palette = [accent, credit, '#8A6DAA', '#4E80B5', '#B5834E', '#7C877F'];
+    const exp = expenseComposition(cid, UI.branchId);
     UI.chartRef2 = new Chart(c2, {
       type:'doughnut',
-      data:{ labels:expData.map(x=>x.name), datasets:[{data:expData.map(x=>x.val), backgroundColor:palette, borderColor:styles.getPropertyValue('--surface').trim(), borderWidth:2}] },
-      options:{ plugins:{legend:{position:'bottom', labels:{color:inkSoft, font:{family:"IBM Plex Sans", size:10.5}, boxWidth:10}}} }
+      data:{ labels:exp.map(x=>x.name), datasets:[{data:exp.map(x=>x.val), backgroundColor:exp.map((x,i)=>cssVar(SERIES_VARS[i])), borderWidth:0, spacing:3, borderRadius:4}] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{legend:{display:false}, tooltip} }
     });
   }
 }
@@ -1196,7 +1900,7 @@ ROUTE_RENDER.puc = function(){
     <div class="panel-head"><h2>Cuentas registradas</h2>
       <div class="btn-row">
         <span class="hint">${accts.length} cuentas</span>
-        <button class="btn primary sm" ${canCreate?'':'disabled title="Tu rol no puede crear cuentas"'} onclick="App.openAccountModal()">+ Nueva cuenta</button>
+        <button class="btn primary sm" ${canCreate?'':'disabled title="Tu rol no puede crear cuentas"'} onclick="App.openAccountModal()">${icon('plus')}Nueva cuenta</button>
       </div>
     </div>
     <div class="panel-body" style="padding:6px 0;">
@@ -1250,7 +1954,7 @@ ROUTE_RENDER.terceros = function(){
   <div class="panel">
     <div class="panel-head"><h2>Directorio de terceros</h2>
       <div class="btn-row"><span class="hint">${list.length} registros</span>
-      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openThirdPartyModal()">+ Nuevo tercero</button></div>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openThirdPartyModal()">${icon('plus')}Nuevo tercero</button></div>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Identificación</th><th class="wrap">Nombre / Razón social</th><th>Contacto</th><th class="num">Saldo</th></tr></thead><tbody>
     ${list.length? list.map(t=>{
@@ -1299,9 +2003,10 @@ ROUTE_RENDER.inventario = function(){
   const locked = requireRead('inventario','Inventario'); if(locked) return locked;
   const prods = productsOf(UI.companyId);
   const canCreate = can(UI.role,'inventario','CREATE');
+  const canDelete = can(UI.role,'inventario','FULL');
   const totalValue = prods.reduce((s,p)=>s+p.stock*p.avgCost,0);
   return `
-  <div class="page-head"><h1>Productos e Inventario</h1><p>Kardex valorado por costo promedio ponderado, sincronizado automáticamente con ventas y compras.</p></div>
+  <div class="page-head"><h1>Productos e inventario</h1><p>Kardex valorado por costo promedio ponderado, sincronizado automáticamente con ventas y compras.</p></div>
   ${kpiStrip([
     {label:'SKUs activos', value:fmtNum(prods.length)},
     {label:'Unidades en stock', value:fmtNum(prods.reduce((s,p)=>s+p.stock,0))},
@@ -1310,7 +2015,7 @@ ROUTE_RENDER.inventario = function(){
   ])}
   <div class="panel">
     <div class="panel-head"><h2>Catálogo de productos y servicios</h2>
-      <div class="btn-row"><button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openProductModal()">+ Nuevo producto</button></div>
+      <div class="btn-row"><button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openProductModal()">${icon('plus')}Nuevo producto</button></div>
     </div>
     <div class="table-wrap"><table><thead><tr><th>SKU</th><th class="wrap">Nombre</th><th>Tipo</th><th class="num">Stock</th><th class="num">Costo prom.</th><th class="num">Precio venta</th><th class="num">Valor stock</th><th></th></tr></thead><tbody>
     ${prods.length? prods.map(p=>`<tr><td class="mono">${p.sku}</td><td class="wrap">${esc(p.name)}</td><td>${p.type==='PRODUCT'?'Producto':'Servicio'}</td>
@@ -1318,28 +2023,53 @@ ROUTE_RENDER.inventario = function(){
       <td class="num mono">${p.type==='PRODUCT'?fmtMoney(p.avgCost):'—'}</td>
       <td class="num mono">${fmtMoney(p.salePrice)}</td>
       <td class="num mono">${p.type==='PRODUCT'?fmtMoney(p.stock*p.avgCost):'—'}</td>
-      <td><button class="btn ghost sm" onclick="App.openKardex('${p.id}')">Kardex</button></td></tr>`).join('') : emptyRow(8,'No hay productos registrados.')}
+      <td class="btn-row"><button class="btn ghost sm" onclick="App.openKardex('${p.id}')">Kardex</button>
+        <button class="btn ghost sm" ${canCreate?'':'disabled'} onclick="App.openProductModal('${p.id}')">Editar</button>
+        <button class="btn danger sm" ${canDelete?'':'disabled'} onclick="App.deleteProduct('${p.id}')">Eliminar</button></td></tr>`).join('') : emptyRow(8,'No hay productos registrados.')}
     </tbody></table></div>
   </div>`;
 };
-App.openProductModal = function(){
+App.openProductModal = function(productId){
   if(!can(UI.role,'inventario','CREATE')) return toast('Tu rol no tiene permiso para crear productos.','danger');
-  App.openModal('Nuevo producto o servicio', `
+  const editing = productId ? product(productId) : null;
+  const hasMoves = editing ? DB.inventoryMovements.some(m=>m.productId===editing.id) : false;
+  App.openModal(editing?'Editar producto o servicio':'Nuevo producto o servicio', `
     <div class="grid2">
-      <div class="field"><label>SKU</label><input type="text" id="fPrSku" class="mono"></div>
-      <div class="field"><label>Tipo</label><select id="fPrType"><option value="PRODUCT">Producto (con inventario)</option><option value="SERVICE">Servicio</option></select></div>
+      <div class="field"><label>SKU</label><input type="text" id="fPrSku" class="mono" value="${editing?esc(editing.sku):''}"></div>
+      <div class="field"><label>Tipo</label><select id="fPrType" ${hasMoves?'disabled':''}><option value="PRODUCT" ${editing&&editing.type==='PRODUCT'?'selected':''}>Producto (con inventario)</option><option value="SERVICE" ${editing&&editing.type==='SERVICE'?'selected':''}>Servicio</option></select></div>
     </div>
-    <div class="field"><label>Nombre</label><input type="text" id="fPrName"></div>
+    <div class="field"><label>Nombre</label><input type="text" id="fPrName" value="${editing?esc(editing.name):''}"></div>
     <div class="grid3">
-      <div class="field"><label>Unidad</label><input type="text" id="fPrUnit" value="UND"></div>
-      <div class="field"><label>Stock inicial</label><input type="number" id="fPrStock" value="0" min="0"></div>
-      <div class="field"><label>Costo inicial</label><input type="number" id="fPrCost" value="0" min="0"></div>
+      <div class="field"><label>Unidad</label><input type="text" id="fPrUnit" value="${editing?esc(editing.unit):'UND'}"></div>
+      <div class="field"><label>${editing?'Stock':'Stock inicial'}</label><input type="number" id="fPrStock" value="${editing?editing.stock:0}" min="0" ${hasMoves?'disabled':''}></div>
+      <div class="field"><label>${editing?'Costo promedio':'Costo inicial'}</label><input type="number" id="fPrCost" value="${editing?editing.avgCost:0}" min="0" ${hasMoves?'disabled':''}></div>
     </div>
-    <div class="field"><label>Precio de venta</label><input type="number" id="fPrPrice" value="0" min="0"></div>
-  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveProduct()">Guardar producto</button>`);
+    <div class="field"><label>Precio de venta</label><input type="number" id="fPrPrice" value="${editing?editing.salePrice:0}" min="0"></div>
+    ${hasMoves?'<div class="notice info">Este producto ya tiene movimientos de inventario: el tipo, el stock y el costo promedio se actualizan automáticamente con ventas y compras y no se pueden editar aquí.</div>':''}
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveProduct(${editing?`'${editing.id}'`:''})">${editing?'Guardar cambios':'Guardar producto'}</button>`);
 };
-App.saveProduct = function(){
+App.saveProduct = function(productId){
   const b = modalBody();
+  if(productId){
+    if(!can(UI.role,'inventario','CREATE')) return toast('Tu rol no tiene permiso para editar productos.','danger');
+    const p = product(productId); if(!p) return;
+    const name = b.querySelector('#fPrName').value.trim();
+    const sku = b.querySelector('#fPrSku').value.trim();
+    if(!name || !sku) return toast('SKU y nombre son obligatorios.','danger');
+    if(DB.products.find(x=>x.companyId===p.companyId && x.sku===sku && x.id!==productId)) return toast('Ya existe un producto con ese SKU.','danger');
+    const hasMoves = DB.inventoryMovements.some(m=>m.productId===productId);
+    p.sku = sku; p.name = name;
+    p.unit = b.querySelector('#fPrUnit').value.trim()||'UND';
+    p.salePrice = Math.max(0, Number(b.querySelector('#fPrPrice').value)||0);
+    if(!hasMoves){
+      p.type = b.querySelector('#fPrType').value;
+      p.stock = p.type==='PRODUCT' ? Math.max(0, Number(b.querySelector('#fPrStock').value)||0) : 0;
+      p.avgCost = p.type==='PRODUCT' ? Math.max(0, Number(b.querySelector('#fPrCost').value)||0) : 0;
+    }
+    addAudit(UI.companyId,'Inventario','Editó el producto '+sku+' — '+name, UI.role);
+    save(); App.closeModal(); rerender(); toast('Producto actualizado correctamente.','ok');
+    return;
+  }
   const name = b.querySelector('#fPrName').value.trim();
   const sku = b.querySelector('#fPrSku').value.trim();
   if(!name || !sku) return toast('SKU y nombre son obligatorios.','danger');
@@ -1350,6 +2080,19 @@ App.saveProduct = function(){
     stock, avgCost, salePrice: Math.max(0, Number(b.querySelector('#fPrPrice').value)||0)});
   addAudit(UI.companyId,'Inventario','Creó el producto '+sku+' — '+name, UI.role);
   save(); App.closeModal(); rerender(); toast('Producto creado correctamente.','ok');
+};
+App.deleteProduct = function(productId){
+  if(!can(UI.role,'inventario','FULL')) return toast('Tu rol no tiene permiso para eliminar productos.','danger');
+  const p = product(productId);
+  if(!p) return;
+  const used = DB.inventoryMovements.some(m=>m.productId===productId)
+    || DB.invoices.some(i=>i.items.some(it=>it.productId===productId))
+    || DB.bills.some(b=>b.items.some(it=>it.productId===productId));
+  if(used) return toast('No se puede eliminar "'+p.name+'": tiene movimientos o documentos asociados. Puedes editarlo, pero no eliminarlo para conservar la trazabilidad.','danger');
+  if(!confirm('¿Eliminar el producto "'+p.name+'"? Esta acción no se puede deshacer.')) return;
+  DB.products = DB.products.filter(x=>x.id!==productId);
+  addAudit(UI.companyId,'Inventario','Eliminó el producto '+p.sku+' — '+p.name, UI.role);
+  save(); rerender(); toast('Producto eliminado correctamente.','ok');
 };
 App.openKardex = function(productId){
   const p = product(productId);
@@ -1366,14 +2109,14 @@ App.openKardex = function(productId){
 
 /* ============================== VENTAS / CARTERA =============================== */
 ROUTE_RENDER.ventas = function(){
-  const locked = requireRead('ventas','Ventas y Cartera'); if(locked) return locked;
+  const locked = requireRead('ventas','Ventas y cartera'); if(locked) return locked;
   const invs = DB.invoices.filter(i=>i.companyId===UI.companyId && (UI.branchId==='ALL'||i.branchId===UI.branchId)).slice().sort((a,b)=>b.date.localeCompare(a.date));
   const totalFacturado = invs.reduce((s,i)=>s+i.total,0);
   const totalCartera = invs.reduce((s,i)=>s+invoiceBalance(i),0);
   const canCreate = can(UI.role,'ventas','CREATE');
   const canCollect = can(UI.role,'tesoreria','CREATE');
   return `
-  <div class="page-head"><h1>Ventas y Cartera</h1><p>Facturación electrónica interna con generación automática del asiento contable, IVA y salida de inventario.</p></div>
+  <div class="page-head"><h1>Ventas y cartera</h1><p>Facturación electrónica interna con generación automática del asiento contable, IVA y salida de inventario.</p></div>
   ${kpiStrip([
     {label:'Facturas emitidas', value:fmtNum(invs.length)},
     {label:'Total facturado', value:fmtMoney(totalFacturado)},
@@ -1382,7 +2125,7 @@ ROUTE_RENDER.ventas = function(){
   ])}
   <div class="panel">
     <div class="panel-head"><h2>Facturas de venta</h2>
-      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openInvoiceModal()">+ Nueva factura de venta</button>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openInvoiceModal()">${icon('plus')}Nueva factura de venta</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>N.° Factura</th><th>Fecha</th><th class="wrap">Cliente</th><th class="num">Subtotal</th><th class="num">IVA</th><th class="num">Total</th><th class="num">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
     ${invs.length? invs.map(i=>{
@@ -1425,7 +2168,7 @@ App.openInvoiceModal = function(){
       <label>Ítems</label>
       <div class="table-wrap entry-lines-table"><table><thead><tr><th>Producto / Servicio</th><th>Cant.</th><th>Precio unit.</th><th class="num">Total</th><th></th></tr></thead>
       <tbody id="invItemsBody">${invoiceItemRow(0, products)}</tbody></table></div>
-      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('invItemsBody').insertAdjacentHTML('beforeend', App._invRowHtml())">+ Agregar ítem</button>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('invItemsBody').insertAdjacentHTML('beforeend', App._invRowHtml())">${icon('plus')}Agregar ítem</button>
     </div>
     <div class="total-bar">
       <span>Subtotal: <b id="invSubtotal">$0</b></span>
@@ -1480,7 +2223,7 @@ App.viewInvoice = function(id){
     ${inv.items.map(it=>`<tr><td class="wrap">${esc(it.name)}</td><td class="num mono">${fmtNum(it.qty)}</td><td class="num mono">${fmtMoney(it.unitPrice)}</td><td class="num mono">${fmtMoney(it.total)}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="total-bar"><span>Subtotal: <b>${fmtMoney(inv.subtotal)}</b></span><span>IVA: <b>${fmtMoney(inv.taxAmount)}</b></span><span>Total: <b>${fmtMoney(inv.total)}</b></span><span>Saldo: <b>${fmtMoney(invoiceBalance(inv))}</b></span></div>
-    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro Diario.</div>`:''}
+    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro diario.</div>`:''}
   `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
 };
 App.openCollectModal = function(invoiceId){
@@ -1514,7 +2257,7 @@ ROUTE_RENDER.compras = function(){
   const canCreate = can(UI.role,'compras','CREATE');
   const canPay = can(UI.role,'tesoreria','CREATE');
   return `
-  <div class="page-head"><h1>Compras y Cuentas por Pagar</h1><p>Registro de facturas de proveedores con actualización automática de inventario, costo promedio y cuentas por pagar.</p></div>
+  <div class="page-head"><h1>Compras y cuentas por pagar</h1><p>Registro de facturas de proveedores con actualización automática de inventario, costo promedio y cuentas por pagar.</p></div>
   ${kpiStrip([
     {label:'Facturas recibidas', value:fmtNum(bills.length)},
     {label:'Total comprado', value:fmtMoney(totalComprado)},
@@ -1523,7 +2266,7 @@ ROUTE_RENDER.compras = function(){
   ])}
   <div class="panel">
     <div class="panel-head"><h2>Facturas de compra</h2>
-      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openBillModal()">+ Nueva factura de compra</button>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openBillModal()">${icon('plus')}Nueva factura de compra</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>N.° Factura</th><th>Fecha</th><th class="wrap">Proveedor</th><th class="num">Subtotal</th><th class="num">IVA</th><th class="num">Total</th><th class="num">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
     ${bills.length? bills.map(bl=>{
@@ -1566,7 +2309,7 @@ App.openBillModal = function(){
       <label>Ítems</label>
       <div class="table-wrap entry-lines-table"><table><thead><tr><th>Producto / Servicio</th><th>Cant.</th><th>Costo unit.</th><th class="num">Total</th><th></th></tr></thead>
       <tbody id="billItemsBody">${billItemRow(0, products)}</tbody></table></div>
-      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('billItemsBody').insertAdjacentHTML('beforeend', App._billRowHtml())">+ Agregar ítem</button>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('billItemsBody').insertAdjacentHTML('beforeend', App._billRowHtml())">${icon('plus')}Agregar ítem</button>
     </div>
     <div class="total-bar">
       <span>Subtotal: <b id="billSubtotal">$0</b></span>
@@ -1620,7 +2363,7 @@ App.viewBill = function(id){
     ${bl.items.map(it=>`<tr><td class="wrap">${esc(it.name)}</td><td class="num mono">${fmtNum(it.qty)}</td><td class="num mono">${fmtMoney(it.unitCost)}</td><td class="num mono">${fmtMoney(it.total)}</td></tr>`).join('')}
     </tbody></table></div>
     <div class="total-bar"><span>Subtotal: <b>${fmtMoney(bl.subtotal)}</b></span><span>IVA: <b>${fmtMoney(bl.taxAmount)}</b></span><span>Total: <b>${fmtMoney(bl.total)}</b></span><span>Saldo: <b>${fmtMoney(billBalance(bl))}</b></span></div>
-    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro Diario.</div>`:''}
+    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro diario.</div>`:''}
   `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
 };
 App.openPayModal = function(billId){
@@ -1657,7 +2400,7 @@ ROUTE_RENDER.tesoreria = function(){
   <div class="page-head"><h1>Tesorería</h1><p>Bancos, caja y movimientos de recaudo/pago conciliados automáticamente contra la contabilidad.</p></div>
   <div class="panel">
     <div class="panel-head"><h2>Cuentas bancarias y caja</h2>
-      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openCashMoveModal()">+ Movimiento manual</button>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openCashMoveModal()">${icon('plus')}Movimiento manual</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Cuenta</th><th class="wrap">Banco</th><th class="mono">N.° cuenta</th><th class="num">Saldo</th></tr></thead><tbody>
     <tr><td>Caja General</td><td class="wrap">Efectivo</td><td class="mono">—</td><td class="num mono">${fmtMoney(caja)}</td></tr>
@@ -1707,13 +2450,13 @@ ROUTE_RENDER.comprobantes = function(){
   const canCreate = can(UI.role,'contabilidad','CREATE');
   const canApprove = can(UI.role,'contabilidad','APPROVE');
   return `
-  <div class="page-head"><h1>Comprobantes Contables</h1><p>Todo movimiento —manual o automático— pasa por este motor de partida doble. Débito = Crédito, sin excepción.</p></div>
+  <div class="page-head"><h1>Comprobantes contables</h1><p>Todo movimiento —manual o automático— pasa por este motor de partida doble. Débito = Crédito, sin excepción.</p></div>
   <div class="panel">
     <div class="panel-head"><h2>Todos los comprobantes</h2>
-      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openEntryModal()">+ Nuevo comprobante manual</button>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openEntryModal()">${icon('plus')}Nuevo comprobante manual</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Número</th><th>Tipo</th><th>Fecha</th><th class="wrap">Concepto</th><th class="num">Valor</th><th>Estado</th><th></th></tr></thead><tbody>
-    ${entries.length? entries.map(e=>`<tr><td class="mono">${e.number}</td><td>${e.voucherType}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td>
+    ${entries.length? entries.map(e=>`<tr><td class="mono">${e.number}</td><td>${vtag(e.voucherType)}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td>
       <td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td><td>${pill(e.status)}</td>
       <td class="btn-row">
         <button class="btn ghost sm" onclick="App.viewEntry('${e.id}')">Ver</button>
@@ -1746,13 +2489,13 @@ App.openEntryModal = function(){
       <label>Movimientos</label>
       <div class="table-wrap entry-lines-table"><table><thead><tr><th>Cuenta</th><th>Nota</th><th>Débito</th><th>Crédito</th><th></th></tr></thead>
       <tbody id="entryLinesBody">${entryLineRow(0, accounts)}${entryLineRow(1, accounts)}</tbody></table></div>
-      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('entryLinesBody').insertAdjacentHTML('beforeend', App._entryRowHtml())">+ Agregar línea</button>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('entryLinesBody').insertAdjacentHTML('beforeend', App._entryRowHtml())">${icon('plus')}Agregar línea</button>
     </div>
     <div class="total-bar">
       <span>Σ Débitos: <b id="enDeb">$0</b></span><span>Σ Créditos: <b id="enCred">$0</b></span>
       <span id="enBalanceMsg" class="balance-ok">Balanceado</span>
     </div>
-    ${willDraft?`<div class="notice warn" style="margin-top:12px;">Tu rol (${ROLE_LABELS[UI.role]}) guarda comprobantes como <b>borrador</b>; un Contador o Super Administrador deberá aprobarlo para que impacte los saldos oficiales.</div>`:''}
+    ${willDraft?`<div class="notice warn" style="margin-top:12px;">Tu rol (${ROLE_LABELS[UI.role]}) guarda comprobantes como <b>borrador</b>; un Contador o Super administrador deberá aprobarlo para que impacte los saldos oficiales.</div>`:''}
   `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitEntry()">${willDraft?'Guardar borrador':'Contabilizar'}</button>`, {wide:true});
   App.recalcEntry();
 };
@@ -1808,10 +2551,10 @@ App.doAnnul = function(id){
 
 /* ============================== LIBRO DIARIO ===================================== */
 ROUTE_RENDER.libroDiario = function(){
-  const locked = requireRead('contabilidad','Libro Diario'); if(locked) return locked;
+  const locked = requireRead('contabilidad','Libro diario'); if(locked) return locked;
   const entries = activeEntries(UI.companyId).filter(inScopeBranch).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.number.localeCompare(b.number));
   return `
-  <div class="page-head"><h1>Libro Diario</h1><p>Todos los comprobantes contabilizados (estado Contabilizado), en orden cronológico.</p></div>
+  <div class="page-head"><h1>Libro diario</h1><p>Todos los comprobantes contabilizados (estado Contabilizado), en orden cronológico.</p></div>
   <div class="panel"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Comprobante</th><th class="wrap">Concepto</th><th>Cuenta</th><th class="num">Débito</th><th class="num">Crédito</th></tr></thead><tbody>
   ${entries.length? entries.map(e=>e.lines.map((l,idx)=>{ const a=accByCode(e.companyId,l.accountCode); return `<tr>
       <td>${idx===0?fmtDate(e.date):''}</td><td class="mono">${idx===0?e.number:''}</td><td class="wrap">${idx===0?esc(e.concept):''}</td>
@@ -1822,13 +2565,13 @@ ROUTE_RENDER.libroDiario = function(){
 
 /* ============================== LIBRO MAYOR ======================================= */
 ROUTE_RENDER.libroMayor = function(){
-  const locked = requireRead('contabilidad','Libro Mayor'); if(locked) return locked;
+  const locked = requireRead('contabilidad','Libro mayor'); if(locked) return locked;
   const accts = leafAccounts(UI.companyId);
   const sel = ROUTE_STATE.libroMayorAccount || (accts[0] ? accts[0].code : '');
   const rows = sel ? accountMovements(UI.companyId, sel, {branchId:UI.branchId}) : [];
   let running=0;
   return `
-  <div class="page-head"><h1>Libro Mayor</h1><p>Movimientos y saldo acumulado por cuenta contable.</p></div>
+  <div class="page-head"><h1>Libro mayor</h1><p>Movimientos y saldo acumulado por cuenta contable.</p></div>
   <div class="panel">
     <div class="panel-head"><h2>Selecciona una cuenta</h2>
       <select id="mayorSelect" onchange="ROUTE_STATE.libroMayorAccount=this.value; rerender();" style="min-width:280px;">
@@ -1847,11 +2590,11 @@ const ROUTE_STATE = {};
 
 /* ============================== BALANCE DE COMPROBACIÓN =========================== */
 ROUTE_RENDER.balanceComprobacion = function(){
-  const locked = requireRead('contabilidad','Balance de Comprobación'); if(locked) return locked;
+  const locked = requireRead('contabilidad','Balance de comprobación'); if(locked) return locked;
   const rows = trialBalance(UI.companyId, UI.branchId).sort((a,b)=>a.account.code.localeCompare(b.account.code));
   const td = rows.reduce((s,r)=>s+r.debit,0), tc = rows.reduce((s,r)=>s+r.credit,0);
   return `
-  <div class="page-head"><h1>Balance de Comprobación</h1><p>Sumas y saldos de todas las cuentas con movimiento, a la fecha actual.</p></div>
+  <div class="page-head"><h1>Balance de comprobación</h1><p>Sumas y saldos de todas las cuentas con movimiento, a la fecha actual.</p></div>
   <div class="panel"><div class="table-wrap"><table><thead><tr><th>Código</th><th class="wrap">Cuenta</th><th class="num">Total débitos</th><th class="num">Total créditos</th><th class="num">Saldo</th></tr></thead><tbody>
   ${rows.length? rows.map(r=>`<tr><td class="mono">${r.account.code}</td><td class="wrap">${esc(r.account.name)}</td>
     <td class="num mono">${fmtMoney(r.debit)}</td><td class="num mono">${fmtMoney(r.credit)}</td>
@@ -1862,14 +2605,14 @@ ROUTE_RENDER.balanceComprobacion = function(){
 
 /* ============================== ESTADO DE RESULTADOS ============================== */
 ROUTE_RENDER.estadoResultados = function(){
-  const locked = requireRead('contabilidad','el Estado de Resultados'); if(locked) return locked;
+  const locked = requireRead('contabilidad','el Estado de resultados'); if(locked) return locked;
   const is = incomeStatement(UI.companyId, UI.branchId);
   const ingAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('4')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
   const cosAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('6')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
   const gasAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('5')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
   const line = (x, sign)=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(sign*(x.bal.credit-x.bal.debit))}</td></tr>`;
   return `
-  <div class="page-head"><h1>Estado de Resultados</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Acumulado a ${fmtDate(todayISO())}</p></div>
+  <div class="page-head"><h1>Estado de resultados</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Acumulado a ${fmtDate(todayISO())}</p></div>
   <div class="panel"><div class="panel-body">
     <div class="tag-line" style="border-color:var(--accent); color:var(--accent); font-weight:600;">INGRESOS OPERACIONALES</div>
     <div class="table-wrap"><table><tbody>${ingAccts.length?ingAccts.map(x=>line(x,1)).join(''):emptyRow(3,'Sin ingresos registrados.')}
@@ -1891,14 +2634,14 @@ ROUTE_RENDER.estadoResultados = function(){
 
 /* ============================== BALANCE GENERAL ==================================== */
 ROUTE_RENDER.balanceGeneral = function(){
-  const locked = requireRead('contabilidad','el Balance General'); if(locked) return locked;
+  const locked = requireRead('contabilidad','el Balance general'); if(locked) return locked;
   const bs = balanceSheet(UI.companyId, UI.branchId);
   const secc = (prefix)=> leafAccounts(UI.companyId).filter(a=>a.code.startsWith(prefix)).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
   const activos = secc('1'), pasivos = secc('2'), patrimonios = secc('3');
   const rowA = x=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(x.bal.balance)}</td></tr>`;
   const rowP = x=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(-x.bal.balance)}</td></tr>`;
   return `
-  <div class="page-head"><h1>Balance General</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Corte ${fmtDate(todayISO())}</p></div>
+  <div class="page-head"><h1>Balance general</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Corte ${fmtDate(todayISO())}</p></div>
   ${!bs.cuadra?`<div class="notice danger">El balance no está cuadrado: revisa comprobantes en borrador o períodos pendientes de cierre.</div>`:''}
   <div class="two-col">
     <div class="panel">
@@ -1924,12 +2667,12 @@ ROUTE_RENDER.balanceGeneral = function(){
 
 /* ============================== CIERRES DE PERÍODO ================================= */
 ROUTE_RENDER.cierres = function(){
-  const locked = requireRead('cierres','Cierres de Período'); if(locked) return locked;
+  const locked = requireRead('cierres','Cierres de período'); if(locked) return locked;
   const canManage = can(UI.role,'cierres','FULL');
   const months = [];
   for(let i=11;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
   return `
-  <div class="page-head"><h1>Cierres de Período Contable</h1><p>Bloquea la contabilización de nuevos comprobantes en períodos ya cerrados, protegiendo la información histórica.</p></div>
+  <div class="page-head"><h1>Cierres de período contable</h1><p>Bloquea la contabilización de nuevos comprobantes en períodos ya cerrados, protegiendo la información histórica.</p></div>
   <div class="panel"><div class="table-wrap"><table><thead><tr><th>Período</th><th>Estado</th><th class="num">Comprobantes</th><th></th></tr></thead><tbody>
   ${months.map(ym=>{
     const closed = isPeriodClosed(UI.companyId, ym);
@@ -1949,7 +2692,7 @@ ROUTE_RENDER.auditoria = function(){
   const locked = requireRead('auditoria','Auditoría'); if(locked) return locked;
   const logs = DB.auditLogs.filter(l=>l.companyId===UI.companyId).slice(0,120);
   return `
-  <div class="page-head"><h1>Registro de Auditoría</h1><p>Bitácora inmutable de toda acción que afecta los datos contables — trazabilidad absoluta, cero borrado.</p></div>
+  <div class="page-head"><h1>Registro de auditoría</h1><p>Bitácora inmutable de toda acción que afecta los datos contables — trazabilidad absoluta, cero borrado.</p></div>
   <div class="panel"><div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Módulo</th><th>Usuario</th><th class="wrap">Acción</th></tr></thead><tbody>
   ${logs.length? logs.map(l=>`<tr><td class="mono">${fmtDateTime(l.ts)}</td><td>${esc(l.module)}</td><td>${esc(l.user)} <span class="hint">(${ROLE_LABELS[l.role]||l.role})</span></td><td class="wrap">${esc(l.action)}</td></tr>`).join('') : emptyRow(4,'Sin actividad registrada aún.')}
   </tbody></table></div></div>`;
@@ -1960,7 +2703,7 @@ let CHAT_LOG = [{who:'bot', text:'Hola, soy el asistente financiero de Contafi. 
 ROUTE_RENDER.asistente = function(){
   const chips = ['¿Cuál es mi cartera pendiente?','¿Cuánto tengo en bancos?','¿Cuál es la utilidad del período?','¿Cuánto debo a proveedores?','¿Cuánto IVA he generado?','¿Qué productos tienen poco stock?'];
   return `
-  <div class="page-head"><h1>Asistente Financiero IA</h1><p>Motor de consultas en lenguaje natural sobre los datos contables en tiempo real de la compañía activa.</p></div>
+  <div class="page-head"><h1>Asistente financiero IA</h1><p>Motor de consultas en lenguaje natural sobre los datos contables en tiempo real de la compañía activa.</p></div>
   <div class="panel">
     <div class="chat-box">
       <div class="chat-log" id="chatLog">${CHAT_LOG.map(m=>`<div class="msg ${m.who}">${m.text}</div>`).join('')}</div>
@@ -2040,7 +2783,7 @@ ROUTE_RENDER.configuracion = function(){
   <div class="page-head"><h1>Configuración</h1><p>Datos de la compañía, sucursales y matriz de roles y permisos del sistema.</p></div>
   <div class="panel">
     <div class="panel-head"><h2>Compañías</h2>
-      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openCompanyModal()">+ Nueva compañía</button>
+      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openCompanyModal()">${icon('plus')}Nueva compañía</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>NIT</th><th class="wrap">Razón social</th><th class="wrap">Régimen</th><th>Activa</th><th></th></tr></thead><tbody>
     ${DB.companies.map(co=>{
@@ -2073,7 +2816,7 @@ ROUTE_RENDER.configuracion = function(){
   </div>
   <div class="panel">
     <div class="panel-head"><h2>Sucursales</h2>
-      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openBranchModal()">+ Nueva sucursal</button>
+      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openBranchModal()">${icon('plus')}Nueva sucursal</button>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Código</th><th class="wrap">Nombre</th><th>Ciudad</th><th class="num">Comprobantes</th><th></th></tr></thead><tbody>
     ${currentBranches().length? currentBranches().map(b=>{
@@ -2089,9 +2832,9 @@ ROUTE_RENDER.configuracion = function(){
     </tbody></table></div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>Seguridad de Roles</h2><span class="hint">Protege con contraseña quién puede entrar a cada rol</span></div>
+    <div class="panel-head"><h2>Seguridad de roles</h2><span class="hint">Protege con contraseña quién puede entrar a cada rol</span></div>
     <div class="panel-body">
-      <div class="notice warn">Esta protección es un control de acceso del lado del navegador, pensado para evitar que alguien cambie de rol por descuido o sin autorización. No es un sistema de autenticación de servidor. Como privilegio del Super Administrador, las contraseñas se guardan también en texto legible (además de un hash) para poder consultarlas o restablecerlas aquí mismo — ten en cuenta que eso también significa que, técnicamente, no están cifradas de forma irreversible.</div>
+      <div class="notice warn">Esta protección es un control de acceso del lado del navegador, pensado para evitar que alguien cambie de rol por descuido o sin autorización. No es un sistema de autenticación de servidor. Como privilegio del Super administrador, las contraseñas se guardan también en texto legible (además de un hash) para poder consultarlas o restablecerlas aquí mismo — ten en cuenta que eso también significa que, técnicamente, no están cifradas de forma irreversible.</div>
     </div>
     <div class="table-wrap"><table><thead><tr><th>Rol</th><th>Estado</th><th>Sesión</th><th></th></tr></thead><tbody>
     ${ROLES.map(r=>{
@@ -2110,7 +2853,7 @@ ROUTE_RENDER.configuracion = function(){
     </tbody></table></div>
   </div>
   <div class="panel">
-    <div class="panel-head"><h2>Matriz de Roles y Permisos (RBAC)</h2><span class="hint">Nivel mínimo requerido por módulo</span></div>
+    <div class="panel-head"><h2>Matriz de roles y permisos (RBAC)</h2><span class="hint">Nivel mínimo requerido por módulo</span></div>
     <div class="table-wrap"><table><thead><tr><th>Rol</th><th>Contabilidad</th><th>Ventas/CxC</th><th>Compras/CxP</th><th>Tesorería</th><th>Nómina</th><th>Cierres</th><th>Auditoría</th></tr></thead><tbody>
     ${ROLES.map(r=>`<tr><td style="font-weight:600;">${ROLE_LABELS[r]}</td>
       <td>${PERMS[r].contabilidad}</td><td>${PERMS[r].ventas}</td><td>${PERMS[r].compras}</td><td>${PERMS[r].tesoreria}</td>
@@ -2276,10 +3019,10 @@ App.removeRolePassword = function(role){
 App.revealRolePassword = function(role){
   if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para consultar contraseñas de roles.','danger');
   const rec = DB.roleAuth[role];
-  addAudit(UI.companyId,'Seguridad','Super Administrador consultó la contraseña del rol '+ROLE_LABELS[role], UI.role);
+  addAudit(UI.companyId,'Seguridad','Super administrador consultó la contraseña del rol '+ROLE_LABELS[role], UI.role);
   save();
   const body = (rec && rec.plain)
-    ? `<div class="notice warn">Solo el Super Administrador puede ver esta contraseña. Esta consulta queda registrada en Auditoría.</div>
+    ? `<div class="notice warn">Solo el Super administrador puede ver esta contraseña. Esta consulta queda registrada en Auditoría.</div>
        <div class="field"><label>Contraseña actual de ${ROLE_LABELS[role]}</label><input type="text" readonly value="${esc(rec.plain)}" class="mono" onclick="this.select()" style="font-size:16px; font-weight:600;"></div>`
     : `<div class="notice danger">Esta contraseña se estableció antes de habilitar la consulta en texto plano, así que no está disponible para ver. Puedes asignar una nueva desde aquí.</div>`;
   App.openModal('Contraseña del rol — '+ROLE_LABELS[role], body,
@@ -2291,31 +3034,77 @@ App.revealRolePassword = function(role){
 /* ============================== LOGIN ================================================ */
 function loginPasswordFieldHtml(role){
   if(roleHasPassword(role)){
-    return pwFieldHtml('loginPass','Contraseña','Contraseña de '+ROLE_LABELS[role], {onEnter:'App.attemptLogin()'});
+    return pwFieldHtml('loginPass','Contraseña del rol '+ROLE_LABELS[role],'Escribe la contraseña', {onEnter:'App.attemptLogin()'});
   }
   return `<div class="notice info">Este rol no tiene contraseña asignada todavía. Puedes ingresar directamente.</div>`;
+}
+function roleTileHtml(r, on){
+  return `<button type="button" class="role-tile" data-role="${r}" aria-pressed="${on?'true':'false'}" onclick="App.pickLoginRole('${r}')">
+    <span class="av">${initials(ROLE_USER[r])}</span>
+    <span class="rt"><span class="rn">${ROLE_LABELS[r]}</span><span class="ru">${esc(ROLE_USER[r])}</span></span>
+    ${roleHasPassword(r)?icon('lock','sm'):''}
+  </button>`;
 }
 function renderLogin(){
   const app = document.getElementById('app');
   const c = DB.companies[0];
+  const bs = balanceSheet(c.id, 'ALL');
+  const role = ROLES[0];
   app.innerHTML = `
   <div class="login-wrap">
-    <div class="login-card">
-      <div class="brand-mark" style="justify-content:center; margin-bottom:4px;"><span class="glyph">§</span><span class="name">Contafi ERP</span></div>
-      <div class="brand-sub" style="text-align:center; margin-bottom:22px;">${esc(c.name)} · Acceso por rol</div>
-      <div class="field"><label>Selecciona tu rol</label>
-        <select id="loginRoleSelect" onchange="App.onLoginRoleChange(this.value)">
-          ${ROLES.map(r=>`<option value="${r}">${ROLE_LABELS[r]}${roleHasPassword(r)?' 🔒':''}</option>`).join('')}
-        </select>
-      </div>
-      <div id="loginPassHost">${loginPasswordFieldHtml(ROLES[0])}</div>
-      <div id="loginError" class="notice danger" style="display:none;"></div>
-      <button class="btn primary" style="width:100%; padding:10px; margin-top:4px;" onclick="App.attemptLogin()">Ingresar</button>
-      <div class="tag-line" style="margin-top:18px;">¿Olvidaste tu contraseña? Solicítala al <b>Super Administrador</b>: puede consultarla o restablecerla desde Configuración → Seguridad de Roles.</div>
+    <div class="login-tools">
+      <button class="btn ghost icon" data-glass-btn onclick="App.toggleGlass()"></button>
+      <button class="btn ghost icon" data-theme-btn onclick="App.toggleTheme()"></button>
     </div>
+    <section class="login-hero">
+      <div class="brand"><div class="logo">${icon('ledger')}</div><span class="brand-name">Contafi</span></div>
+      <div>
+        <h1>Núcleo financiero-contable</h1>
+        <p>${esc(c.name)} · <span class="mono">NIT ${esc(c.nit)}</span></p>
+      </div>
+      <div class="feature-chips">
+        <span class="feature-chip">${icon('scale')}Partida doble validada</span>
+        <span class="feature-chip">${icon('shield')}Trazabilidad absoluta</span>
+        <span class="feature-chip">${icon('building')}Multi-empresa</span>
+        <span class="feature-chip">${icon('mapPin')}Multi-sucursal</span>
+      </div>
+      <div class="eq-card" aria-label="Ecuación contable de ${esc(c.name)}">
+        <div class="eq-head"><span class="dot"></span>Ecuación contable · hoy</div>
+        <div class="eq-row">
+          <div><span class="t">Activo</span><span class="n">${fmtMoney(bs.activo)}</span></div>
+          <span class="eq-op">=</span>
+          <div><span class="t">Pasivo</span><span class="n">${fmtMoney(bs.pasivo)}</span></div>
+          <span class="eq-op">+</span>
+          <div><span class="t">Patrimonio</span><span class="n">${fmtMoney(bs.patrimonio)}</span></div>
+          <span class="eq-ok ${bs.cuadra?'':'bad'}" title="${bs.cuadra?'Cuadra':'No cuadra'}">${icon(bs.cuadra?'check':'alert','sm')}</span>
+        </div>
+      </div>
+    </section>
+    <section class="login-card" aria-labelledby="loginTitle">
+      <div>
+        <h2 id="loginTitle">Ingresar</h2>
+        <p class="login-lead">Elige tu rol; cada uno ve solo los módulos que le corresponden.</p>
+      </div>
+      <div>
+        <span class="lbl-inline" id="roleGroupLbl">Rol</span>
+        <div class="role-grid" role="group" aria-labelledby="roleGroupLbl">${ROLES.map(r=>roleTileHtml(r, r===role)).join('')}</div>
+        <input type="hidden" id="loginRoleSelect" value="${role}">
+      </div>
+      <div id="loginPassHost">${loginPasswordFieldHtml(role)}</div>
+      <div id="loginError" class="notice danger" role="alert" style="display:none;"></div>
+      <button class="btn primary block" onclick="App.attemptLogin()">Ingresar${icon('arrowRight')}</button>
+      <div class="help-note">${icon('info')}<span>¿Olvidaste tu contraseña? Solicítala al <b>Super administrador</b>: puede consultarla o restablecerla en Configuración → Seguridad de roles.</span></div>
+    </section>
+    <div class="login-foot">Prototipo funcional · Datos de demostración, no reemplaza software certificado ante la DIAN.</div>
   </div>`;
-  setTimeout(()=>{ const i=document.getElementById('loginPass'); if(i) i.focus(); else document.getElementById('loginRoleSelect').focus(); }, 30);
+  applyAppearance();
+  setTimeout(()=>{ const i=document.getElementById('loginPass'); if(i) i.focus(); else { const t=document.querySelector('.role-tile[aria-pressed="true"]'); if(t) t.focus(); } }, 30);
 }
+App.pickLoginRole = function(role){
+  document.getElementById('loginRoleSelect').value = role;
+  document.querySelectorAll('.role-tile').forEach(b=>b.setAttribute('aria-pressed', b.dataset.role===role?'true':'false'));
+  App.onLoginRoleChange(role);
+};
 App.onLoginRoleChange = function(role){
   document.getElementById('loginPassHost').innerHTML = loginPasswordFieldHtml(role);
   const err = document.getElementById('loginError'); if(err) err.style.display='none';
@@ -2339,6 +3128,7 @@ App.attemptLogin = function(){
   addAudit(UI.companyId,'Seguridad','Inicio de sesión en el rol '+ROLE_LABELS[role], role);
   save();
   renderShell();
+  window.scrollTo(0,0);
 };
 
 /* ============================== INIT ================================================ */
@@ -2346,7 +3136,20 @@ function init(){
   load();
   migrateRoleAuth();
   UI.unlockedRoles = new Set();
-  if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ UI.theme='dark'; document.documentElement.setAttribute('data-theme','dark'); }
+  const prefs = loadPrefs();
+  const mq = q=> !!(window.matchMedia && window.matchMedia(q).matches);
+  UI.theme = prefs.theme || (mq('(prefers-color-scheme: dark)') ? 'dark' : 'light');
+  UI.glass = prefs.glass || (mq('(prefers-reduced-transparency: reduce)') ? 'off' : 'on');
+  applyAppearance();
+  document.addEventListener('keydown', (e)=>{
+    if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){
+      const s = document.getElementById('navSearch');
+      if(!s) return;
+      e.preventDefault();
+      if(window.innerWidth<=880) App.toggleSidebar(true);
+      s.focus(); s.select();
+    }
+  });
   renderLogin();
 }
 init();

@@ -1,0 +1,17 @@
+{
+  "name": "@contafi/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sistema visual Liquid Glass (tokens, estilos e íconos) compartido por la app de escritorio y la web.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./contafi.css": "./src/contafi.css"
+  },
+  "scripts": { "typecheck": "tsc -p ." },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0"
+  },
+  "devDependencies": { "@types/node": "^24.0.0", "typescript": "^5.9.0" }
+}

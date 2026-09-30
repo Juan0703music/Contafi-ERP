@@ -37,13 +37,33 @@ export const comprobanteSync = z.object({
   lineas: z.array(lineaSync).min(1).max(5000),
 });
 
+export const TIPOS_TERCERO = ['cliente', 'proveedor', 'empleado', 'otro'] as const;
+
+/** Tercero creado o editado en el PC (posiblemente sin conexión). */
+export const terceroSync = z.object({
+  id: uuid,
+  /** 31 NIT, 13 cédula, 22 cédula de extranjería, 41 pasaporte... */
+  tipo_doc: z.string().regex(/^\d{2}$/),
+  numero: z.string().trim().regex(/^[0-9A-Za-z]{3,20}$/),
+  dv: z.number().int().min(0).max(9).nullish(),
+  nombre: z.string().trim().min(1).max(300),
+  tipos: z.array(z.enum(TIPOS_TERCERO)).max(4).default([]),
+  responsabilidades: z.array(z.string().max(20)).max(30).default([]),
+  direccion: z.string().max(300).nullish(),
+  municipio: z.string().max(100).nullish(),
+  correo: z.email().max(200).nullish(),
+  activo: z.boolean().default(true),
+});
+
 export const loteEnvio = z.object({
   version_protocolo: z.literal(VERSION_PROTOCOLO),
   empresa_id: uuid,
   dispositivo: z.object({ id: uuid, nombre: z.string().trim().min(1).max(100), version_app: z.string().max(50) }),
+  /** Terceros nuevos o editados: se registran ANTES que los comprobantes que los usan. */
+  terceros: z.array(terceroSync).max(500).default([]),
   /** En el orden en que se crearon en el PC. */
-  comprobantes: z.array(comprobanteSync).min(1).max(200),
-});
+  comprobantes: z.array(comprobanteSync).max(200).default([]),
+}).refine((l) => l.terceros.length + l.comprobantes.length > 0, 'El lote está vacío.');
 
 export const consultaCambios = z.object({
   empresa_id: uuid,
@@ -52,6 +72,7 @@ export const consultaCambios = z.object({
   limite: z.coerce.number().int().min(1).max(1000).default(500),
 });
 
+export type TerceroSync = z.infer<typeof terceroSync>;
 export type LineaSync = z.infer<typeof lineaSync>;
 export type ComprobanteSync = z.infer<typeof comprobanteSync>;
 export type LoteEnvio = z.infer<typeof loteEnvio>;
@@ -74,8 +95,18 @@ export interface ResultadoItem {
   repetido: boolean;
 }
 
+export interface ResultadoTercero {
+  /** Id con que el PC lo creó. */
+  id: string;
+  /** Id definitivo en el servidor. Si difiere, otro PC ya había creado ese documento: la app reescribe sus referencias. */
+  id_servidor: string | null;
+  estado: 'registrado' | 'rechazado';
+  errores: ErrorItem[];
+}
+
 export interface RespuestaEnvio {
   version_protocolo: typeof VERSION_PROTOCOLO;
+  terceros: ResultadoTercero[];
   resultados: ResultadoItem[];
 }
 

@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Contafi ERP — Núcleo Contable</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+
+  --paper:#F2F4EF;
+  --surface:#FFFFFF;
+  --surface-2:#E9ECE4;
+  --ink:#16211B;
+  --ink-soft:#4B5750;
+  --ink-faint:#7C877F;
+  --line:#D7DACE;
+  --line-strong:#B9BEAE;
+  --accent:#1F5D4E;
+  --accent-ink:#F2F4EF;
+  --accent-soft:#DCE7E1;
+  --warn:#8A5A1E;
+  --warn-soft:#F1E3CC;
+  --danger:#8E332B;
+  --danger-soft:#F3DAD6;
+  --debit:#1F5D4E;
+  --credit:#7A3B12;
+  --shadow: 0 1px 0 rgba(22,33,27,0.04);
+}
+:root[data-theme="dark"]{
+  --paper:#10150F;
+  --surface:#161C15;
+  --surface-2:#1E2620;
+  --ink:#E7ECE4;
+  --ink-soft:#AEB8AC;
+  --ink-faint:#7C877F;
+  --line:#2B342C;
+  --line-strong:#3B453C;
+  --accent:#4E9A85;
+  --accent-ink:#0C1410;
+  --accent-soft:#1D332C;
+  --warn:#D8A868;
+  --warn-soft:#332816;
+  --danger:#D98D82;
+  --danger-soft:#3A211D;
+  --debit:#5FAF9A;
+  --credit:#D3A06E;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#10150F;
+    --surface:#161C15;
+    --surface-2:#1E2620;
+    --ink:#E7ECE4;
+    --ink-soft:#AEB8AC;
+    --ink-faint:#7C877F;
+    --line:#2B342C;
+    --line-strong:#3B453C;
+    --accent:#4E9A85;
+    --accent-ink:#0C1410;
+    --accent-soft:#1D332C;
+    --warn:#D8A868;
+    --warn-soft:#332816;
+    --danger:#D98D82;
+    --danger-soft:#3A211D;
+    --debit:#5FAF9A;
+    --credit:#D3A06E;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px); height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0; height:100%; background:var(--paper); color:var(--ink);
+  font-family:'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.serif{font-family:'Source Serif 4', Georgia, 'Times New Roman', serif;}
+.mono, .num, td.num, .code{font-family:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums;}
+a{color:var(--accent);}
+button{font-family:inherit;}
+::selection{background:var(--accent-soft);}
+
+/* ---- Layout shell ---- */
+#app{min-height:100%; display:flex;}
+.sidebar{
+  width:250px; flex:0 0 250px; background:var(--surface); border-right:1px solid var(--line);
+  padding:0; position:sticky; top:0; height:100vh; overflow-y:auto; z-index:20;
+  padding-top:env(safe-area-inset-top,0px);
+}
+.brand{padding:20px 20px 14px; border-bottom:1px solid var(--line);}
+.brand-mark{display:flex; align-items:baseline; gap:8px;}
+.brand-mark .glyph{font-family:'Source Serif 4',serif; font-weight:700; font-size:22px; color:var(--accent); letter-spacing:-0.5px;}
+.brand-mark .name{font-family:'Source Serif 4',serif; font-weight:600; font-size:18px;}
+.brand-sub{font-size:11px; color:var(--ink-faint); margin-top:3px; letter-spacing:.02em;}
+
+.nav-group{padding:14px 12px 4px;}
+.nav-group-label{font-size:11px; color:var(--ink-faint); padding:6px 10px 4px; letter-spacing:.03em;}
+.nav-item{
+  display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:6px; cursor:pointer;
+  color:var(--ink-soft); font-size:13.5px; font-weight:500; margin-bottom:1px; border:1px solid transparent;
+  user-select:none;
+}
+.nav-item:hover{background:var(--surface-2); color:var(--ink);}
+.nav-item.active{background:var(--accent-soft); color:var(--accent); font-weight:600;}
+.nav-item .ic{width:16px; text-align:center; font-size:14px; opacity:.85;}
+.nav-item.locked{opacity:.4; cursor:not-allowed;}
+.nav-item.locked:hover{background:transparent; color:var(--ink-soft);}
+
+.topbar{
+  position:sticky; top:0; z-index:15; background:var(--paper); border-bottom:1px solid var(--line);
+  padding:10px 22px; padding-top:calc(10px + env(safe-area-inset-top,0px));
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+}
+.selector{
+  display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-soft);
+  border:1px solid var(--line); border-radius:6px; padding:5px 9px; background:var(--surface);
+}
+.selector select{border:none; background:transparent; font-family:inherit; font-size:12.5px; color:var(--ink); outline:none; max-width:170px;}
+.spacer{flex:1;}
+.role-badge{font-size:11.5px; padding:4px 10px; border-radius:20px; background:var(--accent-soft); color:var(--accent); font-weight:600; letter-spacing:.02em;}
+.hamburger{display:none; border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:6px 10px; cursor:pointer;}
+
+.main{flex:1; min-width:0; padding-bottom:60px;}
+.content{padding:26px 30px; max-width:1320px;}
+.page-head{margin-bottom:20px;}
+.page-head h1{font-size:23px; margin:0 0 4px; font-weight:600;}
+.page-head p{margin:0; color:var(--ink-soft); font-size:13px; max-width:640px;}
+.crumb{font-size:11.5px; color:var(--ink-faint); margin-bottom:6px; letter-spacing:.02em;}
+
+/* ---- ledger strip (KPI) ---- */
+.ledger-strip{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:var(--surface); margin-bottom:22px; flex-wrap:wrap;}
+.ledger-cell{flex:1; min-width:150px; padding:14px 18px; border-right:1px solid var(--line);}
+.ledger-cell:last-child{border-right:none;}
+.ledger-cell .l{font-size:11px; color:var(--ink-faint); margin-bottom:6px;}
+.ledger-cell .v{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:600; font-variant-numeric:tabular-nums;}
+.ledger-cell .v.pos{color:var(--debit);}
+.ledger-cell .v.neg{color:var(--danger);}
+
+/* ---- panels / sections ---- */
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:8px; margin-bottom:22px;}
+.panel-head{display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid var(--line); gap:10px; flex-wrap:wrap;}
+.panel-head h2{font-size:15.5px; margin:0; font-weight:600;}
+.panel-head .hint{font-size:12px; color:var(--ink-faint);}
+.panel-body{padding:16px 18px;}
+.two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+@media (max-width:980px){.two-col{grid-template-columns:1fr;}}
+
+/* ---- tables ---- */
+.table-wrap{overflow-x:auto; border-radius:6px;}
+table{width:100%; border-collapse:collapse; font-size:13px;}
+thead th{
+  text-align:left; font-size:10.5px; color:var(--ink-faint); font-weight:600; letter-spacing:.04em;
+  padding:8px 12px; border-bottom:1px solid var(--line-strong); white-space:nowrap;
+}
+tbody td{padding:9px 12px; border-bottom:1px solid var(--line); vertical-align:top; white-space:nowrap;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface-2);}
+td.wrap, th.wrap{white-space:normal;}
+.num{text-align:right; font-variant-numeric:tabular-nums;}
+.t-right{text-align:right;}
+
+/* ---- badges / pills ---- */
+.pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:.01em;}
+.pill.posted{background:var(--accent-soft); color:var(--accent);}
+.pill.draft{background:var(--warn-soft); color:var(--warn);}
+.pill.annulled{background:var(--danger-soft); color:var(--danger);}
+.pill.paid{background:var(--accent-soft); color:var(--accent);}
+.pill.partial{background:var(--warn-soft); color:var(--warn);}
+.pill.open{background:var(--surface-2); color:var(--ink-soft);}
+.pill.closed{background:var(--danger-soft); color:var(--danger);}
+
+/* ---- forms ---- */
+label{display:block; font-size:11.5px; color:var(--ink-soft); margin-bottom:4px; font-weight:500;}
+input[type=text], input[type=number], input[type=date], input[type=email], select, textarea{
+  width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:6px; background:var(--surface);
+  color:var(--ink); font-family:inherit; font-size:13px; outline:none;
+}
+input:focus, select:focus, textarea:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+.field{margin-bottom:12px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+.grid4{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;}
+@media (max-width:700px){.grid2,.grid3,.grid4{grid-template-columns:1fr;}}
+
+button.btn{
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink); padding:8px 14px;
+  border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;
+}
+button.btn:hover{background:var(--surface-2);}
+button.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+button.btn.primary:hover{filter:brightness(1.08);}
+button.btn.danger{background:var(--surface); border-color:var(--danger); color:var(--danger);}
+button.btn.ghost{border-color:transparent; background:transparent;}
+button.btn.sm{padding:5px 10px; font-size:12px;}
+button.btn:disabled{opacity:.4; cursor:not-allowed;}
+.btn-row{display:flex; gap:8px; align-items:center; flex-wrap:wrap;}
+
+.empty{padding:34px 20px; text-align:center; color:var(--ink-faint); font-size:13px;}
+.empty .big{font-size:26px; margin-bottom:8px; opacity:.5;}
+
+.tag-line{border-left:3px solid var(--line-strong); padding-left:10px; margin:10px 0; font-size:12.5px; color:var(--ink-soft);}
+.notice{padding:11px 14px; border-radius:6px; font-size:12.5px; margin-bottom:14px; border:1px solid;}
+.notice.info{background:var(--accent-soft); border-color:var(--accent); color:var(--accent);}
+.notice.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn);}
+.notice.danger{background:var(--danger-soft); border-color:var(--danger); color:var(--danger);}
+
+/* toast */
+#toastHost{position:fixed; bottom:calc(18px + env(safe-area-inset-bottom,0px)); right:18px; z-index:100; display:flex; flex-direction:column; gap:8px;}
+.toast{background:var(--ink); color:var(--paper); padding:10px 16px; border-radius:7px; font-size:12.5px; box-shadow:0 6px 18px rgba(0,0,0,.18); max-width:320px;}
+:root[data-theme="dark"] .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong);}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .toast{background:var(--surface-2); color:var(--ink); border:1px solid var(--line-strong);}}
+
+/* modal */
+.modal-back{position:fixed; inset:0; background:rgba(15,20,16,.45); display:flex; align-items:flex-start; justify-content:center; padding:40px 16px; z-index:60; overflow-y:auto;}
+.modal{background:var(--surface); border:1px solid var(--line); border-radius:10px; width:100%; max-width:620px; box-shadow:0 20px 50px rgba(0,0,0,.2);}
+.modal.wide{max-width:840px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line);}
+.modal-head h3{margin:0; font-size:16px; font-weight:600;}
+.modal-body{padding:18px 20px; max-height:70vh; overflow-y:auto;}
+.modal-foot{display:flex; justify-content:flex-end; gap:8px; padding:14px 20px; border-top:1px solid var(--line);}
+.close-x{cursor:pointer; color:var(--ink-faint); font-size:18px; border:none; background:none; line-height:1;}
+
+.entry-lines-table input, .entry-lines-table select{padding:6px 8px; font-size:12.5px;}
+.total-bar{display:flex; gap:22px; padding:10px 4px 0; font-size:12.5px; border-top:1px dashed var(--line-strong); margin-top:8px;}
+.total-bar b{font-family:'IBM Plex Mono',monospace;}
+.balance-ok{color:var(--debit); font-weight:600;}
+.balance-bad{color:var(--danger); font-weight:600;}
+
+.kpi-mini{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+.kpi-mini:last-child{border-bottom:none;}
+.kpi-mini .dot{width:8px; height:8px; border-radius:50%; flex:0 0 8px;}
+.kpi-mini .lab{flex:1; font-size:12.5px; color:var(--ink-soft);}
+.kpi-mini .val{font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:600;}
+
+.chat-box{border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+.chat-log{max-height:320px; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px;}
+.msg{max-width:82%; padding:9px 12px; border-radius:9px; font-size:13px; line-height:1.45;}
+.msg.user{align-self:flex-end; background:var(--accent); color:var(--accent-ink);}
+.msg.bot{align-self:flex-start; background:var(--surface-2); color:var(--ink);}
+.chat-input{display:flex; border-top:1px solid var(--line);}
+.chat-input input{border:none; border-radius:0; flex:1; padding:12px 14px;}
+.chat-input button{border:none; background:var(--accent); color:var(--accent-ink); padding:0 18px; font-weight:600; cursor:pointer;}
+.suggest-row{display:flex; gap:6px; flex-wrap:wrap; padding:0 16px 12px;}
+.suggest-chip{font-size:11.5px; padding:4px 10px; border:1px solid var(--line-strong); border-radius:20px; cursor:pointer; color:var(--ink-soft); background:var(--surface);}
+.suggest-chip:hover{background:var(--surface-2);}
+
+.acct-tree-row{display:flex; gap:10px; padding:7px 12px; border-bottom:1px solid var(--line); font-size:12.5px; align-items:center;}
+.acct-tree-row .code{width:76px; flex:0 0 76px; color:var(--ink-faint);}
+.acct-tree-row .nm{flex:1;}
+.acct-tree-row.lvl1{font-weight:700; background:var(--surface-2);}
+.acct-tree-row.lvl2{font-weight:600; padding-left:24px;}
+.acct-tree-row.lvl3{padding-left:40px; color:var(--ink-soft);}
+
+footer.appfoot{padding:20px 30px 40px; color:var(--ink-faint); font-size:11.5px; max-width:1320px;}
+
+/* ---- login screen ---- */
+.login-wrap{
+  min-height:100vh; width:100%; display:flex; align-items:center; justify-content:center;
+  background:var(--paper); padding:24px; padding-top:calc(24px + env(safe-area-inset-top,0px));
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));
+}
+.login-card{
+  width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+  padding:32px 30px; box-shadow:0 12px 40px rgba(22,33,27,.08);
+}
+.pw-wrap{position:relative;}
+.pw-wrap input{padding-right:38px;}
+.pw-eye{
+  position:absolute; right:4px; top:50%; transform:translateY(-50%); background:none; border:none;
+  cursor:pointer; font-size:15px; line-height:1; color:var(--ink-faint); padding:6px; border-radius:5px;
+}
+.pw-eye:hover{color:var(--ink); background:var(--surface-2);}
+
+@media (max-width:880px){
+  .sidebar{position:fixed; left:0; top:0; transform:translateX(-100%); transition:transform .18s ease; box-shadow:0 0 0 rgba(0,0,0,0);}
+  .sidebar.open{transform:translateX(0); box-shadow:20px 0 40px rgba(0,0,0,.25);}
+  .hamburger{display:inline-block;}
+  .content{padding:18px 16px;}
+  .topbar{padding:10px 14px; padding-top:calc(10px + env(safe-area-inset-top,0px));}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toastHost"></div>
+<script>
+/* =========================================================================
+   CONTAFI ERP — NÚCLEO CONTABLE
+   Motor de partida doble, PUC, terceros, inventarios, tesorería, reportes.
+   ========================================================================= */
+
+/* ---------------------------- Utilidades ------------------------------- */
+function uid(p){ return (p||'id')+'_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function isoDaysAgo(n){ const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
+function fmtMoney(n){ n = Math.round(Number(n)||0); return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(n); }
+function fmtNum(n){ return new Intl.NumberFormat('es-CO',{maximumFractionDigits:0}).format(Math.round(Number(n)||0)); }
+function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateTime(s){ const d=new Date(s); return d.toLocaleDateString('es-CO',{day:'2-digit',month:'short'})+' · '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+/* Hash simple y determinístico (no criptográfico) para el bloqueo de roles en el navegador.
+   No sustituye autenticación real de servidor — ver nota en Configuración > Seguridad. */
+function simpleHash(str){
+  str = String(str);
+  let h1 = 0xdeadbeef ^ 0, h2 = 0x41c6ce57 ^ 0;
+  for(let i=0;i<str.length;i++){
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return (4294967296*(2097151 & h2) + (h1>>>0)).toString(36);
+}
+function roleHasPassword(role){ return !!(DB.roleAuth[role] && DB.roleAuth[role].hash); }
+/* Campo de contraseña con botón de "ojito" para mostrar/ocultar el texto mientras se escribe. */
+function pwFieldHtml(id, label, placeholder, opts){
+  opts = opts||{};
+  return `<div class="field"><label>${esc(label)}</label>
+    <div class="pw-wrap">
+      <input type="password" id="${id}" autocomplete="off" placeholder="${esc(placeholder||'')}" ${opts.onEnter?`onkeydown="if(event.key==='Enter'){${opts.onEnter}}"`:''}>
+      <button type="button" class="pw-eye" tabindex="-1" title="Mostrar u ocultar contraseña" onclick="App.togglePwVisibility('${id}', this)">👁</button>
+    </div>
+  </div>`;
+}
+function migrateRoleAuth(){
+  if(!DB.roleAuth) DB.roleAuth = {};
+  Object.keys(DB.roleAuth).forEach(r=>{
+    const v = DB.roleAuth[r];
+    if(typeof v === 'string'){ DB.roleAuth[r] = {hash:v, plain:null}; } // contraseñas creadas antes de esta versión: no se guardó el texto plano
+  });
+}
+function monthLabel(ym){ const [y,m]=ym.split('-'); const names=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return names[parseInt(m,10)-1]+' '+y; }
+function toast(msg, kind){
+  const host=document.getElementById('toastHost');
+  const el=document.createElement('div'); el.className='toast'; el.textContent=msg;
+  if(kind==='danger'){ el.style.borderLeft='3px solid var(--danger)'; }
+  if(kind==='ok'){ el.style.borderLeft='3px solid var(--accent)'; }
+  host.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .3s'; el.style.opacity='0'; setTimeout(()=>el.remove(),320); }, 3200);
+}
+
+/* ---------------------------- RBAC -------------------------------------- */
+const ROLES = ['SuperAdmin','Contador','AuxContable','Tesorero','Gerente','Auditor'];
+const ROLE_LABELS = {SuperAdmin:'Super Administrador', Contador:'Contador', AuxContable:'Auxiliar Contable', Tesorero:'Tesorero', Gerente:'Gerente', Auditor:'Auditor'};
+const ROLE_USER = {SuperAdmin:'A. Salcedo', Contador:'C. Núñez Vargas', AuxContable:'D. Peña Ríos', Tesorero:'M. Buitrago', Gerente:'S. Camacho', Auditor:'F. Osorio'};
+const LEVELS = {NONE:0, READ:1, CREATE:2, APPROVE:3, FULL:4};
+const PERMS = {
+  SuperAdmin:  {contabilidad:'FULL', ventas:'FULL', compras:'FULL', tesoreria:'FULL', inventario:'FULL', nomina:'FULL', cierres:'FULL', auditoria:'FULL', configuracion:'FULL'},
+  Contador:    {contabilidad:'FULL', ventas:'READ', compras:'READ', tesoreria:'APPROVE', inventario:'READ', nomina:'APPROVE', cierres:'FULL', auditoria:'READ', configuracion:'READ'},
+  AuxContable: {contabilidad:'CREATE', ventas:'CREATE', compras:'CREATE', tesoreria:'READ', inventario:'CREATE', nomina:'NONE', cierres:'NONE', auditoria:'NONE', configuracion:'NONE'},
+  Tesorero:    {contabilidad:'READ', ventas:'READ', compras:'READ', tesoreria:'FULL', inventario:'READ', nomina:'READ', cierres:'NONE', auditoria:'NONE', configuracion:'NONE'},
+  Gerente:     {contabilidad:'READ', ventas:'READ', compras:'READ', tesoreria:'READ', inventario:'READ', nomina:'READ', cierres:'NONE', auditoria:'READ', configuracion:'NONE'},
+  Auditor:     {contabilidad:'READ', ventas:'READ', compras:'READ', tesoreria:'READ', inventario:'READ', nomina:'READ', cierres:'NONE', auditoria:'FULL', configuracion:'NONE'},
+};
+function permLevel(role, mod){ const p=(PERMS[role]||{})[mod]||'NONE'; return LEVELS[p]; }
+function can(role, mod, min){ return permLevel(role,mod) >= LEVELS[min]; }
+
+/* ---------------------------- Plan Único de Cuentas ---------------------- */
+const PUC_SEED = [
+  ['1','ACTIVO','DEBIT',false],
+  ['11','Disponible','DEBIT',false],
+  ['1105','Caja General','DEBIT',false],
+  ['1110','Bancos y Corporaciones','DEBIT',false],
+  ['13','Deudores','DEBIT',false],
+  ['1305','Clientes Nacionales','DEBIT',true],
+  ['1355','Anticipo de Impuestos y Contribuciones','DEBIT',false],
+  ['135515','IVA Descontable','DEBIT',false],
+  ['14','Inventarios','DEBIT',false],
+  ['1435','Inventario de Mercancías no Fabricadas','DEBIT',false],
+  ['15','Propiedades, Planta y Equipo','DEBIT',false],
+  ['1524','Equipo de Oficina','DEBIT',false],
+  ['1592','Depreciación Acumulada','CREDIT',false],
+  ['2','PASIVO','CREDIT',false],
+  ['22','Proveedores','CREDIT',false],
+  ['2205','Proveedores Nacionales','CREDIT',true],
+  ['24','Impuestos, Gravámenes y Tasas','CREDIT',false],
+  ['2408','Impuesto sobre las Ventas por Pagar','CREDIT',false],
+  ['240805','IVA Generado','CREDIT',false],
+  ['25','Obligaciones Laborales','CREDIT',false],
+  ['2505','Salarios por Pagar','CREDIT',false],
+  ['2510','Cesantías Consolidadas','CREDIT',false],
+  ['3','PATRIMONIO','CREDIT',false],
+  ['31','Capital Social','CREDIT',false],
+  ['3115','Aportes Sociales','CREDIT',false],
+  ['36','Resultados del Ejercicio','CREDIT',false],
+  ['3605','Utilidad del Ejercicio','CREDIT',false],
+  ['4','INGRESOS','CREDIT',false],
+  ['41','Operacionales','CREDIT',false],
+  ['4135','Comercio al por Mayor y al por Menor','CREDIT',false],
+  ['4175','Devoluciones en Ventas','DEBIT',false],
+  ['5','GASTOS','DEBIT',false],
+  ['51','Gastos de Administración','DEBIT',false],
+  ['5105','Gastos de Personal','DEBIT',false],
+  ['5110','Honorarios','DEBIT',false],
+  ['5115','Servicios Públicos','DEBIT',false],
+  ['5195','Diversos','DEBIT',false],
+  ['6','COSTO DE VENTAS','DEBIT',false],
+  ['61','Costo de Ventas y de Prestación de Servicios','DEBIT',false],
+  ['6135','Comercio al por Mayor y al por Menor','DEBIT',false],
+];
+
+/* ---------------------------- Estado global ------------------------------ */
+const STORAGE_KEY = 'contafi_erp_v1';
+let DB = null;   // datos persistentes
+let UI = {       // estado de interfaz (no persistente)
+  route:'dashboard',
+  companyId:'c1',
+  branchId:'ALL',
+  role:'SuperAdmin',
+  sidebarOpen:false,
+  theme:'light',
+  chartRef:null,
+  chartRef2:null,
+  unlockedRoles:null, // Set — roles ya autenticados en esta sesión de navegador
+};
+
+function freshSeed(){
+  const companyId='c1';
+  const accounts = PUC_SEED.map(([code,name,nature,rtp])=>({
+    id:uid('acc'), companyId, code, name, nature,
+    level: code.length===1?1:code.length===2?2:code.length===4?3:4,
+    requiresThirdParty: rtp, isActive:true
+  }));
+  return {
+    companies:[{id:companyId, nit:'900.123.456-7', name:'Comercializadora Andina S.A.S.', regime:'Responsable de IVA — Régimen Ordinario', legalRep:'María Fernanda Ortiz Salazar', currency:'COP', address:'Cra. 15 # 93-47, Of. 501, Bogotá D.C.'}],
+    branches:[
+      {id:'b1', companyId, code:'001', name:'Sede Principal', city:'Bogotá D.C.'},
+      {id:'b2', companyId, code:'002', name:'Sucursal Medellín', city:'Medellín'},
+    ],
+    accounts,
+    thirdParties:[
+      {id:'t1', companyId, type:'CLIENT', docType:'NIT', docNumber:'830.945.221-3', name:'Distribuciones El Roble S.A.S.', email:'compras@elroble.com', phone:'(601) 555 0110'},
+      {id:'t2', companyId, type:'CLIENT', docType:'CC', docNumber:'1.032.556.789', name:'Laura Restrepo Gómez', email:'laura.restrepo@mail.com', phone:'315 220 4477'},
+      {id:'t3', companyId, type:'SUPPLIER', docType:'NIT', docNumber:'901.223.556-1', name:'Importadora Suministros del Norte Ltda.', email:'ventas@suministrosnorte.com', phone:'(604) 411 2200'},
+      {id:'t4', companyId, type:'SUPPLIER', docType:'NIT', docNumber:'860.014.778-2', name:'Papelería y Cómputo Central S.A.', email:'facturacion@pcc.com.co', phone:'(601) 743 9020'},
+      {id:'t5', companyId, type:'EMPLOYEE', docType:'CC', docNumber:'52.330.114', name:'Jorge Iván Cárdenas', email:'jcardenas@andina.co', phone:'300 998 1122'},
+    ],
+    warehouses:[{id:'w1', companyId, name:'Bodega Principal — Bogotá'}, {id:'w2', companyId, name:'Bodega Sucursal Medellín'}],
+    products:[
+      {id:'p1', companyId, sku:'ELT-1002', name:'Router Wi-Fi 6 Doble Banda', type:'PRODUCT', unit:'UND', stock:0, avgCost:0, salePrice:295000},
+      {id:'p2', companyId, sku:'ELT-2210', name:'Switch Administrable 24 Puertos', type:'PRODUCT', unit:'UND', stock:0, avgCost:0, salePrice:790000},
+      {id:'p3', companyId, sku:'ELT-3405', name:'Cámara IP Exterior 4K', type:'PRODUCT', unit:'UND', stock:0, avgCost:0, salePrice:410000},
+      {id:'p4', companyId, sku:'SRV-0001', name:'Instalación y Configuración de Red', type:'SERVICE', unit:'SERV', stock:0, avgCost:0, salePrice:150000},
+    ],
+    bankAccounts:[
+      {id:'ba1', companyId, bank:'Bancolombia', name:'Cuenta Corriente Principal', number:'091-000234-56'},
+      {id:'ba2', companyId, bank:'Davivienda', name:'Cuenta de Ahorros Tesorería', number:'0451-7789-3321'},
+    ],
+    entries:[],
+    invoices:[],
+    bills:[],
+    inventoryMovements:[],
+    periods:[],
+    auditLogs:[],
+    roleAuth:{}, // { role: hashedPassword } — protección de acceso por rol, ver Configuración > Seguridad
+    seq:{}, // seq[companyId][voucherType] = n
+  };
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ DB = JSON.parse(raw); if(!DB.roleAuth) DB.roleAuth = {}; return; }
+  }catch(e){ /* almacenamiento no disponible */ }
+  DB = freshSeed();
+  seedDemoTransactions();
+  save();
+}
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }catch(e){ /* no-op si el navegador bloquea el almacenamiento */ }
+}
+function resetAll(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  DB = freshSeed();
+  seedDemoTransactions();
+  save();
+  UI.route='dashboard';
+  UI.unlockedRoles = new Set();
+  toast('Datos reiniciados a la demostración inicial. Inicia sesión de nuevo.','ok');
+  renderLogin();
+}
+
+/* ---------------------------- Helpers de datos ---------------------------- */
+function company(){ return DB.companies.find(c=>c.id===UI.companyId); }
+function branchesOf(companyId){ return DB.branches.filter(b=>b.companyId===companyId); }
+function accountsOf(companyId){ return DB.accounts.filter(a=>a.companyId===companyId); }
+function leafAccounts(companyId){ return accountsOf(companyId).filter(a=>a.level>=3 && a.isActive); }
+function accByCode(companyId, code){ return DB.accounts.find(a=>a.companyId===companyId && a.code===code); }
+function thirdParty(id){ return DB.thirdParties.find(t=>t.id===id); }
+function thirdPartiesOf(companyId, type){ return DB.thirdParties.filter(t=>t.companyId===companyId && (!type || t.type===type)); }
+function product(id){ return DB.products.find(p=>p.id===id); }
+function productsOf(companyId){ return DB.products.filter(p=>p.companyId===companyId); }
+function bankAccountsOf(companyId){ return DB.bankAccounts.filter(b=>b.companyId===companyId); }
+function bankAccount(id){ return DB.bankAccounts.find(b=>b.id===id); }
+function branchName(id){ const b=DB.branches.find(x=>x.id===id); return b?b.name:'—'; }
+function activeEntries(companyId){ return DB.entries.filter(e=>e.companyId===companyId && e.status==='POSTED'); }
+function inScopeBranch(entry){ return UI.branchId==='ALL' || entry.branchId===UI.branchId; }
+
+function nextNumber(companyId, type){
+  DB.seq[companyId] = DB.seq[companyId] || {};
+  DB.seq[companyId][type] = (DB.seq[companyId][type]||0)+1;
+  return type+'-'+String(DB.seq[companyId][type]).padStart(6,'0');
+}
+function ymOf(dateStr){ return dateStr.slice(0,7); }
+function isPeriodClosed(companyId, ym){
+  const p = DB.periods.find(x=>x.companyId===companyId && x.ym===ym);
+  return p ? p.status==='CLOSED' : false;
+}
+function setPeriodStatus(companyId, ym, status, byRole){
+  if(!can(byRole,'cierres','FULL')) throw new Error('Tu rol no tiene permiso para gestionar cierres de período.');
+  let p = DB.periods.find(x=>x.companyId===companyId && x.ym===ym);
+  if(!p){ p={companyId,ym,status:'OPEN'}; DB.periods.push(p); }
+  p.status = status;
+  addAudit(companyId,'Cierres', (status==='CLOSED'?'Cerró':'Reabrió')+' el período '+monthLabel(ym), byRole);
+  save();
+}
+function addAudit(companyId, module, action, role, detail){
+  DB.auditLogs.unshift({id:uid('log'), ts:new Date().toISOString(), companyId, module, action, role, user:ROLE_USER[role]||role, detail:detail||''});
+  if(DB.auditLogs.length>500) DB.auditLogs.length=500;
+}
+
+/* ---------------------------- Motor de partida doble ---------------------- */
+function postEntry(opts){
+  const {companyId, branchId, voucherType, date, concept, lines, role, sourceType, sourceId} = opts;
+  let td=0, tc=0;
+  lines.forEach(l=>{ td += Math.round(l.debit||0); tc += Math.round(l.credit||0); });
+  if(td !== tc){
+    throw new Error('El comprobante no está balanceado: Débitos '+fmtMoney(td)+' ≠ Créditos '+fmtMoney(tc)+'. ΣDébitos debe ser igual a ΣCréditos.');
+  }
+  if(td===0){ throw new Error('El comprobante no tiene movimientos.'); }
+  const ym = ymOf(date);
+  if(isPeriodClosed(companyId, ym)){
+    throw new Error('El período contable '+monthLabel(ym)+' está cerrado. No se pueden registrar nuevos comprobantes en esa fecha.');
+  }
+  const canFull = can(role,'contabilidad','APPROVE');
+  const status = canFull ? 'POSTED' : 'DRAFT';
+  const entry = {
+    id: uid('ent'), companyId, branchId, voucherType,
+    number: nextNumber(companyId, voucherType),
+    date, concept, status, sourceType:sourceType||'MANUAL', sourceId:sourceId||null,
+    createdBy: role, createdAt: new Date().toISOString(),
+    lines: lines.map(l=>({...l, debit:Math.round(l.debit||0), credit:Math.round(l.credit||0)})),
+  };
+  DB.entries.push(entry);
+  addAudit(companyId, 'Contabilidad', (status==='POSTED'?'Contabilizó':'Guardó borrador de')+' comprobante '+entry.number+' — '+concept, role);
+  save();
+  return entry;
+}
+function approveEntry(entryId, role){
+  if(!can(role,'contabilidad','APPROVE')) throw new Error('Tu rol no tiene permiso para aprobar comprobantes.');
+  const e = DB.entries.find(x=>x.id===entryId);
+  if(!e) return;
+  if(e.status!=='DRAFT') throw new Error('Solo los comprobantes en borrador pueden aprobarse.');
+  const ym = ymOf(e.date);
+  if(isPeriodClosed(e.companyId, ym)) throw new Error('El período '+monthLabel(ym)+' está cerrado.');
+  e.status='POSTED'; e.approvedBy=role; e.approvedAt=new Date().toISOString();
+  addAudit(e.companyId,'Contabilidad','Aprobó y contabilizó comprobante '+e.number, role);
+  save();
+}
+function annulEntry(entryId, role, reason){
+  if(!can(role,'contabilidad','APPROVE')) throw new Error('Tu rol no tiene permiso para anular comprobantes.');
+  const e = DB.entries.find(x=>x.id===entryId);
+  if(!e) return;
+  if(e.status==='ANNULLED') return;
+  e.status='ANNULLED'; e.annulledBy=role; e.annulledAt=new Date().toISOString(); e.annulReason=reason||'';
+  addAudit(e.companyId,'Contabilidad','Anuló comprobante '+e.number+(reason?' — Motivo: '+reason:''), role);
+  save();
+}
+
+/* ---------------------------- Consultas contables -------------------------- */
+function accountMovements(companyId, code, opts){
+  opts = opts||{};
+  const rows=[];
+  DB.entries.filter(e=>e.companyId===companyId && e.status==='POSTED' && (!opts.branchId || opts.branchId==='ALL' || e.branchId===opts.branchId))
+    .forEach(e=>{
+      e.lines.forEach(l=>{
+        if(l.accountCode===code && (l.debit||l.credit)){
+          rows.push({entry:e, line:l});
+        }
+      });
+    });
+  rows.sort((a,b)=> a.entry.date.localeCompare(b.entry.date) || a.entry.number.localeCompare(b.entry.number));
+  return rows;
+}
+function accountBalance(companyId, code, branchId){
+  const rows = accountMovements(companyId, code, {branchId});
+  let d=0,c=0; rows.forEach(r=>{ d+=r.line.debit; c+=r.line.credit; });
+  return {debit:d, credit:c, balance:d-c};
+}
+function trialBalance(companyId, branchId){
+  return leafAccounts(companyId).map(a=>{
+    const b = accountBalance(companyId, a.code, branchId);
+    return {account:a, ...b};
+  }).filter(r=>r.debit!==0 || r.credit!==0);
+}
+function sumClass(companyId, prefix, branchId){
+  let d=0,c=0;
+  leafAccounts(companyId).filter(a=>a.code.startsWith(prefix)).forEach(a=>{
+    const b=accountBalance(companyId,a.code,branchId); d+=b.debit; c+=b.credit;
+  });
+  return {debit:d, credit:c};
+}
+function incomeStatement(companyId, branchId){
+  const ing = sumClass(companyId,'4',branchId);     // ingresos: naturaleza crédito
+  const cos = sumClass(companyId,'6',branchId);     // costo de ventas: naturaleza débito
+  const gas = sumClass(companyId,'5',branchId);     // gastos: naturaleza débito
+  const ingresos = ing.credit - ing.debit;
+  const costos = cos.debit - cos.credit;
+  const gastos = gas.debit - gas.credit;
+  const utilidadBruta = ingresos - costos;
+  const utilidadNeta = utilidadBruta - gastos;
+  return {ingresos, costos, gastos, utilidadBruta, utilidadNeta};
+}
+function balanceSheet(companyId, branchId){
+  const act = sumClass(companyId,'1',branchId);
+  const pas = sumClass(companyId,'2',branchId);
+  const pat = sumClass(companyId,'3',branchId);
+  const activo = act.debit - act.credit;
+  const pasivo = pas.credit - pas.debit;
+  const patrimonioBase = pat.credit - pat.debit;
+  const {utilidadNeta} = incomeStatement(companyId, branchId);
+  const patrimonio = patrimonioBase + utilidadNeta;
+  return {activo, pasivo, patrimonio, utilidadNeta, cuadra: Math.abs(activo-(pasivo+patrimonio))<1};
+}
+function bankBalance(bankAccountId){
+  let bal=0;
+  DB.entries.filter(e=>e.status==='POSTED').forEach(e=>{
+    e.lines.forEach(l=>{ if(l.bankAccountId===bankAccountId){ bal += (l.debit-l.credit); } });
+  });
+  return bal;
+}
+function totalCash(companyId){
+  return bankAccountsOf(companyId).reduce((s,b)=>s+bankBalance(b.id),0) + accountBalance(companyId,'1105').balance;
+}
+function invoiceBalance(inv){ return Math.max(0, inv.total - inv.paidAmount); }
+function billBalance(bill){ return Math.max(0, bill.total - bill.paidAmount); }
+function invoiceStatus(inv){ if(inv.paidAmount<=0) return 'open'; if(inv.paidAmount>=inv.total) return 'paid'; return 'partial'; }
+
+/* ---------------------------- Ventas --------------------------------------- */
+function createSalesInvoice(o){
+  const {companyId, branchId, thirdPartyId, date, items, taxRate, role} = o;
+  if(!can(role,'ventas','CREATE')) throw new Error('Tu rol no tiene permiso para crear facturas de venta.');
+  if(!thirdPartyId) throw new Error('Selecciona un cliente.');
+  if(!items || !items.length) throw new Error('Agrega al menos un producto o servicio a la factura.');
+  let subtotal=0, cost=0;
+  const detailed = items.map(it=>{
+    const p = product(it.productId);
+    if(!p) throw new Error('Producto no encontrado.');
+    if(p.type==='PRODUCT' && p.stock < it.qty){
+      throw new Error('Stock insuficiente de "'+p.name+'": disponible '+fmtNum(p.stock)+' '+p.unit+', solicitado '+fmtNum(it.qty)+'.');
+    }
+    const lineTotal = it.qty*it.unitPrice;
+    subtotal += lineTotal;
+    if(p.type==='PRODUCT') cost += it.qty*p.avgCost;
+    return {...it, product:p, lineTotal};
+  });
+  subtotal = Math.round(subtotal); cost=Math.round(cost);
+  const taxAmount = Math.round(subtotal*taxRate);
+  const total = subtotal+taxAmount;
+  const tp = thirdParty(thirdPartyId);
+  const lines = [
+    {accountCode:'1305', thirdPartyId, debit: total, credit:0, note:'Cartera cliente'},
+    {accountCode:'240805', debit:0, credit: taxAmount, note:'IVA generado 19%'},
+    {accountCode:'4135', debit:0, credit: subtotal, note:'Ingreso operacional'},
+  ];
+  if(cost>0){
+    lines.push({accountCode:'6135', debit:cost, credit:0, note:'Costo de ventas'});
+    lines.push({accountCode:'1435', debit:0, credit:cost, note:'Salida de inventario'});
+  }
+  const entry = postEntry({companyId, branchId, voucherType:'FV', date, concept:'Factura de venta a '+tp.name, lines, role, sourceType:'SALE'});
+  const invoice = {
+    id: uid('inv'), companyId, branchId, thirdPartyId, number:entry.number, date,
+    items: detailed.map(d=>({productId:d.productId, name:d.product.name, qty:d.qty, unitPrice:d.unitPrice, total:d.lineTotal})),
+    subtotal, taxAmount, total, paidAmount:0, entryId:entry.id,
+  };
+  DB.invoices.push(invoice);
+  detailed.forEach(d=>{
+    if(d.product.type==='PRODUCT'){
+      const before = d.product.stock;
+      d.product.stock -= d.qty;
+      DB.inventoryMovements.push({id:uid('mv'), companyId, productId:d.productId, type:'OUT', qty:d.qty, unitCost:d.product.avgCost,
+        totalValue: Math.round(d.qty*d.product.avgCost), stockBefore:before, stockAfter:d.product.stock, date, ref:invoice.number, entryId:entry.id});
+    }
+  });
+  addAudit(companyId,'Ventas','Emitió factura de venta '+invoice.number+' a '+tp.name+' por '+fmtMoney(total), role);
+  save();
+  return invoice;
+}
+
+/* ---------------------------- Compras --------------------------------------- */
+function createPurchaseBill(o){
+  const {companyId, branchId, thirdPartyId, date, items, taxRate, role} = o;
+  if(!can(role,'compras','CREATE')) throw new Error('Tu rol no tiene permiso para registrar facturas de compra.');
+  if(!thirdPartyId) throw new Error('Selecciona un proveedor.');
+  if(!items || !items.length) throw new Error('Agrega al menos un producto o servicio a la factura.');
+  let subtotal=0;
+  const detailed = items.map(it=>{
+    const p = product(it.productId);
+    if(!p) throw new Error('Producto no encontrado.');
+    const lineTotal = it.qty*it.unitCost;
+    subtotal += lineTotal;
+    return {...it, product:p, lineTotal};
+  });
+  subtotal = Math.round(subtotal);
+  const taxAmount = Math.round(subtotal*taxRate);
+  const total = subtotal+taxAmount;
+  const tp = thirdParty(thirdPartyId);
+  const invAccount = detailed.some(d=>d.product.type==='PRODUCT') ? '1435' : '5195';
+  const lines = [
+    {accountCode:invAccount, debit: subtotal, credit:0, note:'Entrada de inventario / gasto'},
+    {accountCode:'135515', debit: taxAmount, credit:0, note:'IVA descontable'},
+    {accountCode:'2205', thirdPartyId, debit:0, credit: total, note:'Cuenta por pagar proveedor'},
+  ];
+  const entry = postEntry({companyId, branchId, voucherType:'FC', date, concept:'Factura de compra de '+tp.name, lines, role, sourceType:'PURCHASE'});
+  const bill = {
+    id: uid('bill'), companyId, branchId, thirdPartyId, number:entry.number, date,
+    items: detailed.map(d=>({productId:d.productId, name:d.product.name, qty:d.qty, unitCost:d.unitCost, total:d.lineTotal})),
+    subtotal, taxAmount, total, paidAmount:0, entryId:entry.id,
+  };
+  DB.bills.push(bill);
+  detailed.forEach(d=>{
+    if(d.product.type==='PRODUCT'){
+      const p=d.product; const before=p.stock;
+      const newQty = p.stock + d.qty;
+      const newCost = newQty>0 ? Math.round(((p.stock*p.avgCost)+(d.qty*d.unitCost))/newQty) : d.unitCost;
+      p.stock = newQty; p.avgCost = newCost;
+      DB.inventoryMovements.push({id:uid('mv'), companyId, productId:d.productId, type:'IN', qty:d.qty, unitCost:d.unitCost,
+        totalValue: Math.round(d.qty*d.unitCost), stockBefore:before, stockAfter:p.stock, date, ref:bill.number, entryId:entry.id});
+    }
+  });
+  addAudit(companyId,'Compras','Registró factura de compra '+bill.number+' de '+tp.name+' por '+fmtMoney(total), role);
+  save();
+  return bill;
+}
+
+/* ---------------------------- Tesorería --------------------------------------- */
+function registerCollection(o){
+  const {companyId, branchId, invoiceId, bankAccountId, amount, date, role} = o;
+  if(!can(role,'tesoreria','CREATE')) throw new Error('Tu rol no tiene permiso para registrar recaudos.');
+  const inv = DB.invoices.find(i=>i.id===invoiceId);
+  if(!inv) throw new Error('Factura no encontrada.');
+  const saldo = invoiceBalance(inv);
+  if(amount<=0 || amount>saldo+1) throw new Error('El valor debe ser mayor a cero y no superar el saldo pendiente de '+fmtMoney(saldo)+'.');
+  const tp = thirdParty(inv.thirdPartyId);
+  const lines = [
+    {accountCode:'1110', bankAccountId, debit:amount, credit:0, note:'Ingreso a banco'},
+    {accountCode:'1305', thirdPartyId:inv.thirdPartyId, debit:0, credit:amount, note:'Abono cartera'},
+  ];
+  const entry = postEntry({companyId, branchId, voucherType:'CI', date, concept:'Recaudo factura '+inv.number+' — '+tp.name, lines, role, sourceType:'COLLECTION', sourceId:inv.id});
+  inv.paidAmount += amount;
+  addAudit(companyId,'Tesorería','Registró recaudo de '+fmtMoney(amount)+' de la factura '+inv.number, role);
+  save();
+  return entry;
+}
+function registerPayment(o){
+  const {companyId, branchId, billId, bankAccountId, amount, date, role} = o;
+  if(!can(role,'tesoreria','CREATE')) throw new Error('Tu rol no tiene permiso para registrar pagos.');
+  const bill = DB.bills.find(b=>b.id===billId);
+  if(!bill) throw new Error('Factura de compra no encontrada.');
+  const saldo = billBalance(bill);
+  if(amount<=0 || amount>saldo+1) throw new Error('El valor debe ser mayor a cero y no superar el saldo pendiente de '+fmtMoney(saldo)+'.');
+  const tp = thirdParty(bill.thirdPartyId);
+  const lines = [
+    {accountCode:'2205', thirdPartyId:bill.thirdPartyId, debit:amount, credit:0, note:'Pago a proveedor'},
+    {accountCode:'1110', bankAccountId, debit:0, credit:amount, note:'Salida de banco'},
+  ];
+  const entry = postEntry({companyId, branchId, voucherType:'CE', date, concept:'Pago factura '+bill.number+' — '+tp.name, lines, role, sourceType:'PAYMENT', sourceId:bill.id});
+  bill.paidAmount += amount;
+  addAudit(companyId,'Tesorería','Registró pago de '+fmtMoney(amount)+' de la factura '+bill.number, role);
+  save();
+  return entry;
+}
+function registerCashMovement(o){
+  const {companyId, branchId, bankAccountId, direction, counterCode, amount, date, concept, role} = o;
+  if(!can(role,'tesoreria','CREATE')) throw new Error('Tu rol no tiene permiso para registrar movimientos de tesorería.');
+  if(amount<=0) throw new Error('El valor debe ser mayor a cero.');
+  const lines = direction==='IN'
+    ? [{accountCode:'1110', bankAccountId, debit:amount, credit:0},{accountCode:counterCode, debit:0, credit:amount}]
+    : [{accountCode:counterCode, debit:amount, credit:0},{accountCode:'1110', bankAccountId, debit:0, credit:amount}];
+  const entry = postEntry({companyId, branchId, voucherType: direction==='IN'?'CI':'CE', date, concept, lines, role, sourceType:'CASH_MOVEMENT'});
+  addAudit(companyId,'Tesorería',(direction==='IN'?'Registró ingreso':'Registró egreso')+' de '+fmtMoney(amount)+' — '+concept, role);
+  save();
+  return entry;
+}
+
+/* ---------------------------- Datos de demostración ------------------------- */
+function seedDemoTransactions(){
+  const companyId='c1', branchId='b1', role='SuperAdmin';
+  postEntry({companyId, branchId, voucherType:'CG', date:isoDaysAgo(85), concept:'Constitución — aporte de capital de los socios',
+    lines:[
+      {accountCode:'1110', bankAccountId:'ba1', debit:32000000, credit:0},
+      {accountCode:'1110', bankAccountId:'ba2', debit:18000000, credit:0},
+      {accountCode:'1105', debit:5000000, credit:0},
+      {accountCode:'3115', debit:0, credit:55000000},
+    ], role});
+  createPurchaseBill({companyId, branchId, thirdPartyId:'t3', date:isoDaysAgo(60), taxRate:0.19, role,
+    items:[{productId:'p1', qty:40, unitCost:180000},{productId:'p2', qty:15, unitCost:520000},{productId:'p3', qty:25, unitCost:230000}]});
+  postEntry({companyId, branchId, voucherType:'CG', date:isoDaysAgo(55), concept:'Compra de equipo de oficina de contado',
+    lines:[
+      {accountCode:'1524', debit:3200000, credit:0},
+      {accountCode:'135515', debit:608000, credit:0},
+      {accountCode:'1110', bankAccountId:'ba1', debit:0, credit:3808000},
+    ], role});
+  const inv1 = createSalesInvoice({companyId, branchId, thirdPartyId:'t1', date:isoDaysAgo(38), taxRate:0.19, role,
+    items:[{productId:'p1', qty:6, unitPrice:295000},{productId:'p2', qty:3, unitPrice:790000}]});
+  const inv2 = createSalesInvoice({companyId, branchId:'b2', thirdPartyId:'t2', date:isoDaysAgo(24), taxRate:0.19, role,
+    items:[{productId:'p3', qty:4, unitPrice:410000},{productId:'p4', qty:2, unitPrice:150000}]});
+  postEntry({companyId, branchId, voucherType:'CG', date:isoDaysAgo(20), concept:'Pago servicios públicos sede principal',
+    lines:[{accountCode:'5115', debit:1180000, credit:0},{accountCode:'1110', bankAccountId:'ba1', debit:0, credit:1180000}], role});
+  postEntry({companyId, branchId, voucherType:'CG', date:isoDaysAgo(15), concept:'Honorarios revisoría fiscal',
+    lines:[{accountCode:'5110', debit:2500000, credit:0},{accountCode:'1110', bankAccountId:'ba2', debit:0, credit:2500000}], role});
+  registerCollection({companyId, branchId, invoiceId:inv1.id, bankAccountId:'ba1', amount: Math.round(inv1.total*0.6), date:isoDaysAgo(10), role});
+  registerCollection({companyId, branchId, invoiceId:inv2.id, bankAccountId:'ba1', amount: inv2.total, date:isoDaysAgo(6), role});
+  const bills = DB.bills.filter(b=>b.companyId===companyId);
+  if(bills[0]) registerPayment({companyId, branchId, billId:bills[0].id, bankAccountId:'ba2', amount: Math.round(bills[0].total*0.5), date:isoDaysAgo(3), role});
+  const inv3 = createSalesInvoice({companyId, branchId, thirdPartyId:'t1', date:isoDaysAgo(2), taxRate:0.19, role,
+    items:[{productId:'p1', qty:5, unitPrice:295000},{productId:'p3', qty:3, unitPrice:410000}]});
+  postEntry({companyId, branchId, voucherType:'CG', date:isoDaysAgo(1), concept:'Nómina — Jorge Iván Cárdenas (provisión)',
+    lines:[{accountCode:'5105', debit:2400000, credit:0},{accountCode:'2505', debit:0, credit:2400000}], role});
+}
+
+/* =========================================================================
+   CAPA DE INTERFAZ
+   ========================================================================= */
+const NAV = [
+  {group:'General', items:[
+    {route:'dashboard', label:'Panel General', code:'PG', module:null},
+  ]},
+  {group:'Contabilidad', items:[
+    {route:'puc', label:'Plan de Cuentas (PUC)', code:'CU', module:'contabilidad'},
+    {route:'comprobantes', label:'Comprobantes', code:'CG', module:'contabilidad'},
+    {route:'libroDiario', label:'Libro Diario', code:'LD', module:'contabilidad'},
+    {route:'libroMayor', label:'Libro Mayor', code:'LM', module:'contabilidad'},
+    {route:'balanceComprobacion', label:'Balance de Comprobación', code:'BC', module:'contabilidad'},
+    {route:'cierres', label:'Cierres de Período', code:'CP', module:'cierres'},
+  ]},
+  {group:'Operación', items:[
+    {route:'terceros', label:'Terceros', code:'TE', module:'ventas'},
+    {route:'inventario', label:'Productos e Inventario', code:'KX', module:'inventario'},
+    {route:'ventas', label:'Ventas y Cartera', code:'VE', module:'ventas'},
+    {route:'compras', label:'Compras y CxP', code:'CO', module:'compras'},
+  ]},
+  {group:'Tesorería', items:[
+    {route:'tesoreria', label:'Bancos y Movimientos', code:'TS', module:'tesoreria'},
+  ]},
+  {group:'Reportes financieros', items:[
+    {route:'estadoResultados', label:'Estado de Resultados', code:'ER', module:'contabilidad'},
+    {route:'balanceGeneral', label:'Balance General', code:'BG', module:'contabilidad'},
+  ]},
+  {group:'Inteligencia', items:[
+    {route:'asistente', label:'Asistente Financiero IA', code:'IA', module:null},
+  ]},
+  {group:'Sistema', items:[
+    {route:'auditoria', label:'Auditoría', code:'AU', module:'auditoria'},
+    {route:'configuracion', label:'Configuración', code:'CF', module:'configuracion'},
+  ]},
+];
+
+const App = {};
+window.App = App;
+
+function currentBranches(){ return branchesOf(UI.companyId); }
+
+function renderShell(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><span class="glyph">§</span><span class="name">Contafi ERP</span></div>
+        <div class="brand-sub">Núcleo Financiero-Contable</div>
+      </div>
+      <div id="navHost"></div>
+      <div style="padding:14px 20px; border-top:1px solid var(--line); margin-top:8px;">
+        <div style="font-size:10.5px; color:var(--ink-faint); line-height:1.6;">
+          Partida doble validada · Trazabilidad absoluta<br>Multi-empresa · Multi-sucursal
+        </div>
+      </div>
+    </div>
+    <div class="main">
+      <div class="topbar">
+        <button class="hamburger" onclick="App.toggleSidebar()">☰</button>
+        <div class="selector">
+          <span style="color:var(--ink-faint);">Empresa</span>
+          <select id="companySelect" onchange="App.setCompany(this.value)"></select>
+        </div>
+        <div class="selector">
+          <span style="color:var(--ink-faint);">Sucursal</span>
+          <select id="branchSelect" onchange="App.setBranch(this.value)"></select>
+        </div>
+        <div class="spacer"></div>
+        <div class="selector">
+          <span style="color:var(--ink-faint);">Rol activo</span>
+          <select id="roleSelect" onchange="App.requestRoleSwitch(this.value)"></select>
+        </div>
+        <span class="role-badge" id="roleBadge"></span>
+        <button class="btn ghost sm" title="Cerrar sesión y volver a la pantalla de acceso" onclick="App.logout()">Cerrar sesión</button>
+        <button class="btn ghost sm" title="Cambiar tema" onclick="App.toggleTheme()">◐</button>
+      </div>
+      <div class="content" id="content"></div>
+      <footer class="appfoot">Contafi ERP — Prototipo funcional de arquitectura API-First · Motor de partida doble en memoria del navegador · Datos de demostración, no reemplaza software certificado ante la DIAN.</footer>
+    </div>
+  `;
+  document.getElementById('sidebar').addEventListener('click', (e)=>{
+    if(window.innerWidth<=880 && e.target.closest('.nav-item')) UI.sidebarOpen=false;
+  });
+  renderNav();
+  renderTopbarSelectors();
+  renderContent();
+}
+
+function renderNav(){
+  const host = document.getElementById('navHost');
+  host.innerHTML = NAV.map(g=>`
+    <div class="nav-group">
+      <div class="nav-group-label">${esc(g.group)}</div>
+      ${g.items.map(it=>{
+        const locked = it.module && !can(UI.role, it.module, 'READ');
+        const active = UI.route===it.route;
+        return `<div class="nav-item ${active?'active':''} ${locked?'locked':''}"
+          title="${locked?'Sin acceso para el rol '+ROLE_LABELS[UI.role]:''}"
+          onclick="${locked?'':'App.navigate(\''+it.route+'\')'}">
+          <span class="ic mono">${it.code}</span><span>${esc(it.label)}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  `).join('');
+  document.getElementById('sidebar').classList.toggle('open', UI.sidebarOpen);
+}
+
+function renderTopbarSelectors(){
+  const cs = document.getElementById('companySelect');
+  cs.innerHTML = DB.companies.map(c=>`<option value="${c.id}" ${c.id===UI.companyId?'selected':''}>${esc(c.name)}</option>`).join('');
+  const bs = document.getElementById('branchSelect');
+  bs.innerHTML = `<option value="ALL">Todas las sucursales</option>` + currentBranches().map(b=>`<option value="${b.id}" ${b.id===UI.branchId?'selected':''}>${esc(b.name)}</option>`).join('');
+  const rs = document.getElementById('roleSelect');
+  rs.innerHTML = ROLES.map(r=>`<option value="${r}" ${r===UI.role?'selected':''}>${ROLE_LABELS[r]}</option>`).join('');
+  document.getElementById('roleBadge').textContent = (roleHasPassword(UI.role)?'🔒 ':'')+ROLE_USER[UI.role]+' · '+ROLE_LABELS[UI.role];
+}
+
+App.toggleSidebar = function(){ UI.sidebarOpen = !UI.sidebarOpen; document.getElementById('sidebar').classList.toggle('open', UI.sidebarOpen); };
+App.toggleTheme = function(){
+  const root = document.documentElement;
+  UI.theme = UI.theme==='dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', UI.theme);
+  refreshCharts();
+};
+App.setCompany = function(id){ UI.companyId=id; UI.branchId='ALL'; renderTopbarSelectors(); renderNav(); renderContent(); };
+App.setBranch = function(id){ UI.branchId=id; renderContent(); };
+App.setRole = function(role){
+  UI.role = role;
+  if(UI.route!=='dashboard' && UI.route!=='asistente'){
+    const item = NAV.flatMap(g=>g.items).find(i=>i.route===UI.route);
+    if(item && item.module && !can(role, item.module, 'READ')){ UI.route='dashboard'; }
+  }
+  renderTopbarSelectors(); renderNav(); renderContent();
+  toast('Sesión activa como '+ROLE_LABELS[role]+'.');
+};
+
+/* ---------------------------- Bloqueo de roles por contraseña -------------------- */
+App.requestRoleSwitch = function(role){
+  if(role===UI.role) return;
+  if(!roleHasPassword(role) || UI.unlockedRoles.has(role)){
+    App.setRole(role);
+    return;
+  }
+  App.openRolePasswordModal(role);
+};
+App.openRolePasswordModal = function(role){
+  App.openModal('Acceso protegido — '+ROLE_LABELS[role], `
+    <div class="notice info">El rol <b>${ROLE_LABELS[role]}</b> está protegido con contraseña. Ingrésala para continuar; se te pedirá una sola vez por sesión de navegador.</div>
+    ${pwFieldHtml('fRolePass','Contraseña','Contraseña del rol '+ROLE_LABELS[role], {onEnter:"App.submitRolePassword('"+role+"')"})}
+    <div id="rolePassError" class="notice danger" style="display:none;"></div>
+    <div class="tag-line">¿La olvidaste? Pide a un Super Administrador que la consulte o la reinicie en Configuración → Seguridad de Roles.</div>
+  `, `<button class="btn" onclick="App.cancelRoleSwitch()">Cancelar</button><button class="btn primary" onclick="App.submitRolePassword('${role}')">Ingresar</button>`);
+  setTimeout(()=>{ const i=document.getElementById('fRolePass'); if(i) i.focus(); }, 30);
+};
+App.cancelRoleSwitch = function(){
+  App.closeModal();
+  const sel = document.getElementById('roleSelect');
+  if(sel) sel.value = UI.role;
+};
+App.submitRolePassword = function(role){
+  const input = document.getElementById('fRolePass');
+  const pass = input ? input.value : '';
+  if(simpleHash(pass) === DB.roleAuth[role].hash){
+    UI.unlockedRoles.add(role);
+    addAudit(UI.companyId, 'Seguridad', 'Acceso concedido al rol '+ROLE_LABELS[role]+' (contraseña correcta)', role);
+    save();
+    App.closeModal();
+    App.setRole(role);
+  }else{
+    addAudit(UI.companyId, 'Seguridad', 'Intento fallido de acceso al rol '+ROLE_LABELS[role], UI.role);
+    save();
+    const err = document.getElementById('rolePassError');
+    if(err){ err.style.display='block'; err.textContent='Contraseña incorrecta. Inténtalo de nuevo.'; }
+    if(input){ input.value=''; input.focus(); }
+    toast('Contraseña incorrecta para el rol '+ROLE_LABELS[role]+'.','danger');
+  }
+};
+App.logout = function(){
+  UI.unlockedRoles.delete(UI.role);
+  addAudit(UI.companyId, 'Seguridad', 'Cerró sesión del rol '+ROLE_LABELS[UI.role], UI.role);
+  save();
+  if(UI.chartRef){ UI.chartRef.destroy(); UI.chartRef=null; }
+  if(UI.chartRef2){ UI.chartRef2.destroy(); UI.chartRef2=null; }
+  toast('Sesión finalizada.');
+  renderLogin();
+};
+App.navigate = function(route){ UI.route = route; UI.sidebarOpen=false; renderNav(); renderContent(); window.scrollTo(0,0); };
+
+const ROUTE_RENDER = {}; // se completa más abajo
+
+function renderContent(){
+  const el = document.getElementById('content');
+  const fn = ROUTE_RENDER[UI.route] || (()=>'<div class="empty">Vista no encontrada.</div>');
+  el.innerHTML = fn();
+  refreshCharts();
+}
+function rerender(){ renderContent(); }
+
+function renderLocked(moduleLabel){
+  return `<div class="page-head"><h1>Acceso restringido</h1></div>
+  <div class="panel"><div class="empty"><div class="big">◇</div>
+  El rol <b>${ROLE_LABELS[UI.role]}</b> no tiene permisos de lectura sobre <b>${esc(moduleLabel)}</b>.<br>
+  Cambia de rol en la barra superior para explorar este módulo.</div></div>`;
+}
+function requireRead(mod, label){
+  if(!can(UI.role, mod, 'READ')){ return renderLocked(label); }
+  return null;
+}
+
+/* ---------------------------- Modal genérico -------------------------------- */
+function ensureModalHost(){
+  let h = document.getElementById('modalHost');
+  if(!h){ h=document.createElement('div'); h.id='modalHost'; document.body.appendChild(h); }
+  return h;
+}
+App.openModal = function(title, bodyHtml, footHtml, opts){
+  opts = opts||{};
+  const host = ensureModalHost();
+  host.innerHTML = `<div class="modal-back" id="modalBack" onmousedown="if(event.target.id==='modalBack')App.closeModal()">
+    <div class="modal ${opts.wide?'wide':''}">
+      <div class="modal-head"><h3>${esc(title)}</h3><button class="close-x" onclick="App.closeModal()">✕</button></div>
+      <div class="modal-body" id="modalBody">${bodyHtml}</div>
+      <div class="modal-foot">${footHtml||''}</div>
+    </div>
+  </div>`;
+};
+App.closeModal = function(){ const h=document.getElementById('modalHost'); if(h) h.innerHTML=''; };
+function modalBody(){ return document.getElementById('modalBody'); }
+App.togglePwVisibility = function(id, btn){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(el.type==='password'){ el.type='text'; btn.textContent='🙈'; btn.title='Ocultar contraseña'; }
+  else{ el.type='password'; btn.textContent='👁'; btn.title='Mostrar contraseña'; }
+};
+
+/* ---------------------------- Componentes compartidos ------------------------ */
+function pill(status){
+  const map = {POSTED:['posted','Contabilizado'], DRAFT:['draft','Borrador'], ANNULLED:['annulled','Anulado'],
+    paid:['paid','Pagada'], partial:['partial','Parcial'], open:['open','Pendiente'],
+    OPEN:['open','Abierto'], CLOSED:['closed','Cerrado']};
+  const m = map[status] || ['open', status];
+  return `<span class="pill ${m[0]}">${m[1]}</span>`;
+}
+function emptyRow(colspan, text){ return `<tr><td colspan="${colspan}"><div class="empty">${esc(text)}</div></td></tr>`; }
+function kpiStrip(items){
+  return `<div class="ledger-strip">${items.map(i=>`
+    <div class="ledger-cell"><div class="l">${esc(i.label)}</div><div class="v ${i.cls||''}">${i.value}</div></div>
+  `).join('')}</div>`;
+}
+
+/* ============================== DASHBOARD ================================= */
+ROUTE_RENDER.dashboard = function(){
+  const cid = UI.companyId;
+  const bs = balanceSheet(cid, UI.branchId);
+  const is = incomeStatement(cid, UI.branchId);
+  const cxc = DB.invoices.filter(i=>i.companyId===cid && (UI.branchId==='ALL'||i.branchId===UI.branchId)).reduce((s,i)=>s+invoiceBalance(i),0);
+  const cxp = DB.bills.filter(b=>b.companyId===cid && (UI.branchId==='ALL'||b.branchId===UI.branchId)).reduce((s,b)=>s+billBalance(b),0);
+  const cash = bankAccountsOf(cid).reduce((s,b)=>s+bankBalance(b.id),0) + accountBalance(cid,'1105').balance;
+  const lowStock = productsOf(cid).filter(p=>p.type==='PRODUCT' && p.stock<=15);
+  const recentEntries = DB.entries.filter(e=>e.companyId===cid && (UI.branchId==='ALL'||e.branchId===UI.branchId)).slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,7);
+  const drafts = DB.entries.filter(e=>e.companyId===cid && e.status==='DRAFT').length;
+
+  return `
+  <div class="crumb">${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado todas las sucursales':branchName(UI.branchId)}</div>
+  <div class="page-head"><h1>Panel General</h1><p>Visión en tiempo real del núcleo contable, cartera, tesorería e inventarios de la compañía.</p></div>
+
+  ${kpiStrip([
+    {label:'Total Activos', value:fmtMoney(bs.activo)},
+    {label:'Total Pasivos', value:fmtMoney(bs.pasivo)},
+    {label:'Patrimonio', value:fmtMoney(bs.patrimonio)},
+    {label:'Utilidad del período', value:fmtMoney(is.utilidadNeta), cls:is.utilidadNeta>=0?'pos':'neg'},
+  ])}
+  ${kpiStrip([
+    {label:'Cartera por cobrar (CxC)', value:fmtMoney(cxc)},
+    {label:'Cuentas por pagar (CxP)', value:fmtMoney(cxp)},
+    {label:'Efectivo y bancos', value:fmtMoney(cash)},
+    {label:'Comprobantes en borrador', value:fmtNum(drafts), cls: drafts>0?'neg':''},
+  ])}
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head"><h2>Ingresos vs. Costo y Gastos — últimos 6 meses</h2></div>
+      <div class="panel-body"><canvas id="chartRevenue" height="230"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Composición de Gastos por Cuenta</h2></div>
+      <div class="panel-body"><canvas id="chartExpense" height="230"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head"><h2>Últimos Comprobantes</h2><span class="hint">${recentEntries.length} recientes</span></div>
+      <div class="table-wrap"><table><thead><tr><th>Número</th><th>Fecha</th><th class="wrap">Concepto</th><th>Estado</th><th class="num">Valor</th></tr></thead><tbody>
+      ${recentEntries.length? recentEntries.map(e=>`<tr><td class="mono">${e.number}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td><td>${pill(e.status)}</td><td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td></tr>`).join('') : emptyRow(5,'Aún no hay comprobantes registrados.')}
+      </tbody></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Alertas de Inventario</h2><span class="hint">stock ≤ 15 und.</span></div>
+      <div class="panel-body">
+        ${lowStock.length? lowStock.map(p=>`
+          <div class="kpi-mini"><span class="dot" style="background:${p.stock<=5?'var(--danger)':'var(--warn)'}"></span>
+          <span class="lab">${esc(p.name)} <span class="mono" style="color:var(--ink-faint)">${p.sku}</span></span>
+          <span class="val">${fmtNum(p.stock)} und.</span></div>`).join('')
+          : '<div class="empty">Niveles de inventario saludables.</div>'}
+      </div>
+    </div>
+  </div>
+  `;
+};
+
+function refreshCharts(){
+  if(UI.route!=='dashboard') return;
+  const cid = UI.companyId;
+  const months = [];
+  for(let i=5;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
+  const rev = months.map(ym=>{
+    let ingresos=0, costosGastos=0;
+    DB.entries.filter(e=>e.companyId===cid && e.status==='POSTED' && e.date.slice(0,7)===ym && (UI.branchId==='ALL'||e.branchId===UI.branchId))
+      .forEach(e=>e.lines.forEach(l=>{
+        if(l.accountCode.startsWith('4')) ingresos += (l.credit-l.debit);
+        if(l.accountCode.startsWith('5')||l.accountCode.startsWith('6')) costosGastos += (l.debit-l.credit);
+      }));
+    return {ym, ingresos, costosGastos};
+  });
+  const styles = getComputedStyle(document.documentElement);
+  const inkSoft = styles.getPropertyValue('--ink-soft').trim();
+  const line = styles.getPropertyValue('--line').trim();
+  const accent = styles.getPropertyValue('--accent').trim();
+  const credit = styles.getPropertyValue('--credit').trim();
+
+  const c1 = document.getElementById('chartRevenue');
+  if(c1 && window.Chart){
+    if(UI.chartRef) UI.chartRef.destroy();
+    UI.chartRef = new Chart(c1, {
+      type:'line',
+      data:{ labels:rev.map(r=>monthLabel(r.ym)), datasets:[
+        {label:'Ingresos', data:rev.map(r=>r.ingresos), borderColor:accent, backgroundColor:accent+'33', tension:.3, fill:true},
+        {label:'Costo + Gastos', data:rev.map(r=>r.costosGastos), borderColor:credit, backgroundColor:credit+'22', tension:.3, fill:true},
+      ]},
+      options:{ plugins:{legend:{labels:{color:inkSoft, font:{family:"IBM Plex Sans", size:11}}}},
+        scales:{ x:{ticks:{color:inkSoft, font:{size:10}}, grid:{color:line}}, y:{ticks:{color:inkSoft, font:{size:10}}, grid:{color:line}} } }
+    });
+  }
+  const expenseAccounts = leafAccounts(cid).filter(a=>a.code.startsWith('5')||a.code.startsWith('6'));
+  const expData = expenseAccounts.map(a=>({name:a.name, val:accountBalance(cid,a.code,UI.branchId).balance})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val).slice(0,6);
+  const c2 = document.getElementById('chartExpense');
+  if(c2 && window.Chart){
+    if(UI.chartRef2) UI.chartRef2.destroy();
+    const palette = [accent, credit, '#8A6DAA', '#4E80B5', '#B5834E', '#7C877F'];
+    UI.chartRef2 = new Chart(c2, {
+      type:'doughnut',
+      data:{ labels:expData.map(x=>x.name), datasets:[{data:expData.map(x=>x.val), backgroundColor:palette, borderColor:styles.getPropertyValue('--surface').trim(), borderWidth:2}] },
+      options:{ plugins:{legend:{position:'bottom', labels:{color:inkSoft, font:{family:"IBM Plex Sans", size:10.5}, boxWidth:10}}} }
+    });
+  }
+}
+
+/* ============================== PUC ========================================= */
+ROUTE_RENDER.puc = function(){
+  const locked = requireRead('contabilidad','el Plan Único de Cuentas'); if(locked) return locked;
+  const accts = accountsOf(UI.companyId).slice().sort((a,b)=>a.code.localeCompare(b.code));
+  const canCreate = can(UI.role,'contabilidad','CREATE');
+  return `
+  <div class="page-head"><h1>Plan Único de Cuentas (PUC)</h1><p>Catálogo jerárquico de cuentas — nivel Clase, Grupo, Cuenta y Subcuenta. Las cuentas de nivel 3-4 reciben movimientos.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Cuentas registradas</h2>
+      <div class="btn-row">
+        <span class="hint">${accts.length} cuentas</span>
+        <button class="btn primary sm" ${canCreate?'':'disabled title="Tu rol no puede crear cuentas"'} onclick="App.openAccountModal()">+ Nueva cuenta</button>
+      </div>
+    </div>
+    <div class="panel-body" style="padding:6px 0;">
+      ${accts.map(a=>{
+        const bal = a.level>=3 ? accountBalance(UI.companyId, a.code, UI.branchId).balance : null;
+        return `<div class="acct-tree-row lvl${Math.min(a.level,3)}">
+          <span class="code mono">${a.code}</span>
+          <span class="nm">${esc(a.name)} ${a.requiresThirdParty?'<span class="pill open" style="margin-left:6px;">requiere tercero</span>':''}</span>
+          <span class="mono" style="width:70px; color:var(--ink-faint); text-align:right;">${a.nature==='DEBIT'?'Débito':'Crédito'}</span>
+          <span class="num mono" style="width:150px;">${bal!==null?fmtMoney(bal):''}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+};
+App.openAccountModal = function(){
+  if(!can(UI.role,'contabilidad','CREATE')) return toast('Tu rol no tiene permiso para crear cuentas.','danger');
+  const parents = accountsOf(UI.companyId).filter(a=>a.level<=3);
+  App.openModal('Nueva cuenta contable', `
+    <div class="grid2">
+      <div class="field"><label>Código</label><input type="text" id="fAcctCode" placeholder="Ej. 413595" class="mono"></div>
+      <div class="field"><label>Naturaleza</label><select id="fAcctNature"><option value="DEBIT">Débito</option><option value="CREDIT">Crédito</option></select></div>
+    </div>
+    <div class="field"><label>Nombre</label><input type="text" id="fAcctName" placeholder="Nombre de la cuenta"></div>
+    <div class="field"><label><input type="checkbox" id="fAcctRtp" style="width:auto; display:inline-block; margin-right:6px;">Requiere tercero asociado</label></div>
+    <div class="notice info">El nivel se determina automáticamente por la longitud del código (1=Clase, 2=Grupo, 4=Cuenta, 6=Subcuenta).</div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveAccount()">Guardar cuenta</button>`);
+};
+App.saveAccount = function(){
+  const code = modalBody().querySelector('#fAcctCode').value.trim();
+  const name = modalBody().querySelector('#fAcctName').value.trim();
+  const nature = modalBody().querySelector('#fAcctNature').value;
+  const rtp = modalBody().querySelector('#fAcctRtp').checked;
+  if(!/^[0-9]{1,8}$/.test(code)) return toast('El código debe ser numérico.','danger');
+  if(!name) return toast('Ingresa el nombre de la cuenta.','danger');
+  if(accByCode(UI.companyId, code)) return toast('Ya existe una cuenta con ese código.','danger');
+  const level = code.length===1?1:code.length===2?2:code.length===4?3:code.length===6?4:5;
+  DB.accounts.push({id:uid('acc'), companyId:UI.companyId, code, name, nature, level, requiresThirdParty:rtp, isActive:true});
+  addAudit(UI.companyId,'Contabilidad','Creó la cuenta '+code+' — '+name, UI.role);
+  save(); App.closeModal(); rerender(); toast('Cuenta creada correctamente.','ok');
+};
+
+/* ============================== TERCEROS ===================================== */
+ROUTE_RENDER.terceros = function(){
+  const locked = requireRead('ventas','Terceros'); if(locked) return locked;
+  const list = thirdPartiesOf(UI.companyId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const canCreate = can(UI.role,'ventas','CREATE') || can(UI.role,'compras','CREATE');
+  const typeLabel = {CLIENT:'Cliente', SUPPLIER:'Proveedor', EMPLOYEE:'Empleado'};
+  return `
+  <div class="page-head"><h1>Terceros</h1><p>Clientes, proveedores y empleados vinculados a la compañía.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Directorio de terceros</h2>
+      <div class="btn-row"><span class="hint">${list.length} registros</span>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openThirdPartyModal()">+ Nuevo tercero</button></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Tipo</th><th>Identificación</th><th class="wrap">Nombre / Razón social</th><th>Contacto</th><th class="num">Saldo</th></tr></thead><tbody>
+    ${list.length? list.map(t=>{
+      let saldo=0, saldoLabel='';
+      if(t.type==='CLIENT'){ saldo = DB.invoices.filter(i=>i.thirdPartyId===t.id).reduce((s,i)=>s+invoiceBalance(i),0); saldoLabel = saldo>0?fmtMoney(saldo)+' CxC':'Al día'; }
+      if(t.type==='SUPPLIER'){ saldo = DB.bills.filter(b=>b.thirdPartyId===t.id).reduce((s,b)=>s+billBalance(b),0); saldoLabel = saldo>0?fmtMoney(saldo)+' CxP':'Al día'; }
+      return `<tr><td>${typeLabel[t.type]}</td><td class="mono">${t.docType} ${t.docNumber}</td><td class="wrap">${esc(t.name)}</td>
+        <td style="color:var(--ink-soft)">${esc(t.email||'')}<br>${esc(t.phone||'')}</td>
+        <td class="num mono">${saldoLabel}</td></tr>`;
+    }).join('') : emptyRow(5,'No hay terceros registrados todavía.')}
+    </tbody></table></div>
+  </div>`;
+};
+App.openThirdPartyModal = function(){
+  App.openModal('Nuevo tercero', `
+    <div class="grid2">
+      <div class="field"><label>Tipo</label><select id="fTpType"><option value="CLIENT">Cliente</option><option value="SUPPLIER">Proveedor</option><option value="EMPLOYEE">Empleado</option></select></div>
+      <div class="field"><label>Tipo documento</label><select id="fTpDocType"><option>NIT</option><option>CC</option><option>CE</option><option>Pasaporte</option></select></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Número documento</label><input type="text" id="fTpDoc"></div>
+      <div class="field"><label>Nombre / Razón social</label><input type="text" id="fTpName"></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label>Correo</label><input type="email" id="fTpEmail"></div>
+      <div class="field"><label>Teléfono</label><input type="text" id="fTpPhone"></div>
+    </div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveThirdParty()">Guardar tercero</button>`);
+};
+App.saveThirdParty = function(){
+  const b = modalBody();
+  const type = b.querySelector('#fTpType').value;
+  const mod = type==='SUPPLIER' ? 'compras' : 'ventas';
+  if(!can(UI.role, mod, 'CREATE')) return toast('Tu rol no tiene permiso para crear este tercero.','danger');
+  const name = b.querySelector('#fTpName').value.trim();
+  const docNumber = b.querySelector('#fTpDoc').value.trim();
+  if(!name || !docNumber) return toast('Nombre y número de documento son obligatorios.','danger');
+  DB.thirdParties.push({id:uid('tp'), companyId:UI.companyId, type, docType:b.querySelector('#fTpDocType').value, docNumber,
+    name, email:b.querySelector('#fTpEmail').value.trim(), phone:b.querySelector('#fTpPhone').value.trim()});
+  addAudit(UI.companyId,'Terceros','Creó el tercero '+name, UI.role);
+  save(); App.closeModal(); rerender(); toast('Tercero creado correctamente.','ok');
+};
+
+/* ============================== INVENTARIO / PRODUCTOS ======================== */
+ROUTE_RENDER.inventario = function(){
+  const locked = requireRead('inventario','Inventario'); if(locked) return locked;
+  const prods = productsOf(UI.companyId);
+  const canCreate = can(UI.role,'inventario','CREATE');
+  const totalValue = prods.reduce((s,p)=>s+p.stock*p.avgCost,0);
+  return `
+  <div class="page-head"><h1>Productos e Inventario</h1><p>Kardex valorado por costo promedio ponderado, sincronizado automáticamente con ventas y compras.</p></div>
+  ${kpiStrip([
+    {label:'SKUs activos', value:fmtNum(prods.length)},
+    {label:'Unidades en stock', value:fmtNum(prods.reduce((s,p)=>s+p.stock,0))},
+    {label:'Valor de inventario', value:fmtMoney(totalValue)},
+    {label:'Movimientos registrados', value:fmtNum(DB.inventoryMovements.filter(m=>m.companyId===UI.companyId).length)},
+  ])}
+  <div class="panel">
+    <div class="panel-head"><h2>Catálogo de productos y servicios</h2>
+      <div class="btn-row"><button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openProductModal()">+ Nuevo producto</button></div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>SKU</th><th class="wrap">Nombre</th><th>Tipo</th><th class="num">Stock</th><th class="num">Costo prom.</th><th class="num">Precio venta</th><th class="num">Valor stock</th><th></th></tr></thead><tbody>
+    ${prods.length? prods.map(p=>`<tr><td class="mono">${p.sku}</td><td class="wrap">${esc(p.name)}</td><td>${p.type==='PRODUCT'?'Producto':'Servicio'}</td>
+      <td class="num mono">${p.type==='PRODUCT'?fmtNum(p.stock)+' '+p.unit:'—'}</td>
+      <td class="num mono">${p.type==='PRODUCT'?fmtMoney(p.avgCost):'—'}</td>
+      <td class="num mono">${fmtMoney(p.salePrice)}</td>
+      <td class="num mono">${p.type==='PRODUCT'?fmtMoney(p.stock*p.avgCost):'—'}</td>
+      <td><button class="btn ghost sm" onclick="App.openKardex('${p.id}')">Kardex</button></td></tr>`).join('') : emptyRow(8,'No hay productos registrados.')}
+    </tbody></table></div>
+  </div>`;
+};
+App.openProductModal = function(){
+  if(!can(UI.role,'inventario','CREATE')) return toast('Tu rol no tiene permiso para crear productos.','danger');
+  App.openModal('Nuevo producto o servicio', `
+    <div class="grid2">
+      <div class="field"><label>SKU</label><input type="text" id="fPrSku" class="mono"></div>
+      <div class="field"><label>Tipo</label><select id="fPrType"><option value="PRODUCT">Producto (con inventario)</option><option value="SERVICE">Servicio</option></select></div>
+    </div>
+    <div class="field"><label>Nombre</label><input type="text" id="fPrName"></div>
+    <div class="grid3">
+      <div class="field"><label>Unidad</label><input type="text" id="fPrUnit" value="UND"></div>
+      <div class="field"><label>Stock inicial</label><input type="number" id="fPrStock" value="0" min="0"></div>
+      <div class="field"><label>Costo inicial</label><input type="number" id="fPrCost" value="0" min="0"></div>
+    </div>
+    <div class="field"><label>Precio de venta</label><input type="number" id="fPrPrice" value="0" min="0"></div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveProduct()">Guardar producto</button>`);
+};
+App.saveProduct = function(){
+  const b = modalBody();
+  const name = b.querySelector('#fPrName').value.trim();
+  const sku = b.querySelector('#fPrSku').value.trim();
+  if(!name || !sku) return toast('SKU y nombre son obligatorios.','danger');
+  const type = b.querySelector('#fPrType').value;
+  const stock = type==='PRODUCT' ? Math.max(0, Number(b.querySelector('#fPrStock').value)||0) : 0;
+  const avgCost = type==='PRODUCT' ? Math.max(0, Number(b.querySelector('#fPrCost').value)||0) : 0;
+  DB.products.push({id:uid('pr'), companyId:UI.companyId, sku, name, type, unit:b.querySelector('#fPrUnit').value.trim()||'UND',
+    stock, avgCost, salePrice: Math.max(0, Number(b.querySelector('#fPrPrice').value)||0)});
+  addAudit(UI.companyId,'Inventario','Creó el producto '+sku+' — '+name, UI.role);
+  save(); App.closeModal(); rerender(); toast('Producto creado correctamente.','ok');
+};
+App.openKardex = function(productId){
+  const p = product(productId);
+  const moves = DB.inventoryMovements.filter(m=>m.productId===productId).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  App.openModal('Kardex — '+p.name, `
+    <div class="notice info">Costeo por promedio ponderado. Stock actual: <b>${fmtNum(p.stock)} ${p.unit}</b> · Costo promedio: <b>${fmtMoney(p.avgCost)}</b></div>
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Ref.</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Costo unit.</th><th class="num">Valor</th><th class="num">Saldo</th></tr></thead><tbody>
+    ${moves.length? moves.map(m=>`<tr><td>${fmtDate(m.date)}</td><td class="mono">${m.ref}</td>
+      <td>${m.type==='IN'?'Entrada':'Salida'}</td><td class="num mono">${m.type==='IN'?'+':'−'}${fmtNum(m.qty)}</td>
+      <td class="num mono">${fmtMoney(m.unitCost)}</td><td class="num mono">${fmtMoney(m.totalValue)}</td><td class="num mono">${fmtNum(m.stockAfter)}</td></tr>`).join('') : emptyRow(7,'Sin movimientos de inventario.')}
+    </tbody></table></div>
+  `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
+};
+
+/* ============================== VENTAS / CARTERA =============================== */
+ROUTE_RENDER.ventas = function(){
+  const locked = requireRead('ventas','Ventas y Cartera'); if(locked) return locked;
+  const invs = DB.invoices.filter(i=>i.companyId===UI.companyId && (UI.branchId==='ALL'||i.branchId===UI.branchId)).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const totalFacturado = invs.reduce((s,i)=>s+i.total,0);
+  const totalCartera = invs.reduce((s,i)=>s+invoiceBalance(i),0);
+  const canCreate = can(UI.role,'ventas','CREATE');
+  const canCollect = can(UI.role,'tesoreria','CREATE');
+  return `
+  <div class="page-head"><h1>Ventas y Cartera</h1><p>Facturación electrónica interna con generación automática del asiento contable, IVA y salida de inventario.</p></div>
+  ${kpiStrip([
+    {label:'Facturas emitidas', value:fmtNum(invs.length)},
+    {label:'Total facturado', value:fmtMoney(totalFacturado)},
+    {label:'Cartera pendiente (CxC)', value:fmtMoney(totalCartera), cls: totalCartera>0?'neg':'pos'},
+    {label:'Recaudado', value:fmtMoney(totalFacturado-totalCartera), cls:'pos'},
+  ])}
+  <div class="panel">
+    <div class="panel-head"><h2>Facturas de venta</h2>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openInvoiceModal()">+ Nueva factura de venta</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>N.° Factura</th><th>Fecha</th><th class="wrap">Cliente</th><th class="num">Subtotal</th><th class="num">IVA</th><th class="num">Total</th><th class="num">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${invs.length? invs.map(i=>{
+      const tp = thirdParty(i.thirdPartyId); const bal = invoiceBalance(i);
+      return `<tr><td class="mono">${i.number}</td><td>${fmtDate(i.date)}</td><td class="wrap">${esc(tp?tp.name:'—')}</td>
+        <td class="num mono">${fmtMoney(i.subtotal)}</td><td class="num mono">${fmtMoney(i.taxAmount)}</td><td class="num mono">${fmtMoney(i.total)}</td>
+        <td class="num mono">${fmtMoney(bal)}</td><td>${pill(invoiceStatus(i))}</td>
+        <td class="btn-row">
+          <button class="btn ghost sm" onclick="App.viewInvoice('${i.id}')">Ver</button>
+          ${bal>0?`<button class="btn sm" ${canCollect?'':'disabled'} onclick="App.openCollectModal('${i.id}')">Recaudar</button>`:''}
+        </td></tr>`;
+    }).join('') : emptyRow(9,'No se han emitido facturas de venta.')}
+    </tbody></table></div>
+  </div>`;
+};
+function invoiceItemRow(idx, products){
+  return `<tr data-row="${idx}">
+    <td><select onchange="App.onInvoiceItemChange(this)" style="min-width:190px;">
+      <option value="">Selecciona…</option>
+      ${products.map(p=>`<option value="${p.id}" data-price="${p.salePrice}" data-stock="${p.stock}" data-type="${p.type}">${esc(p.name)} (${p.sku})</option>`).join('')}
+    </select></td>
+    <td><input type="number" min="1" value="1" style="width:70px" oninput="App.recalcInvoice()"></td>
+    <td><input type="number" min="0" value="0" style="width:110px" oninput="App.recalcInvoice()"></td>
+    <td class="num mono line-total">$0</td>
+    <td><button class="btn ghost sm" onclick="this.closest('tr').remove(); App.recalcInvoice();">✕</button></td>
+  </tr>`;
+}
+App.openInvoiceModal = function(){
+  if(!can(UI.role,'ventas','CREATE')) return toast('Tu rol no tiene permiso para crear facturas de venta.','danger');
+  const clients = thirdPartiesOf(UI.companyId,'CLIENT');
+  const products = productsOf(UI.companyId);
+  if(!clients.length) return toast('Registra al menos un cliente antes de facturar.','danger');
+  App.openModal('Nueva factura de venta', `
+    <div class="grid2">
+      <div class="field"><label>Cliente</label><select id="fInvClient">${clients.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha</label><input type="date" id="fInvDate" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>Sucursal</label><select id="fInvBranch">${currentBranches().map(b=>`<option value="${b.id}" ${b.id===(UI.branchId!=='ALL'?UI.branchId:'')?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <div class="field">
+      <label>Ítems</label>
+      <div class="table-wrap entry-lines-table"><table><thead><tr><th>Producto / Servicio</th><th>Cant.</th><th>Precio unit.</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody id="invItemsBody">${invoiceItemRow(0, products)}</tbody></table></div>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('invItemsBody').insertAdjacentHTML('beforeend', App._invRowHtml())">+ Agregar ítem</button>
+    </div>
+    <div class="total-bar">
+      <span>Subtotal: <b id="invSubtotal">$0</b></span>
+      <span>IVA (19%): <b id="invTax">$0</b></span>
+      <span>Total: <b id="invTotal">$0</b></span>
+    </div>
+    <div class="notice info" style="margin-top:12px;">El sistema validará el stock disponible y generará automáticamente el asiento: Débito Clientes / Crédito IVA e Ingresos / Débito Costo de Ventas — Crédito Inventario.</div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitInvoice()">Emitir factura</button>`, {wide:true});
+  App.recalcInvoice();
+};
+App._invRowHtml = function(){ const n=modalBody().querySelectorAll('#invItemsBody tr').length; return invoiceItemRow(n, productsOf(UI.companyId)); };
+App.onInvoiceItemChange = function(sel){
+  const row = sel.closest('tr');
+  const opt = sel.selectedOptions[0];
+  if(opt && opt.value){ row.querySelector('td:nth-child(3) input').value = opt.dataset.price; }
+  App.recalcInvoice();
+};
+App.recalcInvoice = function(){
+  const rows = modalBody().querySelectorAll('#invItemsBody tr');
+  let subtotal=0;
+  rows.forEach(r=>{
+    const qty = Number(r.querySelector('td:nth-child(2) input').value)||0;
+    const price = Number(r.querySelector('td:nth-child(3) input').value)||0;
+    const t = qty*price; subtotal += t;
+    r.querySelector('.line-total').textContent = fmtMoney(t);
+  });
+  const tax = Math.round(subtotal*0.19); const total = subtotal+tax;
+  modalBody().querySelector('#invSubtotal').textContent = fmtMoney(subtotal);
+  modalBody().querySelector('#invTax').textContent = fmtMoney(tax);
+  modalBody().querySelector('#invTotal').textContent = fmtMoney(total);
+};
+App.submitInvoice = function(){
+  const b = modalBody();
+  const rows = b.querySelectorAll('#invItemsBody tr');
+  const items = [];
+  rows.forEach(r=>{
+    const sel = r.querySelector('select');
+    if(sel.value){ items.push({productId:sel.value, qty:Number(r.querySelector('td:nth-child(2) input').value)||0, unitPrice:Number(r.querySelector('td:nth-child(3) input').value)||0}); }
+  });
+  try{
+    createSalesInvoice({companyId:UI.companyId, branchId:b.querySelector('#fInvBranch').value, thirdPartyId:b.querySelector('#fInvClient').value,
+      date:b.querySelector('#fInvDate').value, items, taxRate:0.19, role:UI.role});
+    App.closeModal(); rerender(); toast('Factura de venta emitida y contabilizada correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+App.viewInvoice = function(id){
+  const inv = DB.invoices.find(i=>i.id===id); const tp = thirdParty(inv.thirdPartyId); const entry = DB.entries.find(e=>e.id===inv.entryId);
+  App.openModal('Factura de venta '+inv.number, `
+    <div class="grid2"><div><b>Cliente:</b> ${esc(tp.name)}<br><span class="mono">${tp.docType} ${tp.docNumber}</span></div>
+    <div style="text-align:right"><b>Fecha:</b> ${fmtDate(inv.date)}<br>${pill(invoiceStatus(inv))}</div></div>
+    <div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th class="wrap">Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Total</th></tr></thead><tbody>
+    ${inv.items.map(it=>`<tr><td class="wrap">${esc(it.name)}</td><td class="num mono">${fmtNum(it.qty)}</td><td class="num mono">${fmtMoney(it.unitPrice)}</td><td class="num mono">${fmtMoney(it.total)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="total-bar"><span>Subtotal: <b>${fmtMoney(inv.subtotal)}</b></span><span>IVA: <b>${fmtMoney(inv.taxAmount)}</b></span><span>Total: <b>${fmtMoney(inv.total)}</b></span><span>Saldo: <b>${fmtMoney(invoiceBalance(inv))}</b></span></div>
+    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro Diario.</div>`:''}
+  `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
+};
+App.openCollectModal = function(invoiceId){
+  if(!can(UI.role,'tesoreria','CREATE')) return toast('Tu rol no tiene permiso para registrar recaudos.','danger');
+  const inv = DB.invoices.find(i=>i.id===invoiceId); const tp = thirdParty(inv.thirdPartyId);
+  const banks = bankAccountsOf(UI.companyId);
+  App.openModal('Registrar recaudo — '+inv.number, `
+    <div class="notice info">Cliente: <b>${esc(tp.name)}</b> · Saldo pendiente: <b>${fmtMoney(invoiceBalance(inv))}</b></div>
+    <div class="grid2">
+      <div class="field"><label>Cuenta bancaria destino</label><select id="fColBank">${banks.map(bk=>`<option value="${bk.id}">${esc(bk.bank)} — ${esc(bk.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha</label><input type="date" id="fColDate" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>Valor a recaudar</label><input type="number" id="fColAmount" value="${invoiceBalance(inv)}" min="1" max="${invoiceBalance(inv)}"></div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitCollect('${invoiceId}')">Registrar recaudo</button>`);
+};
+App.submitCollect = function(invoiceId){
+  const b = modalBody();
+  try{
+    registerCollection({companyId:UI.companyId, branchId: DB.invoices.find(i=>i.id===invoiceId).branchId, invoiceId,
+      bankAccountId:b.querySelector('#fColBank').value, amount:Number(b.querySelector('#fColAmount').value), date:b.querySelector('#fColDate').value, role:UI.role});
+    App.closeModal(); rerender(); toast('Recaudo registrado correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+
+/* ============================== COMPRAS / CXP =================================== */
+ROUTE_RENDER.compras = function(){
+  const locked = requireRead('compras','Compras y CxP'); if(locked) return locked;
+  const bills = DB.bills.filter(b=>b.companyId===UI.companyId && (UI.branchId==='ALL'||b.branchId===UI.branchId)).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  const totalComprado = bills.reduce((s,b)=>s+b.total,0);
+  const totalCxp = bills.reduce((s,b)=>s+billBalance(b),0);
+  const canCreate = can(UI.role,'compras','CREATE');
+  const canPay = can(UI.role,'tesoreria','CREATE');
+  return `
+  <div class="page-head"><h1>Compras y Cuentas por Pagar</h1><p>Registro de facturas de proveedores con actualización automática de inventario, costo promedio y cuentas por pagar.</p></div>
+  ${kpiStrip([
+    {label:'Facturas recibidas', value:fmtNum(bills.length)},
+    {label:'Total comprado', value:fmtMoney(totalComprado)},
+    {label:'Por pagar (CxP)', value:fmtMoney(totalCxp), cls: totalCxp>0?'neg':'pos'},
+    {label:'Pagado', value:fmtMoney(totalComprado-totalCxp), cls:'pos'},
+  ])}
+  <div class="panel">
+    <div class="panel-head"><h2>Facturas de compra</h2>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openBillModal()">+ Nueva factura de compra</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>N.° Factura</th><th>Fecha</th><th class="wrap">Proveedor</th><th class="num">Subtotal</th><th class="num">IVA</th><th class="num">Total</th><th class="num">Saldo</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${bills.length? bills.map(bl=>{
+      const tp = thirdParty(bl.thirdPartyId); const bal = billBalance(bl);
+      return `<tr><td class="mono">${bl.number}</td><td>${fmtDate(bl.date)}</td><td class="wrap">${esc(tp?tp.name:'—')}</td>
+        <td class="num mono">${fmtMoney(bl.subtotal)}</td><td class="num mono">${fmtMoney(bl.taxAmount)}</td><td class="num mono">${fmtMoney(bl.total)}</td>
+        <td class="num mono">${fmtMoney(bal)}</td><td>${pill(invoiceStatus(bl))}</td>
+        <td class="btn-row">
+          <button class="btn ghost sm" onclick="App.viewBill('${bl.id}')">Ver</button>
+          ${bal>0?`<button class="btn sm" ${canPay?'':'disabled'} onclick="App.openPayModal('${bl.id}')">Pagar</button>`:''}
+        </td></tr>`;
+    }).join('') : emptyRow(9,'No se han registrado facturas de compra.')}
+    </tbody></table></div>
+  </div>`;
+};
+function billItemRow(idx, products){
+  return `<tr data-row="${idx}">
+    <td><select onchange="App.onBillItemChange(this)" style="min-width:190px;">
+      <option value="">Selecciona…</option>
+      ${products.map(p=>`<option value="${p.id}" data-cost="${p.avgCost}">${esc(p.name)} (${p.sku})</option>`).join('')}
+    </select></td>
+    <td><input type="number" min="1" value="1" style="width:70px" oninput="App.recalcBill()"></td>
+    <td><input type="number" min="0" value="0" style="width:110px" oninput="App.recalcBill()"></td>
+    <td class="num mono line-total">$0</td>
+    <td><button class="btn ghost sm" onclick="this.closest('tr').remove(); App.recalcBill();">✕</button></td>
+  </tr>`;
+}
+App.openBillModal = function(){
+  if(!can(UI.role,'compras','CREATE')) return toast('Tu rol no tiene permiso para registrar compras.','danger');
+  const suppliers = thirdPartiesOf(UI.companyId,'SUPPLIER');
+  const products = productsOf(UI.companyId);
+  if(!suppliers.length) return toast('Registra al menos un proveedor antes de comprar.','danger');
+  App.openModal('Nueva factura de compra', `
+    <div class="grid2">
+      <div class="field"><label>Proveedor</label><select id="fBillSupplier">${suppliers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha</label><input type="date" id="fBillDate" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>Sucursal</label><select id="fBillBranch">${currentBranches().map(b=>`<option value="${b.id}" ${b.id===(UI.branchId!=='ALL'?UI.branchId:'')?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+    <div class="field">
+      <label>Ítems</label>
+      <div class="table-wrap entry-lines-table"><table><thead><tr><th>Producto / Servicio</th><th>Cant.</th><th>Costo unit.</th><th class="num">Total</th><th></th></tr></thead>
+      <tbody id="billItemsBody">${billItemRow(0, products)}</tbody></table></div>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('billItemsBody').insertAdjacentHTML('beforeend', App._billRowHtml())">+ Agregar ítem</button>
+    </div>
+    <div class="total-bar">
+      <span>Subtotal: <b id="billSubtotal">$0</b></span>
+      <span>IVA descontable (19%): <b id="billTax">$0</b></span>
+      <span>Total: <b id="billTotal">$0</b></span>
+    </div>
+    <div class="notice info" style="margin-top:12px;">Actualiza el costo promedio ponderado del inventario y genera: Débito Inventario / Débito IVA Descontable — Crédito Proveedores.</div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitBill()">Registrar compra</button>`, {wide:true});
+  App.recalcBill();
+};
+App._billRowHtml = function(){ const n=modalBody().querySelectorAll('#billItemsBody tr').length; return billItemRow(n, productsOf(UI.companyId)); };
+App.onBillItemChange = function(sel){
+  const row = sel.closest('tr'); const opt = sel.selectedOptions[0];
+  if(opt && opt.value){ row.querySelector('td:nth-child(3) input').value = opt.dataset.cost; }
+  App.recalcBill();
+};
+App.recalcBill = function(){
+  const rows = modalBody().querySelectorAll('#billItemsBody tr');
+  let subtotal=0;
+  rows.forEach(r=>{
+    const qty = Number(r.querySelector('td:nth-child(2) input').value)||0;
+    const cost = Number(r.querySelector('td:nth-child(3) input').value)||0;
+    const t = qty*cost; subtotal+=t;
+    r.querySelector('.line-total').textContent = fmtMoney(t);
+  });
+  const tax = Math.round(subtotal*0.19); const total = subtotal+tax;
+  modalBody().querySelector('#billSubtotal').textContent = fmtMoney(subtotal);
+  modalBody().querySelector('#billTax').textContent = fmtMoney(tax);
+  modalBody().querySelector('#billTotal').textContent = fmtMoney(total);
+};
+App.submitBill = function(){
+  const b = modalBody();
+  const rows = b.querySelectorAll('#billItemsBody tr');
+  const items = [];
+  rows.forEach(r=>{
+    const sel = r.querySelector('select');
+    if(sel.value){ items.push({productId:sel.value, qty:Number(r.querySelector('td:nth-child(2) input').value)||0, unitCost:Number(r.querySelector('td:nth-child(3) input').value)||0}); }
+  });
+  try{
+    createPurchaseBill({companyId:UI.companyId, branchId:b.querySelector('#fBillBranch').value, thirdPartyId:b.querySelector('#fBillSupplier').value,
+      date:b.querySelector('#fBillDate').value, items, taxRate:0.19, role:UI.role});
+    App.closeModal(); rerender(); toast('Factura de compra registrada y contabilizada correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+App.viewBill = function(id){
+  const bl = DB.bills.find(b=>b.id===id); const tp = thirdParty(bl.thirdPartyId); const entry = DB.entries.find(e=>e.id===bl.entryId);
+  App.openModal('Factura de compra '+bl.number, `
+    <div class="grid2"><div><b>Proveedor:</b> ${esc(tp.name)}<br><span class="mono">${tp.docType} ${tp.docNumber}</span></div>
+    <div style="text-align:right"><b>Fecha:</b> ${fmtDate(bl.date)}<br>${pill(invoiceStatus(bl))}</div></div>
+    <div class="table-wrap" style="margin-top:12px;"><table><thead><tr><th class="wrap">Producto</th><th class="num">Cant.</th><th class="num">Costo</th><th class="num">Total</th></tr></thead><tbody>
+    ${bl.items.map(it=>`<tr><td class="wrap">${esc(it.name)}</td><td class="num mono">${fmtNum(it.qty)}</td><td class="num mono">${fmtMoney(it.unitCost)}</td><td class="num mono">${fmtMoney(it.total)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="total-bar"><span>Subtotal: <b>${fmtMoney(bl.subtotal)}</b></span><span>IVA: <b>${fmtMoney(bl.taxAmount)}</b></span><span>Total: <b>${fmtMoney(bl.total)}</b></span><span>Saldo: <b>${fmtMoney(billBalance(bl))}</b></span></div>
+    ${entry?`<div class="tag-line">Asiento contable generado automáticamente: <b class="mono">${entry.number}</b> — ver en Libro Diario.</div>`:''}
+  `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
+};
+App.openPayModal = function(billId){
+  if(!can(UI.role,'tesoreria','CREATE')) return toast('Tu rol no tiene permiso para registrar pagos.','danger');
+  const bl = DB.bills.find(b=>b.id===billId); const tp = thirdParty(bl.thirdPartyId);
+  const banks = bankAccountsOf(UI.companyId);
+  App.openModal('Registrar pago — '+bl.number, `
+    <div class="notice info">Proveedor: <b>${esc(tp.name)}</b> · Saldo pendiente: <b>${fmtMoney(billBalance(bl))}</b></div>
+    <div class="grid2">
+      <div class="field"><label>Cuenta bancaria origen</label><select id="fPayBank">${banks.map(bk=>`<option value="${bk.id}">${esc(bk.bank)} — ${esc(bk.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Fecha</label><input type="date" id="fPayDate" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>Valor a pagar</label><input type="number" id="fPayAmount" value="${billBalance(bl)}" min="1" max="${billBalance(bl)}"></div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitPay('${billId}')">Registrar pago</button>`);
+};
+App.submitPay = function(billId){
+  const b = modalBody();
+  try{
+    registerPayment({companyId:UI.companyId, branchId: DB.bills.find(x=>x.id===billId).branchId, billId,
+      bankAccountId:b.querySelector('#fPayBank').value, amount:Number(b.querySelector('#fPayAmount').value), date:b.querySelector('#fPayDate').value, role:UI.role});
+    App.closeModal(); rerender(); toast('Pago registrado correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+
+/* ============================== TESORERÍA ======================================= */
+ROUTE_RENDER.tesoreria = function(){
+  const locked = requireRead('tesoreria','Tesorería'); if(locked) return locked;
+  const banks = bankAccountsOf(UI.companyId);
+  const caja = accountBalance(UI.companyId,'1105').balance;
+  const canCreate = can(UI.role,'tesoreria','CREATE');
+  const movements = DB.entries.filter(e=>e.companyId===UI.companyId && e.status==='POSTED' && (e.voucherType==='CI'||e.voucherType==='CE') && e.lines.some(l=>l.bankAccountId))
+    .slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,25);
+  return `
+  <div class="page-head"><h1>Tesorería</h1><p>Bancos, caja y movimientos de recaudo/pago conciliados automáticamente contra la contabilidad.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Cuentas bancarias y caja</h2>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openCashMoveModal()">+ Movimiento manual</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Cuenta</th><th class="wrap">Banco</th><th class="mono">N.° cuenta</th><th class="num">Saldo</th></tr></thead><tbody>
+    <tr><td>Caja General</td><td class="wrap">Efectivo</td><td class="mono">—</td><td class="num mono">${fmtMoney(caja)}</td></tr>
+    ${banks.map(b=>`<tr><td>${esc(b.name)}</td><td class="wrap">${esc(b.bank)}</td><td class="mono">${b.number}</td><td class="num mono">${fmtMoney(bankBalance(b.id))}</td></tr>`).join('')}
+    <tr style="font-weight:700;"><td colspan="3">Total disponible</td><td class="num mono">${fmtMoney(caja+banks.reduce((s,b)=>s+bankBalance(b.id),0))}</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Movimientos recientes</h2><span class="hint">Recaudos y pagos</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Comprobante</th><th>Fecha</th><th class="wrap">Concepto</th><th>Tipo</th><th class="num">Valor</th></tr></thead><tbody>
+    ${movements.length? movements.map(e=>`<tr><td class="mono">${e.number}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td>
+      <td>${e.voucherType==='CI'?'Ingreso':'Egreso'}</td><td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td></tr>`).join('') : emptyRow(5,'Sin movimientos de tesorería.')}
+    </tbody></table></div>
+  </div>`;
+};
+App.openCashMoveModal = function(){
+  if(!can(UI.role,'tesoreria','CREATE')) return toast('Tu rol no tiene permiso para registrar movimientos.','danger');
+  const banks = bankAccountsOf(UI.companyId);
+  const counters = leafAccounts(UI.companyId).filter(a=>a.code!=='1110');
+  App.openModal('Nuevo movimiento de tesorería', `
+    <div class="grid2">
+      <div class="field"><label>Dirección</label><select id="fCmDir"><option value="IN">Ingreso a banco</option><option value="OUT">Egreso de banco</option></select></div>
+      <div class="field"><label>Cuenta bancaria</label><select id="fCmBank">${banks.map(b=>`<option value="${b.id}">${esc(b.bank)} — ${esc(b.name)}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Cuenta contrapartida</label><select id="fCmCounter">${counters.map(a=>`<option value="${a.code}">${a.code} — ${esc(a.name)}</option>`).join('')}</select></div>
+    <div class="grid2">
+      <div class="field"><label>Valor</label><input type="number" id="fCmAmount" min="1"></div>
+      <div class="field"><label>Fecha</label><input type="date" id="fCmDate" value="${todayISO()}"></div>
+    </div>
+    <div class="field"><label>Concepto</label><input type="text" id="fCmConcept" placeholder="Descripción del movimiento"></div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitCashMove()">Registrar</button>`);
+};
+App.submitCashMove = function(){
+  const b = modalBody();
+  try{
+    registerCashMovement({companyId:UI.companyId, branchId: (UI.branchId!=='ALL'?UI.branchId:currentBranches()[0].id), bankAccountId:b.querySelector('#fCmBank').value,
+      direction:b.querySelector('#fCmDir').value, counterCode:b.querySelector('#fCmCounter').value, amount:Number(b.querySelector('#fCmAmount').value),
+      date:b.querySelector('#fCmDate').value, concept:b.querySelector('#fCmConcept').value.trim()||'Movimiento de tesorería', role:UI.role});
+    App.closeModal(); rerender(); toast('Movimiento registrado correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+
+/* ============================== COMPROBANTES (manual) =========================== */
+ROUTE_RENDER.comprobantes = function(){
+  const locked = requireRead('contabilidad','Comprobantes'); if(locked) return locked;
+  const entries = DB.entries.filter(e=>e.companyId===UI.companyId && (UI.branchId==='ALL'||e.branchId===UI.branchId)).slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  const canCreate = can(UI.role,'contabilidad','CREATE');
+  const canApprove = can(UI.role,'contabilidad','APPROVE');
+  return `
+  <div class="page-head"><h1>Comprobantes Contables</h1><p>Todo movimiento —manual o automático— pasa por este motor de partida doble. Débito = Crédito, sin excepción.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Todos los comprobantes</h2>
+      <button class="btn primary sm" ${canCreate?'':'disabled'} onclick="App.openEntryModal()">+ Nuevo comprobante manual</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Número</th><th>Tipo</th><th>Fecha</th><th class="wrap">Concepto</th><th class="num">Valor</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${entries.length? entries.map(e=>`<tr><td class="mono">${e.number}</td><td>${e.voucherType}</td><td>${fmtDate(e.date)}</td><td class="wrap">${esc(e.concept)}</td>
+      <td class="num mono">${fmtMoney(e.lines.reduce((s,l)=>s+l.debit,0))}</td><td>${pill(e.status)}</td>
+      <td class="btn-row">
+        <button class="btn ghost sm" onclick="App.viewEntry('${e.id}')">Ver</button>
+        ${e.status==='DRAFT' && canApprove?`<button class="btn sm" onclick="App.doApprove('${e.id}')">Aprobar</button>`:''}
+        ${e.status==='POSTED' && canApprove?`<button class="btn danger sm" onclick="App.doAnnul('${e.id}')">Anular</button>`:''}
+      </td></tr>`).join('') : emptyRow(7,'No hay comprobantes registrados.')}
+    </tbody></table></div>
+  </div>`;
+};
+function entryLineRow(idx, accounts){
+  return `<tr data-row="${idx}">
+    <td><select style="min-width:210px;">${accounts.map(a=>`<option value="${a.code}">${a.code} — ${esc(a.name)}</option>`).join('')}</select></td>
+    <td><input type="text" placeholder="Nota (opcional)" style="width:150px;"></td>
+    <td><input type="number" min="0" value="0" style="width:120px" oninput="App.recalcEntry()"></td>
+    <td><input type="number" min="0" value="0" style="width:120px" oninput="App.recalcEntry()"></td>
+    <td><button class="btn ghost sm" onclick="this.closest('tr').remove(); App.recalcEntry();">✕</button></td>
+  </tr>`;
+}
+App.openEntryModal = function(){
+  if(!can(UI.role,'contabilidad','CREATE')) return toast('Tu rol no tiene permiso para crear comprobantes.','danger');
+  const accounts = leafAccounts(UI.companyId);
+  const willDraft = !can(UI.role,'contabilidad','APPROVE');
+  App.openModal('Nuevo comprobante contable', `
+    <div class="grid2">
+      <div class="field"><label>Fecha</label><input type="date" id="fEnDate" value="${todayISO()}"></div>
+      <div class="field"><label>Sucursal</label><select id="fEnBranch">${currentBranches().map(b=>`<option value="${b.id}" ${b.id===(UI.branchId!=='ALL'?UI.branchId:'')?'selected':''}>${esc(b.name)}</option>`).join('')}</select></div>
+    </div>
+    <div class="field"><label>Concepto</label><input type="text" id="fEnConcept" placeholder="Descripción del comprobante"></div>
+    <div class="field">
+      <label>Movimientos</label>
+      <div class="table-wrap entry-lines-table"><table><thead><tr><th>Cuenta</th><th>Nota</th><th>Débito</th><th>Crédito</th><th></th></tr></thead>
+      <tbody id="entryLinesBody">${entryLineRow(0, accounts)}${entryLineRow(1, accounts)}</tbody></table></div>
+      <button class="btn ghost sm" style="margin-top:8px;" onclick="document.getElementById('entryLinesBody').insertAdjacentHTML('beforeend', App._entryRowHtml())">+ Agregar línea</button>
+    </div>
+    <div class="total-bar">
+      <span>Σ Débitos: <b id="enDeb">$0</b></span><span>Σ Créditos: <b id="enCred">$0</b></span>
+      <span id="enBalanceMsg" class="balance-ok">Balanceado</span>
+    </div>
+    ${willDraft?`<div class="notice warn" style="margin-top:12px;">Tu rol (${ROLE_LABELS[UI.role]}) guarda comprobantes como <b>borrador</b>; un Contador o Super Administrador deberá aprobarlo para que impacte los saldos oficiales.</div>`:''}
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.submitEntry()">${willDraft?'Guardar borrador':'Contabilizar'}</button>`, {wide:true});
+  App.recalcEntry();
+};
+App._entryRowHtml = function(){ const n=modalBody().querySelectorAll('#entryLinesBody tr').length; return entryLineRow(n, leafAccounts(UI.companyId)); };
+App.recalcEntry = function(){
+  const rows = modalBody().querySelectorAll('#entryLinesBody tr');
+  let d=0,c=0;
+  rows.forEach(r=>{ d+= Number(r.querySelector('td:nth-child(3) input').value)||0; c+= Number(r.querySelector('td:nth-child(4) input').value)||0; });
+  modalBody().querySelector('#enDeb').textContent = fmtMoney(d);
+  modalBody().querySelector('#enCred').textContent = fmtMoney(c);
+  const msg = modalBody().querySelector('#enBalanceMsg');
+  if(d===c && d>0){ msg.textContent='Balanceado ✓'; msg.className='balance-ok'; }
+  else{ msg.textContent='Diferencia: '+fmtMoney(Math.abs(d-c)); msg.className='balance-bad'; }
+};
+App.submitEntry = function(){
+  const b = modalBody();
+  const rows = b.querySelectorAll('#entryLinesBody tr');
+  const lines = [];
+  rows.forEach(r=>{
+    const code = r.querySelector('select').value;
+    const debit = Number(r.querySelector('td:nth-child(3) input').value)||0;
+    const credit = Number(r.querySelector('td:nth-child(4) input').value)||0;
+    const note = r.querySelector('td:nth-child(2) input').value.trim();
+    if(debit>0||credit>0) lines.push({accountCode:code, debit, credit, note});
+  });
+  const concept = b.querySelector('#fEnConcept').value.trim();
+  if(!concept) return toast('Ingresa el concepto del comprobante.','danger');
+  try{
+    postEntry({companyId:UI.companyId, branchId:b.querySelector('#fEnBranch').value, voucherType:'CG', date:b.querySelector('#fEnDate').value, concept, lines, role:UI.role});
+    App.closeModal(); rerender(); toast('Comprobante guardado correctamente.','ok');
+  }catch(err){ toast(err.message,'danger'); }
+};
+App.viewEntry = function(id){
+  const e = DB.entries.find(x=>x.id===id);
+  App.openModal('Comprobante '+e.number, `
+    <div class="grid2"><div><b>Fecha:</b> ${fmtDate(e.date)}<br><b>Sucursal:</b> ${esc(branchName(e.branchId))}</div>
+    <div style="text-align:right">${pill(e.status)}<br><span class="hint">Creado por ${ROLE_LABELS[e.createdBy]||e.createdBy}</span></div></div>
+    <div class="tag-line">${esc(e.concept)}</div>
+    <div class="table-wrap"><table><thead><tr><th>Cuenta</th><th class="wrap">Nota</th><th class="num">Débito</th><th class="num">Crédito</th></tr></thead><tbody>
+    ${e.lines.map(l=>{ const a=accByCode(e.companyId,l.accountCode); return `<tr><td class="mono">${l.accountCode} — ${esc(a?a.name:'')}</td><td class="wrap">${esc(l.note||'')}</td><td class="num mono">${l.debit?fmtMoney(l.debit):''}</td><td class="num mono">${l.credit?fmtMoney(l.credit):''}</td></tr>`; }).join('')}
+    </tbody></table></div>
+    ${e.status==='ANNULLED'?`<div class="notice danger" style="margin-top:12px;">Anulado por ${ROLE_LABELS[e.annulledBy]||e.annulledBy}${e.annulReason?' — Motivo: '+esc(e.annulReason):''}</div>`:''}
+  `, `<button class="btn primary" onclick="App.closeModal()">Cerrar</button>`, {wide:true});
+};
+App.doApprove = function(id){
+  try{ approveEntry(id, UI.role); rerender(); toast('Comprobante aprobado y contabilizado.','ok'); }catch(err){ toast(err.message,'danger'); }
+};
+App.doAnnul = function(id){
+  const reason = window.prompt('Motivo de anulación del comprobante (quedará en el registro de auditoría):','');
+  if(reason===null) return;
+  try{ annulEntry(id, UI.role, reason); rerender(); toast('Comprobante anulado.','ok'); }catch(err){ toast(err.message,'danger'); }
+};
+
+/* ============================== LIBRO DIARIO ===================================== */
+ROUTE_RENDER.libroDiario = function(){
+  const locked = requireRead('contabilidad','Libro Diario'); if(locked) return locked;
+  const entries = activeEntries(UI.companyId).filter(inScopeBranch).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.number.localeCompare(b.number));
+  return `
+  <div class="page-head"><h1>Libro Diario</h1><p>Todos los comprobantes contabilizados (estado Contabilizado), en orden cronológico.</p></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Comprobante</th><th class="wrap">Concepto</th><th>Cuenta</th><th class="num">Débito</th><th class="num">Crédito</th></tr></thead><tbody>
+  ${entries.length? entries.map(e=>e.lines.map((l,idx)=>{ const a=accByCode(e.companyId,l.accountCode); return `<tr>
+      <td>${idx===0?fmtDate(e.date):''}</td><td class="mono">${idx===0?e.number:''}</td><td class="wrap">${idx===0?esc(e.concept):''}</td>
+      <td class="mono">${l.accountCode} ${esc(a?a.name:'')}</td><td class="num mono">${l.debit?fmtMoney(l.debit):''}</td><td class="num mono">${l.credit?fmtMoney(l.credit):''}</td></tr>`; }).join('')).join('')
+    : emptyRow(6,'No hay comprobantes contabilizados en el período seleccionado.')}
+  </tbody></table></div></div>`;
+};
+
+/* ============================== LIBRO MAYOR ======================================= */
+ROUTE_RENDER.libroMayor = function(){
+  const locked = requireRead('contabilidad','Libro Mayor'); if(locked) return locked;
+  const accts = leafAccounts(UI.companyId);
+  const sel = ROUTE_STATE.libroMayorAccount || (accts[0] ? accts[0].code : '');
+  const rows = sel ? accountMovements(UI.companyId, sel, {branchId:UI.branchId}) : [];
+  let running=0;
+  return `
+  <div class="page-head"><h1>Libro Mayor</h1><p>Movimientos y saldo acumulado por cuenta contable.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Selecciona una cuenta</h2>
+      <select id="mayorSelect" onchange="ROUTE_STATE.libroMayorAccount=this.value; rerender();" style="min-width:280px;">
+      ${accts.map(a=>`<option value="${a.code}" ${a.code===sel?'selected':''}>${a.code} — ${esc(a.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Comprobante</th><th class="wrap">Concepto</th><th class="num">Débito</th><th class="num">Crédito</th><th class="num">Saldo</th></tr></thead><tbody>
+    ${rows.length? rows.map(r=>{ running += r.line.debit - r.line.credit; return `<tr><td>${fmtDate(r.entry.date)}</td><td class="mono">${r.entry.number}</td><td class="wrap">${esc(r.entry.concept)}</td>
+      <td class="num mono">${r.line.debit?fmtMoney(r.line.debit):''}</td><td class="num mono">${r.line.credit?fmtMoney(r.line.credit):''}</td><td class="num mono">${fmtMoney(running)}</td></tr>`; }).join('')
+      : emptyRow(6,'Esta cuenta no registra movimientos.')}
+    ${rows.length?`<tr style="font-weight:700;"><td colspan="5">Saldo final</td><td class="num mono">${fmtMoney(running)}</td></tr>`:''}
+    </tbody></table></div>
+  </div>`;
+};
+const ROUTE_STATE = {};
+
+/* ============================== BALANCE DE COMPROBACIÓN =========================== */
+ROUTE_RENDER.balanceComprobacion = function(){
+  const locked = requireRead('contabilidad','Balance de Comprobación'); if(locked) return locked;
+  const rows = trialBalance(UI.companyId, UI.branchId).sort((a,b)=>a.account.code.localeCompare(b.account.code));
+  const td = rows.reduce((s,r)=>s+r.debit,0), tc = rows.reduce((s,r)=>s+r.credit,0);
+  return `
+  <div class="page-head"><h1>Balance de Comprobación</h1><p>Sumas y saldos de todas las cuentas con movimiento, a la fecha actual.</p></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Código</th><th class="wrap">Cuenta</th><th class="num">Total débitos</th><th class="num">Total créditos</th><th class="num">Saldo</th></tr></thead><tbody>
+  ${rows.length? rows.map(r=>`<tr><td class="mono">${r.account.code}</td><td class="wrap">${esc(r.account.name)}</td>
+    <td class="num mono">${fmtMoney(r.debit)}</td><td class="num mono">${fmtMoney(r.credit)}</td>
+    <td class="num mono">${fmtMoney(r.balance)} ${r.balance>=0?'Db':'Cr'}</td></tr>`).join('') : emptyRow(5,'No hay movimientos contabilizados.')}
+  ${rows.length?`<tr style="font-weight:700;"><td colspan="2">Totales</td><td class="num mono">${fmtMoney(td)}</td><td class="num mono">${fmtMoney(tc)}</td><td class="num mono">${td===tc?'Cuadrado ✓':'Descuadrado'}</td></tr>`:''}
+  </tbody></table></div></div>`;
+};
+
+/* ============================== ESTADO DE RESULTADOS ============================== */
+ROUTE_RENDER.estadoResultados = function(){
+  const locked = requireRead('contabilidad','el Estado de Resultados'); if(locked) return locked;
+  const is = incomeStatement(UI.companyId, UI.branchId);
+  const ingAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('4')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
+  const cosAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('6')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
+  const gasAccts = leafAccounts(UI.companyId).filter(a=>a.code.startsWith('5')).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
+  const line = (x, sign)=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(sign*(x.bal.credit-x.bal.debit))}</td></tr>`;
+  return `
+  <div class="page-head"><h1>Estado de Resultados</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Acumulado a ${fmtDate(todayISO())}</p></div>
+  <div class="panel"><div class="panel-body">
+    <div class="tag-line" style="border-color:var(--accent); color:var(--accent); font-weight:600;">INGRESOS OPERACIONALES</div>
+    <div class="table-wrap"><table><tbody>${ingAccts.length?ingAccts.map(x=>line(x,1)).join(''):emptyRow(3,'Sin ingresos registrados.')}
+    <tr style="font-weight:700;"><td colspan="2">Total ingresos</td><td class="num mono">${fmtMoney(is.ingresos)}</td></tr></tbody></table></div>
+
+    <div class="tag-line" style="margin-top:18px;">COSTO DE VENTAS</div>
+    <div class="table-wrap"><table><tbody>${cosAccts.length?cosAccts.map(x=>line(x,-1)).join(''):emptyRow(3,'Sin costo de ventas registrado.')}
+    <tr style="font-weight:700;"><td colspan="2">Total costo de ventas</td><td class="num mono">(${fmtMoney(is.costos)})</td></tr></tbody></table></div>
+    <div class="total-bar"><span>Utilidad bruta: <b>${fmtMoney(is.utilidadBruta)}</b></span></div>
+
+    <div class="tag-line" style="margin-top:18px;">GASTOS OPERACIONALES</div>
+    <div class="table-wrap"><table><tbody>${gasAccts.length?gasAccts.map(x=>line(x,-1)).join(''):emptyRow(3,'Sin gastos registrados.')}
+    <tr style="font-weight:700;"><td colspan="2">Total gastos</td><td class="num mono">(${fmtMoney(is.gastos)})</td></tr></tbody></table></div>
+
+    <div class="ledger-strip" style="margin-top:18px;"><div class="ledger-cell"><div class="l">UTILIDAD (PÉRDIDA) DEL EJERCICIO</div>
+    <div class="v ${is.utilidadNeta>=0?'pos':'neg'}" style="font-size:24px;">${fmtMoney(is.utilidadNeta)}</div></div></div>
+  </div></div>`;
+};
+
+/* ============================== BALANCE GENERAL ==================================== */
+ROUTE_RENDER.balanceGeneral = function(){
+  const locked = requireRead('contabilidad','el Balance General'); if(locked) return locked;
+  const bs = balanceSheet(UI.companyId, UI.branchId);
+  const secc = (prefix)=> leafAccounts(UI.companyId).filter(a=>a.code.startsWith(prefix)).map(a=>({a, bal:accountBalance(UI.companyId,a.code,UI.branchId)})).filter(x=>x.bal.debit||x.bal.credit);
+  const activos = secc('1'), pasivos = secc('2'), patrimonios = secc('3');
+  const rowA = x=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(x.bal.balance)}</td></tr>`;
+  const rowP = x=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(-x.bal.balance)}</td></tr>`;
+  return `
+  <div class="page-head"><h1>Balance General</h1><p>${esc(company().name)} · ${UI.branchId==='ALL'?'Consolidado':branchName(UI.branchId)} · Corte ${fmtDate(todayISO())}</p></div>
+  ${!bs.cuadra?`<div class="notice danger">El balance no está cuadrado: revisa comprobantes en borrador o períodos pendientes de cierre.</div>`:''}
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-head"><h2>Activo</h2></div>
+      <div class="table-wrap"><table><tbody>${activos.length?activos.map(rowA).join(''):emptyRow(3,'Sin saldo de activos.')}
+      <tr style="font-weight:700;"><td colspan="2">Total activo</td><td class="num mono">${fmtMoney(bs.activo)}</td></tr></tbody></table></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>Pasivo y Patrimonio</h2></div>
+      <div class="table-wrap"><table><tbody>
+      <tr><td colspan="3" style="font-weight:600; color:var(--ink-soft);">Pasivo</td></tr>
+      ${pasivos.length?pasivos.map(rowP).join(''):emptyRow(3,'Sin saldo de pasivos.')}
+      <tr style="font-weight:700;"><td colspan="2">Total pasivo</td><td class="num mono">${fmtMoney(bs.pasivo)}</td></tr>
+      <tr><td colspan="3" style="font-weight:600; color:var(--ink-soft); padding-top:14px;">Patrimonio</td></tr>
+      ${patrimonios.length?patrimonios.map(x=>`<tr><td class="mono">${x.a.code}</td><td class="wrap">${esc(x.a.name)}</td><td class="num mono">${fmtMoney(-x.bal.balance)}</td></tr>`).join(''):''}
+      <tr><td class="mono">—</td><td class="wrap">Utilidad del ejercicio (no distribuida)</td><td class="num mono">${fmtMoney(bs.utilidadNeta)}</td></tr>
+      <tr style="font-weight:700;"><td colspan="2">Total patrimonio</td><td class="num mono">${fmtMoney(bs.patrimonio)}</td></tr>
+      <tr style="font-weight:700; border-top:2px solid var(--line-strong);"><td colspan="2">Total pasivo + patrimonio</td><td class="num mono">${fmtMoney(bs.pasivo+bs.patrimonio)}</td></tr>
+      </tbody></table></div>
+    </div>
+  </div>`;
+};
+
+/* ============================== CIERRES DE PERÍODO ================================= */
+ROUTE_RENDER.cierres = function(){
+  const locked = requireRead('cierres','Cierres de Período'); if(locked) return locked;
+  const canManage = can(UI.role,'cierres','FULL');
+  const months = [];
+  for(let i=11;i>=0;i--){ const d=new Date(); d.setMonth(d.getMonth()-i); months.push(d.toISOString().slice(0,7)); }
+  return `
+  <div class="page-head"><h1>Cierres de Período Contable</h1><p>Bloquea la contabilización de nuevos comprobantes en períodos ya cerrados, protegiendo la información histórica.</p></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Período</th><th>Estado</th><th class="num">Comprobantes</th><th></th></tr></thead><tbody>
+  ${months.map(ym=>{
+    const closed = isPeriodClosed(UI.companyId, ym);
+    const count = DB.entries.filter(e=>e.companyId===UI.companyId && e.status==='POSTED' && ymOf(e.date)===ym).length;
+    return `<tr><td>${monthLabel(ym)}</td><td>${pill(closed?'CLOSED':'OPEN')}</td><td class="num mono">${fmtNum(count)}</td>
+      <td><button class="btn sm" ${canManage?'':'disabled'} onclick="App.togglePeriod('${ym}')">${closed?'Reabrir':'Cerrar período'}</button></td></tr>`;
+  }).join('')}
+  </tbody></table></div></div>`;
+};
+App.togglePeriod = function(ym){
+  try{ setPeriodStatus(UI.companyId, ym, isPeriodClosed(UI.companyId,ym)?'OPEN':'CLOSED', UI.role); rerender(); toast('Estado del período actualizado.','ok'); }
+  catch(err){ toast(err.message,'danger'); }
+};
+
+/* ============================== AUDITORÍA =========================================== */
+ROUTE_RENDER.auditoria = function(){
+  const locked = requireRead('auditoria','Auditoría'); if(locked) return locked;
+  const logs = DB.auditLogs.filter(l=>l.companyId===UI.companyId).slice(0,120);
+  return `
+  <div class="page-head"><h1>Registro de Auditoría</h1><p>Bitácora inmutable de toda acción que afecta los datos contables — trazabilidad absoluta, cero borrado.</p></div>
+  <div class="panel"><div class="table-wrap"><table><thead><tr><th>Fecha y hora</th><th>Módulo</th><th>Usuario</th><th class="wrap">Acción</th></tr></thead><tbody>
+  ${logs.length? logs.map(l=>`<tr><td class="mono">${fmtDateTime(l.ts)}</td><td>${esc(l.module)}</td><td>${esc(l.user)} <span class="hint">(${ROLE_LABELS[l.role]||l.role})</span></td><td class="wrap">${esc(l.action)}</td></tr>`).join('') : emptyRow(4,'Sin actividad registrada aún.')}
+  </tbody></table></div></div>`;
+};
+
+/* ============================== ASISTENTE FINANCIERO IA ============================= */
+let CHAT_LOG = [{who:'bot', text:'Hola, soy el asistente financiero de Contafi. Puedo responder preguntas sobre cartera, cuentas por pagar, caja, bancos, inventario, IVA, ingresos, gastos y utilidad de '+"'"+'Comercializadora Andina'+"'"+'. ¿Qué deseas consultar?'}];
+ROUTE_RENDER.asistente = function(){
+  const chips = ['¿Cuál es mi cartera pendiente?','¿Cuánto tengo en bancos?','¿Cuál es la utilidad del período?','¿Cuánto debo a proveedores?','¿Cuánto IVA he generado?','¿Qué productos tienen poco stock?'];
+  return `
+  <div class="page-head"><h1>Asistente Financiero IA</h1><p>Motor de consultas en lenguaje natural sobre los datos contables en tiempo real de la compañía activa.</p></div>
+  <div class="panel">
+    <div class="chat-box">
+      <div class="chat-log" id="chatLog">${CHAT_LOG.map(m=>`<div class="msg ${m.who}">${m.text}</div>`).join('')}</div>
+      <div class="suggest-row">${chips.map(c=>`<span class="suggest-chip" onclick="App.askAssistant(${JSON.stringify(c)})">${esc(c)}</span>`).join('')}</div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="Escribe tu pregunta financiera…" onkeydown="if(event.key==='Enter'){App.askAssistant(this.value); this.value='';}">
+        <button onclick="const i=document.getElementById('chatInput'); App.askAssistant(i.value); i.value='';">Enviar</button>
+      </div>
+    </div>
+  </div>
+  <div class="notice info">Este asistente calcula respuestas directamente desde los libros contables locales (no usa un modelo externo). En producción, este módulo se conectaría a un motor de lenguaje natural sobre el mismo API-First descrito en la arquitectura.</div>`;
+};
+App.askAssistant = function(q){
+  q = (q||'').trim(); if(!q) return;
+  CHAT_LOG.push({who:'user', text:esc(q)});
+  CHAT_LOG.push({who:'bot', text:answerFinance(q)});
+  if(CHAT_LOG.length>40) CHAT_LOG = CHAT_LOG.slice(-40);
+  rerender();
+  setTimeout(()=>{ const log=document.getElementById('chatLog'); if(log) log.scrollTop = log.scrollHeight; }, 30);
+};
+function answerFinance(qRaw){
+  const q = qRaw.toLowerCase();
+  const cid = UI.companyId;
+  const has = (...ws)=> ws.some(w=>q.includes(w));
+  if(has('cartera','cxc','cobrar')){
+    const total = DB.invoices.filter(i=>i.companyId===cid).reduce((s,i)=>s+invoiceBalance(i),0);
+    const n = DB.invoices.filter(i=>i.companyId===cid && invoiceBalance(i)>0).length;
+    return 'Tu cartera pendiente por cobrar es de <b>'+fmtMoney(total)+'</b>, distribuida en '+n+' factura(s) sin saldar.';
+  }
+  if(has('cxp','proveedor','pagar')){
+    const total = DB.bills.filter(b=>b.companyId===cid).reduce((s,b)=>s+billBalance(b),0);
+    const n = DB.bills.filter(b=>b.companyId===cid && billBalance(b)>0).length;
+    return 'Debes a proveedores <b>'+fmtMoney(total)+'</b>, en '+n+' factura(s) de compra pendientes.';
+  }
+  if(has('banco','bancos')){
+    const total = bankAccountsOf(cid).reduce((s,b)=>s+bankBalance(b.id),0);
+    return 'El saldo total en cuentas bancarias es de <b>'+fmtMoney(total)+'</b>, distribuido en '+bankAccountsOf(cid).length+' cuenta(s).';
+  }
+  if(has('caja')){
+    return 'El saldo actual de Caja General es de <b>'+fmtMoney(accountBalance(cid,'1105').balance)+'</b>.';
+  }
+  if(has('utilidad','ganancia','perdid','resultado')){
+    const is = incomeStatement(cid, 'ALL');
+    return (is.utilidadNeta>=0?'La utilidad':'La pérdida')+' acumulada del ejercicio es de <b>'+fmtMoney(Math.abs(is.utilidadNeta))+'</b> (ingresos '+fmtMoney(is.ingresos)+' − costos '+fmtMoney(is.costos)+' − gastos '+fmtMoney(is.gastos)+').';
+  }
+  if(has('iva')){
+    const gen = accountBalance(cid,'240805').balance;
+    const desc = accountBalance(cid,'135515').balance;
+    return 'IVA generado en ventas: <b>'+fmtMoney(-gen)+'</b>. IVA descontable en compras: <b>'+fmtMoney(desc)+'</b>. Saldo neto por pagar a la DIAN: <b>'+fmtMoney(-gen-desc)+'</b>.';
+  }
+  if(has('stock','inventario','existencia')){
+    const low = productsOf(cid).filter(p=>p.type==='PRODUCT' && p.stock<=15);
+    if(!low.length) return 'Todos los productos tienen niveles de inventario saludables (más de 15 unidades).';
+    return 'Productos con inventario bajo: '+low.map(p=>esc(p.name)+' ('+fmtNum(p.stock)+' und.)').join(', ')+'.';
+  }
+  if(has('activo')){
+    return 'El total de activos de la compañía es <b>'+fmtMoney(balanceSheet(cid,'ALL').activo)+'</b>.';
+  }
+  if(has('pasivo')){
+    return 'El total de pasivos de la compañía es <b>'+fmtMoney(balanceSheet(cid,'ALL').pasivo)+'</b>.';
+  }
+  if(has('patrimonio')){
+    return 'El patrimonio actual (incluida la utilidad del ejercicio) es de <b>'+fmtMoney(balanceSheet(cid,'ALL').patrimonio)+'</b>.';
+  }
+  if(has('ingreso','venta','factur')){
+    const is = incomeStatement(cid,'ALL');
+    return 'Los ingresos operacionales acumulados suman <b>'+fmtMoney(is.ingresos)+'</b>, provenientes de '+DB.invoices.filter(i=>i.companyId===cid).length+' factura(s) de venta.';
+  }
+  return 'No tengo una respuesta calculada para esa pregunta todavía. Puedo ayudarte con cartera, cuentas por pagar, bancos, caja, IVA, inventario, activos, pasivos, patrimonio y utilidad. Prueba con una de las sugerencias debajo del chat.';
+}
+
+/* ============================== CONFIGURACIÓN ======================================= */
+ROUTE_RENDER.configuracion = function(){
+  const locked = requireRead('configuracion','Configuración'); if(locked) return locked;
+  const c = company();
+  return `
+  <div class="page-head"><h1>Configuración</h1><p>Datos de la compañía, sucursales y matriz de roles y permisos del sistema.</p></div>
+  <div class="panel">
+    <div class="panel-head"><h2>Compañías</h2>
+      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openCompanyModal()">+ Nueva compañía</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>NIT</th><th class="wrap">Razón social</th><th class="wrap">Régimen</th><th>Activa</th><th></th></tr></thead><tbody>
+    ${DB.companies.map(co=>{
+      const canEdit = can(UI.role,'configuracion','CREATE');
+      const canDelete = can(UI.role,'configuracion','FULL');
+      const isActive = co.id===UI.companyId;
+      return `<tr ${isActive?'style="background:var(--accent-soft);"':''}>
+        <td class="mono">${esc(co.nit)}</td><td class="wrap">${esc(co.name)}</td><td class="wrap">${esc(co.regime)}</td>
+        <td>${isActive?'<span class="pill posted">En uso</span>':''}</td>
+        <td class="btn-row">
+          <button class="btn ghost sm" ${canEdit?'':'disabled'} onclick="App.openCompanyModal('${co.id}')">Editar</button>
+          <button class="btn danger sm" ${canDelete?'':'disabled'} onclick="App.deleteCompany('${co.id}')">Eliminar</button>
+        </td></tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Compañía activa</h2><span class="hint">Cámbiala desde el selector "Empresa" en la barra superior</span></div>
+    <div class="panel-body">
+      <div class="grid2">
+        <div><label>Razón social</label><div>${esc(c.name)}</div></div>
+        <div><label>NIT</label><div class="mono">${c.nit}</div></div>
+      </div>
+      <div class="grid2" style="margin-top:12px;">
+        <div><label>Régimen</label><div>${esc(c.regime)}</div></div>
+        <div><label>Representante legal</label><div>${esc(c.legalRep)}</div></div>
+      </div>
+      <div style="margin-top:12px;"><label>Dirección</label><div>${esc(c.address)}</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Sucursales</h2>
+      <button class="btn primary sm" ${can(UI.role,'configuracion','CREATE')?'':'disabled'} onclick="App.openBranchModal()">+ Nueva sucursal</button>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Código</th><th class="wrap">Nombre</th><th>Ciudad</th><th class="num">Comprobantes</th><th></th></tr></thead><tbody>
+    ${currentBranches().length? currentBranches().map(b=>{
+      const canEdit = can(UI.role,'configuracion','CREATE');
+      const canDelete = can(UI.role,'configuracion','FULL');
+      const nMov = DB.entries.filter(e=>e.branchId===b.id).length;
+      return `<tr><td class="mono">${esc(b.code)}</td><td class="wrap">${esc(b.name)}</td><td>${esc(b.city)}</td><td class="num mono">${fmtNum(nMov)}</td>
+      <td class="btn-row">
+        <button class="btn ghost sm" ${canEdit?'':'disabled'} onclick="App.openBranchModal('${b.id}')">Editar</button>
+        <button class="btn danger sm" ${canDelete?'':'disabled'} onclick="App.deleteBranch('${b.id}')">Eliminar</button>
+      </td></tr>`;
+    }).join('') : emptyRow(5,'No hay sucursales registradas.')}
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Seguridad de Roles</h2><span class="hint">Protege con contraseña quién puede entrar a cada rol</span></div>
+    <div class="panel-body">
+      <div class="notice warn">Esta protección es un control de acceso del lado del navegador, pensado para evitar que alguien cambie de rol por descuido o sin autorización. No es un sistema de autenticación de servidor. Como privilegio del Super Administrador, las contraseñas se guardan también en texto legible (además de un hash) para poder consultarlas o restablecerlas aquí mismo — ten en cuenta que eso también significa que, técnicamente, no están cifradas de forma irreversible.</div>
+    </div>
+    <div class="table-wrap"><table><thead><tr><th>Rol</th><th>Estado</th><th>Sesión</th><th></th></tr></thead><tbody>
+    ${ROLES.map(r=>{
+      const hasPass = roleHasPassword(r);
+      const unlocked = UI.unlockedRoles.has(r);
+      const canManage = can(UI.role,'configuracion','FULL');
+      return `<tr><td style="font-weight:600;">${ROLE_LABELS[r]}</td>
+        <td>${hasPass?'<span class="pill closed">Protegido</span>':'<span class="pill open">Sin contraseña</span>'}</td>
+        <td>${unlocked?'<span class="pill posted">Desbloqueado</span>':'<span class="pill draft">Bloqueado</span>'}</td>
+        <td class="btn-row">
+          ${hasPass?`<button class="btn ghost sm" ${canManage?'':'disabled'} onclick="App.revealRolePassword('${r}')">Ver contraseña</button>`:''}
+          <button class="btn ghost sm" ${canManage?'':'disabled'} onclick="App.openSetPasswordModal('${r}')">${hasPass?'Cambiar':'Establecer'}</button>
+          ${hasPass?`<button class="btn danger sm" ${canManage?'':'disabled'} onclick="App.removeRolePassword('${r}')">Quitar</button>`:''}
+        </td></tr>`;
+    }).join('')}
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Matriz de Roles y Permisos (RBAC)</h2><span class="hint">Nivel mínimo requerido por módulo</span></div>
+    <div class="table-wrap"><table><thead><tr><th>Rol</th><th>Contabilidad</th><th>Ventas/CxC</th><th>Compras/CxP</th><th>Tesorería</th><th>Nómina</th><th>Cierres</th><th>Auditoría</th></tr></thead><tbody>
+    ${ROLES.map(r=>`<tr><td style="font-weight:600;">${ROLE_LABELS[r]}</td>
+      <td>${PERMS[r].contabilidad}</td><td>${PERMS[r].ventas}</td><td>${PERMS[r].compras}</td><td>${PERMS[r].tesoreria}</td>
+      <td>${PERMS[r].nomina}</td><td>${PERMS[r].cierres}</td><td>${PERMS[r].auditoria}</td></tr>`).join('')}
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><h2>Datos de la aplicación</h2></div>
+    <div class="panel-body">
+      <p style="color:var(--ink-soft); font-size:12.5px; max-width:600px;">Toda la información de esta demostración se guarda únicamente en el almacenamiento local de tu navegador. Ningún dato se envía a servidores externos.</p>
+      <button class="btn danger sm" onclick="if(confirm('¿Reiniciar todos los datos a la demostración inicial? Esta acción no se puede deshacer.')) resetAll();">Reiniciar datos de demostración</button>
+    </div>
+  </div>`;
+};
+App.openCompanyModal = function(companyId){
+  if(!can(UI.role,'configuracion','CREATE')) return toast('Tu rol no tiene permiso para gestionar compañías.','danger');
+  const editing = companyId ? DB.companies.find(c=>c.id===companyId) : null;
+  App.openModal(editing?'Editar compañía':'Nueva compañía', `
+    <div class="grid2">
+      <div class="field"><label>NIT</label><input type="text" id="fCoNit" class="mono" value="${editing?esc(editing.nit):''}" placeholder="900.123.456-7"></div>
+      <div class="field"><label>Moneda</label><input type="text" id="fCoCurrency" value="${editing?esc(editing.currency):'COP'}" disabled></div>
+    </div>
+    <div class="field"><label>Razón social</label><input type="text" id="fCoName" value="${editing?esc(editing.name):''}"></div>
+    <div class="grid2">
+      <div class="field"><label>Régimen</label><input type="text" id="fCoRegime" value="${editing?esc(editing.regime):'Responsable de IVA — Régimen Ordinario'}"></div>
+      <div class="field"><label>Representante legal</label><input type="text" id="fCoLegalRep" value="${editing?esc(editing.legalRep):''}"></div>
+    </div>
+    <div class="field"><label>Dirección</label><input type="text" id="fCoAddress" value="${editing?esc(editing.address):''}"></div>
+    ${editing?'':'<div class="notice info">Se creará automáticamente con una sucursal principal, el Plan Único de Cuentas completo y una cuenta bancaria, lista para operar.</div>'}
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveCompany(${editing?`'${editing.id}'`:'null'})">${editing?'Guardar cambios':'Crear compañía'}</button>`);
+};
+App.saveCompany = function(companyId){
+  if(!can(UI.role,'configuracion','CREATE')) return toast('Tu rol no tiene permiso para gestionar compañías.','danger');
+  const b = modalBody();
+  const nit = b.querySelector('#fCoNit').value.trim();
+  const name = b.querySelector('#fCoName').value.trim();
+  const regime = b.querySelector('#fCoRegime').value.trim();
+  const legalRep = b.querySelector('#fCoLegalRep').value.trim();
+  const address = b.querySelector('#fCoAddress').value.trim();
+  if(!nit || !name) return toast('NIT y razón social son obligatorios.','danger');
+  const dup = DB.companies.find(x=>x.nit===nit && x.id!==companyId);
+  if(dup) return toast('Ya existe una compañía registrada con ese NIT.','danger');
+  if(companyId){
+    const co = DB.companies.find(x=>x.id===companyId);
+    co.nit=nit; co.name=name; co.regime=regime; co.legalRep=legalRep; co.address=address;
+    addAudit(UI.companyId,'Configuración','Editó los datos de la compañía '+name, UI.role);
+    save(); App.closeModal(); renderTopbarSelectors(); rerender(); toast('Compañía actualizada correctamente.','ok');
+  }else{
+    const newId = uid('co');
+    DB.companies.push({id:newId, nit, name, regime, legalRep, address, currency:'COP'});
+    const branchId = uid('br');
+    DB.branches.push({id:branchId, companyId:newId, code:'001', name:'Sede Principal', city:''});
+    DB.accounts.push(...PUC_SEED.map(([code,acctName,nature,rtp])=>({
+      id:uid('acc'), companyId:newId, code, name:acctName, nature,
+      level: code.length===1?1:code.length===2?2:code.length===4?3:4,
+      requiresThirdParty: rtp, isActive:true
+    })));
+    DB.bankAccounts.push({id:uid('ba'), companyId:newId, bank:'Banco por definir', name:'Cuenta Principal', number:'—'});
+    addAudit(newId,'Configuración','Creó la compañía '+name, UI.role);
+    save();
+    UI.companyId = newId; UI.branchId='ALL';
+    App.closeModal(); renderTopbarSelectors(); renderNav(); rerender();
+    toast('Compañía creada. Ahora estás trabajando sobre "'+name+'".','ok');
+  }
+};
+App.deleteCompany = function(companyId){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para eliminar compañías.','danger');
+  const co = DB.companies.find(x=>x.id===companyId);
+  if(!co) return;
+  if(DB.companies.length<=1) return toast('No puedes eliminar la única compañía del sistema.','danger');
+  const nMov = DB.entries.filter(e=>e.companyId===companyId).length;
+  if(nMov>0) return toast('No se puede eliminar "'+co.name+'": tiene '+fmtNum(nMov)+' comprobante(s) contabilizados. Puedes editarla, pero no eliminarla para conservar la trazabilidad.','danger');
+  if(!confirm('¿Eliminar la compañía "'+co.name+'" y todos sus datos maestros (sucursales, plan de cuentas, terceros, productos)? Esta acción no se puede deshacer.')) return;
+  DB.companies = DB.companies.filter(x=>x.id!==companyId);
+  DB.branches = DB.branches.filter(x=>x.companyId!==companyId);
+  DB.accounts = DB.accounts.filter(x=>x.companyId!==companyId);
+  DB.thirdParties = DB.thirdParties.filter(x=>x.companyId!==companyId);
+  DB.products = DB.products.filter(x=>x.companyId!==companyId);
+  DB.warehouses = DB.warehouses.filter(x=>x.companyId!==companyId);
+  DB.bankAccounts = DB.bankAccounts.filter(x=>x.companyId!==companyId);
+  DB.periods = DB.periods.filter(x=>x.companyId!==companyId);
+  addAudit(DB.companies[0].id,'Configuración','Eliminó la compañía '+co.name, UI.role);
+  if(UI.companyId===companyId){ UI.companyId = DB.companies[0].id; UI.branchId='ALL'; }
+  save(); renderTopbarSelectors(); renderNav(); rerender(); toast('Compañía eliminada correctamente.','ok');
+};
+
+
+App.openBranchModal = function(branchId){
+  if(!can(UI.role,'configuracion','CREATE')) return toast('Tu rol no tiene permiso para gestionar sucursales.','danger');
+  const editing = branchId ? DB.branches.find(b=>b.id===branchId) : null;
+  App.openModal(editing?'Editar sucursal':'Nueva sucursal', `
+    <div class="grid2">
+      <div class="field"><label>Código</label><input type="text" id="fBrCode" class="mono" value="${editing?esc(editing.code):''}"></div>
+      <div class="field"><label>Ciudad</label><input type="text" id="fBrCity" value="${editing?esc(editing.city):''}"></div>
+    </div>
+    <div class="field"><label>Nombre</label><input type="text" id="fBrName" value="${editing?esc(editing.name):''}"></div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveBranch(${editing?`'${editing.id}'`:'null'})">${editing?'Guardar cambios':'Guardar sucursal'}</button>`);
+};
+App.saveBranch = function(branchId){
+  if(!can(UI.role,'configuracion','CREATE')) return toast('Tu rol no tiene permiso para gestionar sucursales.','danger');
+  const b = modalBody();
+  const name = b.querySelector('#fBrName').value.trim();
+  const code = b.querySelector('#fBrCode').value.trim();
+  const city = b.querySelector('#fBrCity').value.trim();
+  if(!name || !code) return toast('Código y nombre son obligatorios.','danger');
+  const dup = DB.branches.find(x=>x.companyId===UI.companyId && x.code===code && x.id!==branchId);
+  if(dup) return toast('Ya existe una sucursal con ese código.','danger');
+  if(branchId){
+    const br = DB.branches.find(x=>x.id===branchId);
+    br.code=code; br.name=name; br.city=city;
+    addAudit(UI.companyId,'Configuración','Editó la sucursal '+name, UI.role);
+    toast('Sucursal actualizada correctamente.','ok');
+  }else{
+    DB.branches.push({id:uid('br'), companyId:UI.companyId, code, name, city});
+    addAudit(UI.companyId,'Configuración','Creó la sucursal '+name, UI.role);
+    toast('Sucursal creada correctamente.','ok');
+  }
+  save(); App.closeModal(); renderTopbarSelectors(); rerender();
+};
+App.deleteBranch = function(branchId){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para eliminar sucursales.','danger');
+  const br = DB.branches.find(x=>x.id===branchId);
+  if(!br) return;
+  if(currentBranches().length<=1) return toast('No puedes eliminar la única sucursal de la compañía.','danger');
+  const nMov = DB.entries.filter(e=>e.branchId===branchId).length;
+  if(nMov>0) return toast('No se puede eliminar "'+br.name+'": tiene '+fmtNum(nMov)+' comprobante(s) asociados. Puedes editarla, pero no eliminarla para conservar la trazabilidad.','danger');
+  if(!confirm('¿Eliminar la sucursal "'+br.name+'"? Esta acción no se puede deshacer.')) return;
+  DB.branches = DB.branches.filter(x=>x.id!==branchId);
+  if(UI.branchId===branchId) UI.branchId='ALL';
+  addAudit(UI.companyId,'Configuración','Eliminó la sucursal '+br.name, UI.role);
+  save(); renderTopbarSelectors(); rerender(); toast('Sucursal eliminada correctamente.','ok');
+};
+
+/* ---------------------------- Gestión de contraseñas por rol ---------------------- */
+App.openSetPasswordModal = function(role){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para gestionar contraseñas de roles.','danger');
+  const hasPass = roleHasPassword(role);
+  App.openModal((hasPass?'Cambiar':'Establecer')+' contraseña — '+ROLE_LABELS[role], `
+    ${pwFieldHtml('fNewPass1','Nueva contraseña','Mínimo 4 caracteres')}
+    ${pwFieldHtml('fNewPass2','Confirmar contraseña','Repite la contraseña')}
+    <div class="notice info">Quien seleccione el rol <b>${ROLE_LABELS[role]}</b> en el inicio de sesión o en el selector de la barra superior deberá ingresar esta contraseña para acceder, una vez por sesión de navegador.</div>
+  `, `<button class="btn" onclick="App.closeModal()">Cancelar</button><button class="btn primary" onclick="App.saveRolePassword('${role}')">Guardar contraseña</button>`);
+};
+App.saveRolePassword = function(role){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para gestionar contraseñas de roles.','danger');
+  const b = modalBody();
+  const p1 = b.querySelector('#fNewPass1').value;
+  const p2 = b.querySelector('#fNewPass2').value;
+  if(p1.length<4) return toast('La contraseña debe tener al menos 4 caracteres.','danger');
+  if(p1!==p2) return toast('Las contraseñas no coinciden.','danger');
+  DB.roleAuth[role] = {hash: simpleHash(p1), plain: p1};
+  UI.unlockedRoles.add(role); // quien la acaba de definir no queda bloqueado de su propia acción
+  addAudit(UI.companyId,'Seguridad','Estableció/cambió la contraseña del rol '+ROLE_LABELS[role], UI.role);
+  save(); App.closeModal(); rerender(); toast('Contraseña del rol '+ROLE_LABELS[role]+' actualizada.','ok');
+};
+App.removeRolePassword = function(role){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para gestionar contraseñas de roles.','danger');
+  if(!confirm('¿Quitar la protección por contraseña del rol '+ROLE_LABELS[role]+'? Cualquiera podrá entrar a ese rol sin contraseña.')) return;
+  delete DB.roleAuth[role];
+  addAudit(UI.companyId,'Seguridad','Quitó la protección por contraseña del rol '+ROLE_LABELS[role], UI.role);
+  save(); rerender(); toast('Protección removida del rol '+ROLE_LABELS[role]+'.','ok');
+};
+App.revealRolePassword = function(role){
+  if(!can(UI.role,'configuracion','FULL')) return toast('Tu rol no tiene permiso para consultar contraseñas de roles.','danger');
+  const rec = DB.roleAuth[role];
+  addAudit(UI.companyId,'Seguridad','Super Administrador consultó la contraseña del rol '+ROLE_LABELS[role], UI.role);
+  save();
+  const body = (rec && rec.plain)
+    ? `<div class="notice warn">Solo el Super Administrador puede ver esta contraseña. Esta consulta queda registrada en Auditoría.</div>
+       <div class="field"><label>Contraseña actual de ${ROLE_LABELS[role]}</label><input type="text" readonly value="${esc(rec.plain)}" class="mono" onclick="this.select()" style="font-size:16px; font-weight:600;"></div>`
+    : `<div class="notice danger">Esta contraseña se estableció antes de habilitar la consulta en texto plano, así que no está disponible para ver. Puedes asignar una nueva desde aquí.</div>`;
+  App.openModal('Contraseña del rol — '+ROLE_LABELS[role], body,
+    rec && rec.plain
+      ? `<button class="btn" onclick="App.closeModal()">Cerrar</button><button class="btn primary" onclick="App.closeModal(); App.openSetPasswordModal('${role}');">Cambiarla ahora</button>`
+      : `<button class="btn" onclick="App.closeModal()">Cerrar</button><button class="btn primary" onclick="App.closeModal(); App.openSetPasswordModal('${role}');">Asignar nueva contraseña</button>`);
+};
+
+/* ============================== LOGIN ================================================ */
+function loginPasswordFieldHtml(role){
+  if(roleHasPassword(role)){
+    return pwFieldHtml('loginPass','Contraseña','Contraseña de '+ROLE_LABELS[role], {onEnter:'App.attemptLogin()'});
+  }
+  return `<div class="notice info">Este rol no tiene contraseña asignada todavía. Puedes ingresar directamente.</div>`;
+}
+function renderLogin(){
+  const app = document.getElementById('app');
+  const c = DB.companies[0];
+  app.innerHTML = `
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="brand-mark" style="justify-content:center; margin-bottom:4px;"><span class="glyph">§</span><span class="name">Contafi ERP</span></div>
+      <div class="brand-sub" style="text-align:center; margin-bottom:22px;">${esc(c.name)} · Acceso por rol</div>
+      <div class="field"><label>Selecciona tu rol</label>
+        <select id="loginRoleSelect" onchange="App.onLoginRoleChange(this.value)">
+          ${ROLES.map(r=>`<option value="${r}">${ROLE_LABELS[r]}${roleHasPassword(r)?' 🔒':''}</option>`).join('')}
+        </select>
+      </div>
+      <div id="loginPassHost">${loginPasswordFieldHtml(ROLES[0])}</div>
+      <div id="loginError" class="notice danger" style="display:none;"></div>
+      <button class="btn primary" style="width:100%; padding:10px; margin-top:4px;" onclick="App.attemptLogin()">Ingresar</button>
+      <div class="tag-line" style="margin-top:18px;">¿Olvidaste tu contraseña? Solicítala al <b>Super Administrador</b>: puede consultarla o restablecerla desde Configuración → Seguridad de Roles.</div>
+    </div>
+  </div>`;
+  setTimeout(()=>{ const i=document.getElementById('loginPass'); if(i) i.focus(); else document.getElementById('loginRoleSelect').focus(); }, 30);
+}
+App.onLoginRoleChange = function(role){
+  document.getElementById('loginPassHost').innerHTML = loginPasswordFieldHtml(role);
+  const err = document.getElementById('loginError'); if(err) err.style.display='none';
+  const i = document.getElementById('loginPass'); if(i) i.focus();
+};
+App.attemptLogin = function(){
+  const role = document.getElementById('loginRoleSelect').value;
+  const rec = DB.roleAuth[role];
+  const passInput = document.getElementById('loginPass');
+  const pass = passInput ? passInput.value : '';
+  if(rec && rec.hash && simpleHash(pass) !== rec.hash){
+    addAudit(UI.companyId,'Seguridad','Intento fallido de inicio de sesión en el rol '+ROLE_LABELS[role], role);
+    save();
+    const err = document.getElementById('loginError');
+    err.style.display='block'; err.textContent='Contraseña incorrecta. Inténtalo de nuevo.';
+    if(passInput){ passInput.value=''; passInput.focus(); }
+    return;
+  }
+  UI.role = role;
+  UI.unlockedRoles.add(role);
+  addAudit(UI.companyId,'Seguridad','Inicio de sesión en el rol '+ROLE_LABELS[role], role);
+  save();
+  renderShell();
+};
+
+/* ============================== INIT ================================================ */
+function init(){
+  load();
+  migrateRoleAuth();
+  UI.unlockedRoles = new Set();
+  if(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches){ UI.theme='dark'; document.documentElement.setAttribute('data-theme','dark'); }
+  renderLogin();
+}
+init();
+</script>
+
+</body>
+</html>

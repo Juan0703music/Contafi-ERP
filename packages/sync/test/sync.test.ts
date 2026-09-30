@@ -27,7 +27,11 @@ function cg(fecha: string, lineas: [string, string, string][], extra: Partial<Co
     ...extra,
   };
 }
-const lote = (comprobantes: ComprobanteSync[]): LoteEnvio => ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, comprobantes });
+const lote = (comprobantes: ComprobanteSync[], terceros: LoteEnvio['terceros'] = []): LoteEnvio =>
+  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, terceros, comprobantes });
+
+const nuevoTercero = (numero: string, dv: number | null, nombre: string): LoteEnvio['terceros'][number] =>
+  ({ id: randomUUID(), tipo_doc: '31', numero, dv, nombre, tipos: ['proveedor'], responsabilidades: [], activo: true });
 
 beforeAll(async () => {
   db = await crearBaseDePrueba();
@@ -101,6 +105,49 @@ describe('envío de la cola de salida (sección 9.2)', () => {
     const r = await procesarEnvio(repo(), lote([cg('2026-09-06', [['111005', grande, '0'], ['310505', '0', grande]])]));
     const [l] = await como<{ d: string }>(db, ana, `select debito::text as d from public.lineas where comprobante_id = $1 and debito > 0`, [r.resultados[0]!.id]);
     expect(l!.d).toBe(grande);
+  });
+});
+
+describe('terceros creados sin conexión', () => {
+  const repo = () => repositorioPglite(db, ana);
+  const conTercero = (t: string) => cg('2026-09-10', [['519595', '5000', '0'], ['220505', '0', '5000']]).lineas.map((l) => ({ ...l, tercero_id: t }));
+
+  it('registra el tercero y el comprobante que lo usa en el mismo lote', async () => {
+    const t = nuevoTercero('901223556', 9, 'Suministros del Norte');
+    const c = { ...cg('2026-09-10', []), lineas: conTercero(t.id) };
+    const r = await procesarEnvio(repo(), lote([c], [t]));
+    expect(r.terceros).toEqual([{ id: t.id, id_servidor: t.id, estado: 'registrado', errores: [] }]);
+    expect(r.resultados[0]!.estado).toBe('contabilizado');
+  });
+
+  it('dos PC crean el mismo NIT: el segundo recibe el id del servidor y su comprobante se reescribe', async () => {
+    const pc1 = nuevoTercero('860034313', 7, 'Davivienda');
+    await procesarEnvio(repo(), lote([], [pc1]));
+    const pc2 = nuevoTercero('860034313', 7, 'Banco Davivienda S.A.');
+    const c = { ...cg('2026-09-11', []), lineas: conTercero(pc2.id) };
+    const r = await procesarEnvio(repo(), lote([c], [pc2]));
+    expect(r.terceros[0]).toMatchObject({ id: pc2.id, id_servidor: pc1.id, estado: 'registrado' });
+    expect(r.resultados[0]!.estado).toBe('contabilizado');
+    const usados = await como<{ t: string }>(db, ana, 'select distinct tercero_id::text as t from public.lineas where comprobante_id = $1', [c.id]);
+    expect(usados).toEqual([{ t: pc1.id }]);
+    // Gana el último cambio confirmado; el anterior queda en auditoría
+    const [actual] = await como<{ nombre: string }>(db, ana, 'select nombre from public.terceros where id = $1', [pc1.id]);
+    expect(actual!.nombre).toBe('Banco Davivienda S.A.');
+    const [aud] = await como<{ antes: { nombre: string } }>(db, ana,
+      `select antes from public.auditoria where tabla = 'terceros' and registro_id = $1 and accion = 'UPDATE' order by id desc limit 1`, [pc1.id]);
+    expect(aud!.antes.nombre).toBe('Davivienda');
+  });
+
+  it('un NIT con DV errado se rechaza, y también los comprobantes que lo usan', async () => {
+    const malo = nuevoTercero('830945221', 3, 'El Roble (DV del prototipo)');
+    const c = { ...cg('2026-09-12', []), lineas: conTercero(malo.id) };
+    const r = await procesarEnvio(repo(), lote([c], [malo]));
+    expect(r.terceros[0]).toMatchObject({ estado: 'rechazado', errores: [{ codigo: 'DV_INVALIDO' }] });
+    expect(r.resultados[0]!.errores).toContainEqual(expect.objectContaining({ codigo: 'TERCERO_RECHAZADO' }));
+  });
+
+  it('un usuario sin permiso de crear no registra terceros', async () => {
+    await expect(procesarEnvio(repositorioPglite(db, beto), lote([], [nuevoTercero('800197268', 4, 'DIAN')]))).rejects.toThrow(ErrorAcceso);
   });
 });
 

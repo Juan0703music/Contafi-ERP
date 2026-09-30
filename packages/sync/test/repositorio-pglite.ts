@@ -2,7 +2,19 @@
 import type { PGlite } from '@electric-sql/pglite';
 import type { Cuenta } from '@contafi/motor';
 import { como, type Sesion } from '@contafi/supabase/test/entorno';
-import type { Cambio, RepositorioSync, ResultadoRegistro, TablaSync } from '../src/index.ts';
+import { ErrorRegistro, type Cambio, type RepositorioSync, type ResultadoRegistro, type TablaSync } from '../src/index.ts';
+
+/** Códigos de Postgres que son errores de datos de un registro (no de sesión ni del sistema). */
+export const CODIGOS_DE_DATOS = new Set(['P0001', '22023', '22P02', '23505', '23503', '23514', '23502']);
+
+export function comoErrorRegistro(e: unknown): never {
+  const codigo = (e as { code?: string }).code;
+  const mensaje = (e as Error).message ?? String(e);
+  if (codigo && CODIGOS_DE_DATOS.has(codigo)) {
+    throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(mensaje)?.[1] ?? (codigo === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), mensaje);
+  }
+  throw e;
+}
 
 export const SQL_REGISTROS: Record<TablaSync, string> = {
   cuentas: 'select * from public.cuentas where empresa_id = $1 and codigo = any($2::text[])',
@@ -10,8 +22,10 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
   periodos: `select * from public.periodos where empresa_id = $1 and (anio || '-' || mes) = any($2::text[])`,
   terceros: 'select * from public.terceros where empresa_id = $1 and id = any($2::uuid[])',
   centros_costo: 'select * from public.centros_costo where empresa_id = $1 and id = any($2::uuid[])',
+  // Columnas explícitas y fechas como texto, igual que las entrega PostgREST.
   comprobantes: `
-    select c.*, coalesce((
+    select c.id, c.empresa_id, c.tipo, c.numero, c.fecha::text as fecha, c.concepto, c.estado, c.origen,
+           c.clave_idempotencia, c.reversa_de, c.creado_en, c.contabilizado_en, c.anulado_en, c.motivo_anulacion, coalesce((
       select json_agg(json_build_object(
         'orden', l.orden, 'cuenta', l.cuenta, 'tercero_id', l.tercero_id, 'centro_costo_id', l.centro_costo_id,
         'debito', l.debito::text, 'credito', l.credito::text, 'base_impuesto', l.base_impuesto::text, 'nota', l.nota
@@ -46,6 +60,13 @@ export function repositorioPglite(db: PGlite, sesion: Sesion): RepositorioSync {
     },
     async registrar(p) {
       return (await q<{ r: ResultadoRegistro }>('select public.registrar_comprobante($1::jsonb) as r', [JSON.stringify(p)]))[0]!.r;
+    },
+    async registrarTercero(p) {
+      try {
+        return (await q<{ id: string }>('select public.registrar_tercero($1::jsonb) as id', [JSON.stringify(p)]))[0]!.id;
+      } catch (e) {
+        return comoErrorRegistro(e);
+      }
     },
     async marcarSincronizacion(d) {
       await q('select public.marcar_sincronizacion($1, $2, $3)', [d.id, d.nombre, d.version_app]);

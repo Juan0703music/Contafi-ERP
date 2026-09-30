@@ -1,9 +1,9 @@
-import { aCentavos } from '@contafi/shared';
+import { aCentavos, calcularDV } from '@contafi/shared';
 import { contextoDesdeCuentas, validarComprobante, type Cuenta, type Linea } from '@contafi/motor';
 import {
   TABLAS_SYNC, VERSION_PROTOCOLO,
-  type Cambio, type ComprobanteSync, type ConsultaCambios, type LoteEnvio, type RespuestaCambios,
-  type RespuestaEnvio, type ResultadoItem, type TablaSync,
+  type Cambio, type ComprobanteSync, type ConsultaCambios, type ErrorItem, type LoteEnvio, type RespuestaCambios,
+  type RespuestaEnvio, type ResultadoItem, type ResultadoTercero, type TablaSync, type TerceroSync,
 } from './protocolo.ts';
 
 export interface ResultadoRegistro {
@@ -24,6 +24,8 @@ export interface RepositorioSync {
   contexto(empresaId: string): Promise<{ cuentas: Cuenta[]; periodosCerrados: string[] }>;
   buscarPorClave(empresaId: string, clave: string): Promise<ResultadoRegistro | null>;
   registrar(p: ComprobanteSync & { empresa_id: string; dispositivo_id: string }): Promise<ResultadoRegistro>;
+  /** Devuelve el id definitivo. Lanza ErrorRegistro si los datos no son válidos. */
+  registrarTercero(p: TerceroSync & { empresa_id: string }): Promise<string>;
   marcarSincronizacion(d: { id: string; nombre: string; version_app: string }): Promise<void>;
   cambios(empresaId: string, desde: number, limite: number): Promise<Cambio[]>;
   registros(empresaId: string, tabla: TablaSync, ids: string[]): Promise<Record<string, unknown>[]>;
@@ -31,6 +33,46 @@ export interface RepositorioSync {
 
 export class ErrorAcceso extends Error {
   override name = 'ErrorAcceso';
+}
+
+/** Error de datos de un registro puntual (no de sesión ni de red): se informa en su resultado y el lote sigue. */
+export class ErrorRegistro extends Error {
+  override name = 'ErrorRegistro';
+  readonly codigo: string;
+  constructor(codigo: string, mensaje: string) {
+    super(mensaje);
+    this.codigo = codigo;
+  }
+}
+
+async function registrarTerceros(
+  repo: RepositorioSync, empresa: string, terceros: readonly TerceroSync[],
+): Promise<ResultadoTercero[]> {
+  const resultados: ResultadoTercero[] = [];
+  for (const t of terceros) {
+    const errores: ErrorItem[] = [];
+    if (t.tipo_doc === '31') {
+      try {
+        if (t.dv == null || calcularDV(t.numero) !== t.dv) {
+          errores.push({ codigo: 'DV_INVALIDO', mensaje: `El dígito de verificación del NIT ${t.numero} es ${calcularDV(t.numero)}.` });
+        }
+      } catch {
+        errores.push({ codigo: 'NIT_INVALIDO', mensaje: `NIT inválido: ${t.numero}.` });
+      }
+    }
+    if (errores.length === 0) {
+      try {
+        const id_servidor = await repo.registrarTercero({ ...t, empresa_id: empresa });
+        resultados.push({ id: t.id, id_servidor, estado: 'registrado', errores: [] });
+        continue;
+      } catch (e) {
+        if (!(e instanceof ErrorRegistro)) throw e;
+        errores.push({ codigo: e.codigo, mensaje: e.message });
+      }
+    }
+    resultados.push({ id: t.id, id_servidor: null, estado: 'rechazado', errores });
+  }
+  return resultados;
 }
 
 function aLineasMotor(c: ComprobanteSync): Linea[] {
@@ -67,12 +109,27 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
   if (!(await repo.puedeRegistrar(lote.empresa_id))) {
     throw new ErrorAcceso('No tiene permiso para registrar comprobantes en esta empresa.');
   }
+  // 1. Terceros primero: los comprobantes del lote pueden usarlos.
+  const terceros = await registrarTerceros(repo, lote.empresa_id, lote.terceros);
+  const idServidor = new Map(terceros.filter((t) => t.id_servidor).map((t) => [t.id, t.id_servidor!]));
+  const rechazados = new Set(terceros.filter((t) => t.estado === 'rechazado').map((t) => t.id));
+
   const { cuentas, periodosCerrados } = await repo.contexto(lote.empresa_id);
   const ctx = contextoDesdeCuentas(cuentas, periodosCerrados);
 
+  // 2. Comprobantes, con las referencias a terceros reescritas al id definitivo.
   const resultados: ResultadoItem[] = [];
-  for (const c of lote.comprobantes) {
-    const errores = validarComprobante({ fecha: c.fecha, concepto: c.concepto, lineas: aLineasMotor(c) }, ctx);
+  for (const original of lote.comprobantes) {
+    const c: ComprobanteSync = {
+      ...original,
+      lineas: original.lineas.map((l) => (l.tercero_id && idServidor.has(l.tercero_id) ? { ...l, tercero_id: idServidor.get(l.tercero_id)! } : l)),
+    };
+    const errores: ErrorItem[] = validarComprobante({ fecha: c.fecha, concepto: c.concepto, lineas: aLineasMotor(c) }, ctx);
+    original.lineas.forEach((l, i) => {
+      if (l.tercero_id && rechazados.has(l.tercero_id)) {
+        errores.push({ codigo: 'TERCERO_RECHAZADO', linea: i, mensaje: `Línea ${i + 1}: el tercero no se pudo registrar; corríjalo primero.` });
+      }
+    });
     if (errores.length > 0) {
       // Puede ser un reintento de algo que ya entró (y, por ejemplo, el período se cerró después).
       const existente = await repo.buscarPorClave(lote.empresa_id, c.clave_idempotencia);
@@ -85,7 +142,7 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
     resultados.push(aResultado(c.clave_idempotencia, r));
   }
   await repo.marcarSincronizacion(lote.dispositivo);
-  return { version_protocolo: VERSION_PROTOCOLO, resultados };
+  return { version_protocolo: VERSION_PROTOCOLO, terceros, resultados };
 }
 
 /** Clave usada en `cambios.registro_id` para cada tabla. */

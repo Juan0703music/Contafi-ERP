@@ -1,0 +1,6 @@
+/* Ajustes propios de la app sobre el sistema visual del prototipo (no editar contafi.css). */
+
+/* El formulario de comprobante tiene una columna más que en el prototipo (Tercero). */
+.modal.xl{max-width:1120px;}
+.entry-lines-table tbody td{padding:8px 8px;}
+.entry-lines-table thead th{padding-left:8px; padding-right:8px;}

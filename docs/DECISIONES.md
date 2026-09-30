@@ -63,3 +63,25 @@ estos olvidos. Regla: toda función SECURITY DEFINER que no revise permisos se r
 ## D-012 · Plantilla del PUC generada desde TypeScript (2026-09-30)
 `supabase/migrations/…_plantilla_puc.sql` se genera desde `packages/shared/src/puc.ts`
 (`pnpm --filter @contafi/supabase generar-puc`). Una prueba falla si se desincronizan.
+
+## D-013 · La lógica local vive en TypeScript sobre una interfaz SQL mínima (2026-09-30)
+`@contafi/local` (cola de salida, sincronización, reportes locales) solo necesita `consultar` y
+`lote` (transacción atómica). Rust implementa esas dos operaciones con SQLCipher; las pruebas usan
+node:sqlite y el modo demostración usa SQLite en WebAssembly. Así casi todo se prueba sin compilar
+Rust, y Rust queda pequeño: cifrado, llave, integridad y respaldos.
+Consecuencia: los montos se leen con `CAST(x AS TEXT)` (el puente JSON no tiene bigint).
+
+## D-014 · Terceros creados sin conexión (2026-09-30)
+El lote de sincronización lleva los terceros antes que los comprobantes. Si dos PC crean el mismo
+documento, el servidor devuelve el id que ya tenía y el PC reescribe sus referencias. Gana el último
+cambio confirmado; el anterior queda en auditoría (sección 9.4).
+
+## D-015 · La app reutiliza el CSS del prototipo aprobado (2026-09-30)
+`packages/ui/src/contafi.css` es copia del sistema Liquid Glass del prototipo (mismas clases), con las
+fuentes Geist empaquetadas (sin Google Fonts: funciona sin internet). Los ajustes propios van en
+`apps/escritorio/src/app.css`, sin editar la copia.
+
+## D-016 · Prototipo de referencia corregido (2026-09-30)
+En la Fase 0 se copió por error la versión original del prototipo (Descargas) en lugar de la rediseñada
+con Liquid Glass (Documentos). Se corrigió: `docs/referencia/prototipo-liquid-glass.html` es ahora la
+correcta y la original quedó como `prototipo-original.html`. La lógica del motor es idéntica en ambas.

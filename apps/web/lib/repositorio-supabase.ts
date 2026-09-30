@@ -1,7 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Cuenta } from '@contafi/motor';
-import type { Cambio, RepositorioSync, ResultadoRegistro, TablaSync } from '@contafi/sync';
+import { ErrorRegistro, type Cambio, type RepositorioSync, type ResultadoRegistro, type TablaSync } from '@contafi/sync';
 import { traducirError } from './supabase.ts';
 
 // PostgREST devuelve como máximo 1.000 filas por consulta y las URL largas fallan: se pagina y se parte.
@@ -15,6 +15,9 @@ function trozos<T>(xs: T[], n: number): T[][] {
 }
 
 /** Montos como texto: numeric(18,2) no cabe con exactitud en un number de JavaScript. */
+/** Mismos códigos que en test/repositorio-pglite.ts de @contafi/sync. */
+const CODIGOS_DE_DATOS = new Set(['P0001', '22023', '22P02', '23505', '23503', '23514', '23502']);
+
 const COLUMNAS_LINEAS = 'orden,cuenta,tercero_id,centro_costo_id,debito::text,credito::text,base_impuesto::text,nota';
 
 /**
@@ -63,6 +66,17 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
       const { data, error } = await sb.rpc('registrar_comprobante', { p });
       if (error) throw traducirError(error);
       return data as ResultadoRegistro;
+    },
+
+    async registrarTercero(p) {
+      const { data, error } = await sb.rpc('registrar_tercero', { p });
+      if (error) {
+        if (error.code && CODIGOS_DE_DATOS.has(error.code)) {
+          throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(error.message)?.[1] ?? (error.code === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), error.message);
+        }
+        throw traducirError(error);
+      }
+      return data as string;
     },
 
     async marcarSincronizacion(d) {

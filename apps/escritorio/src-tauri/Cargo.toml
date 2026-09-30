@@ -1,0 +1,30 @@
+[package]
+name = "contafi"
+version = "0.3.0"
+description = "Contafi — software contable multi-empresa"
+edition = "2021"
+
+[lib]
+name = "contafi_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# SQLite con cifrado SQLCipher, compilado dentro del ejecutable (OpenSSL incluido).
+rusqlite = { version = "0.32", features = ["bundled-sqlcipher-vendored-openssl"] }
+getrandom = "0.2"
+
+# La llave de la base se guarda en el Administrador de credenciales de Windows (protegido con DPAPI).
+[target.'cfg(windows)'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

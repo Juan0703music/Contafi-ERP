@@ -61,6 +61,23 @@ export function aCentavos(texto: string | number | bigint): Centavos {
   return negativo ? -c : c;
 }
 
+/**
+ * Lee un monto escrito por una persona en Colombia. A diferencia de `aCentavos` (formato de máquina),
+ * un punto seguido de grupos de 3 dígitos es separador de miles: "1.234" = mil doscientos treinta y cuatro.
+ * Acepta "$ 1.234.567,89", "1234567,89", "1234567.89", "1.234" y "1234". Devuelve null si no es un monto.
+ */
+export function leerMontoUsuario(texto: string): Centavos | null {
+  let t = texto.trim().replace(/\s|\$/g, '');
+  if (t === '') return null;
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, ''); // solo separadores de miles
+  if (!/^-?(\d{1,3}(\.\d{3})+|\d+)([.,]\d+)?$/.test(t)) return null;
+  try {
+    return aCentavos(t);
+  } catch {
+    return null;
+  }
+}
+
 /** "1234567.89" — formato de intercambio (XML, JSON, base de datos numeric). */
 export function aDecimal(c: Centavos): string {
   const neg = c < 0n;
