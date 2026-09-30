@@ -16,6 +16,9 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 await page.setViewport({ width: 1440, height: 900 });
 const errores = [];
+const fallas = [];
+/** Verificación: si no se cumple, el recorrido termina con error (sirve como prueba automática). */
+const verificar = (nombre, ok, valor) => { console.log(`${ok ? '✓' : '✗'} ${nombre}: ${valor}`); if (!ok) fallas.push(nombre); };
 page.on('console', (m) => { if (m.type() === 'error') errores.push(m.text()); });
 page.on('pageerror', (e) => errores.push(String(e)));
 const foto = async (n) => { await new Promise((r) => setTimeout(r, 400)); await page.screenshot({ path: `${S}/${n}.png` }); console.log('foto', n); };
@@ -30,6 +33,12 @@ await foto('02-panel');
 
 await page.click('.nav-item:nth-of-type(1)'); // noop
 const ir = async (texto) => { const b = await page.$$('.nav-item'); for (const x of b) { if ((await x.evaluate((n) => n.textContent)).includes(texto)) { await x.click(); break; } } await new Promise((r) => setTimeout(r, 500)); };
+await ir('Mis empresas');
+await page.waitForSelector('tbody tr');
+await new Promise((r) => setTimeout(r, 500));
+const misEmpresas = await page.$eval('.page-head p', (n) => n.textContent);
+verificar('Panel multi-empresa', misEmpresas.startsWith('2 empresa(s)'), misEmpresas);
+await foto('02b-mis-empresas');
 await ir('Comprobantes');
 await foto('03-comprobantes');
 
@@ -59,7 +68,7 @@ await new Promise((r) => setTimeout(r, 300));
 await boton('Nuevo comprobante');
 await page.waitForSelector('.modal .notice.info', { timeout: 5000 });
 const recuperado = await page.$eval('#cConcepto', (n) => n.value);
-console.log('Autoguardado recuperado:', recuperado);
+verificar('Autoguardado recuperado', recuperado === 'Borrador que no se debe perder', recuperado);
 await foto('07-autoguardado');
 await page.keyboard.press('Escape');
 
@@ -93,15 +102,40 @@ const filaFactura = (await page.$$('tbody tr'))[0];
 const casilla = await filaFactura.$('label.hint input[type=checkbox]');
 await casilla.click();
 await new Promise((r) => setTimeout(r, 600));
-console.log('Retención aplicada:', await filaFactura.$eval('label.hint', (n) => n.textContent.trim()));
+const retencion = await filaFactura.$eval('label.hint', (n) => n.textContent.trim());
+verificar('Retención aplicada', retencion.includes('26.500'), retencion);
 await foto('07b-importar-dian');
 const botonImportar = await page.$$('button');
 for (const b of botonImportar) { if ((await b.evaluate((n) => n.textContent)).includes('Contabilizar 2')) { await b.click(); break; } }
 await page.waitForSelector('.page-head h1', { timeout: 5000 });
 await new Promise((r) => setTimeout(r, 2500));
 const filasFC = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.textContent).filter((t) => /FC-|NC-/.test(t)));
-console.log('Importados con número oficial:', filasFC.map((t) => t.match(/(FC|NC)-\d{6}/)?.[0]).join(', '));
+const importados = filasFC.map((t) => t.match(/(FC|NC)-\d{6}/)?.[0]).filter(Boolean);
+verificar('Importados con número oficial', importados.includes('NC-000001') && importados.includes('FC-000002'), importados.join(', '));
 await foto('07c-importados');
+
+// Conciliación bancaria: extracto de marzo contra libros (antes de cerrar marzo)
+await ir('Conciliación bancaria');
+await boton('Cargar extracto');
+await page.waitForSelector('#bCta');
+await page.select('#bCta', '111005');
+await (await page.$('#bArch')).uploadFile(new URL('./extracto-marzo.csv', import.meta.url).pathname);
+await page.waitForSelector('#bSaldo', { timeout: 5000 });
+await page.type('#bSaldo', '55.568.000');
+await boton('Cargar');
+await page.waitForSelector('.kpi-grid', { timeout: 5000 });
+await boton('Conciliar automáticamente');
+await new Promise((r) => setTimeout(r, 600));
+const filasBanco = await page.$$('.grid2 .panel:first-child tbody tr');
+for (const f of filasBanco) {
+  if ((await f.evaluate((n) => n.textContent)).includes('Comisión')) { const b = await f.$('button'); await b.click(); break; }
+}
+await page.waitForSelector('#rgCta');
+await boton('Crear comprobante');
+await new Promise((r) => setTimeout(r, 900));
+const conciliacion = await page.$eval('.notice b', (n) => n.textContent);
+verificar('Conciliación bancaria', conciliacion.includes('cuadrada'), conciliacion);
+await foto('07f-conciliacion');
 
 // Períodos y cierres: cerrar marzo en el modo demostración
 await ir('Períodos y cierres');
@@ -112,7 +146,7 @@ for (const f of filasMes) {
 }
 await new Promise((r) => setTimeout(r, 800));
 const marzo = await page.$$eval('tbody tr', (trs) => trs.find((t) => t.textContent.startsWith('Marzo'))?.textContent);
-console.log('Marzo tras cerrar:', marzo.includes('Cerrado') ? 'Cerrado' : marzo);
+verificar('Marzo cerrado', marzo.includes('Cerrado'), marzo.includes('Cerrado') ? 'Cerrado' : marzo);
 await foto('07d-cierres');
 
 // Saldos iniciales desde CSV
@@ -120,7 +154,8 @@ await ir('Saldos iniciales');
 const csv = await page.$('#sArchivo');
 await csv.uploadFile(new URL('./saldos-ejemplo.csv', import.meta.url).pathname);
 await page.waitForSelector('.fila-total', { timeout: 5000 });
-console.log('Saldos iniciales:', await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent));
+const saldos = await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent);
+verificar('Saldos iniciales', saldos === 'Balanceado', saldos);
 await foto('07e-saldos-iniciales');
 
 await ir('Libros');
@@ -134,7 +169,7 @@ await page.waitForSelector('table');
 const desdeInicio = await page.$('#eCorte');
 await foto('08d-situacion-financiera');
 const cuadra = await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent);
-console.log('Estado de situación financiera:', cuadra);
+verificar('Estado de situación financiera', cuadra === 'Activo = Pasivo + Patrimonio', cuadra);
 await page.pdf({ path: `${S}/estado-situacion.pdf`, format: 'letter', printBackground: false });
 await boton('Resultados');
 await foto('08e-resultados');
@@ -163,4 +198,4 @@ await foto('14-angosto');
 
 console.log('ERRORES DE CONSOLA:', errores.length ? errores : 'ninguno');
 await browser.close();
-if (errores.length || recuperado !== 'Borrador que no se debe perder') process.exit(1);
+if (errores.length || fallas.length) { console.log('FALLARON:', fallas); process.exit(1); }

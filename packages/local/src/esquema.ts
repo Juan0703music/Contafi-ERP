@@ -99,6 +99,22 @@ export const MIGRACIONES: readonly string[][] = [
        empresa_id text not null, nit text not null, codigo text not null, primary key (empresa_id, nit, codigo)
      ) strict`,
   ],
+  // 4 · Conciliación bancaria (extractos importados y parejas extracto ↔ libros)
+  [
+    `create table extractos (
+       id text primary key, empresa_id text not null, cuenta text not null, archivo text not null,
+       desde text not null, hasta text not null, saldo_final integer not null, importado_en text not null
+     ) strict`,
+    `create table lineas_extracto (
+       id text primary key, extracto_id text not null references extractos (id) on delete cascade,
+       fecha text not null, descripcion text not null, referencia text, valor integer not null
+     ) strict`,
+    // movimiento_libro = "<comprobante_id>:<orden de la línea>"
+    `create table conciliaciones (
+       linea_extracto_id text primary key references lineas_extracto (id) on delete cascade,
+       movimiento_libro text not null unique, conciliado_en text not null
+     ) strict`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

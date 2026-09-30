@@ -5,3 +5,5 @@ export * from './sincronizacion.ts';
 export * from './importacion.ts';
 export * from './cierres.ts';
 export * from './retenciones.ts';
+export * from './bancos.ts';
+export * from './resumen.ts';

@@ -50,9 +50,23 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros, sincronización · ⬜ libros diario y mayor, estados financieros |
 | Inicio de sesión con MFA | ✅ pantalla lista · ⬜ probar contra un Supabase real |
 | Modo demostración para pilotos (sin servidor) | ✅ `?demo`, con servidor simulado que asigna números |
-| Instalador firmado, actualizaciones automáticas y Sentry | 🟡 instalador sin firmar en CI · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
+| Instalador firmado, actualizaciones automáticas y Sentry | ✅ **el CI compila el instalador de Windows** (`.exe` de 4,9 MB y `.msi` de 6,1 MB, incluye SQLCipher) · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
 
-**Criterio de salida:** pasan las pruebas de cortes de red y de energía (✅ en `@contafi/local`) e instalación limpia en Windows 10 y 11 (⬜ requiere el instalador del CI y un PC con Windows).
+**Criterio de salida:** pasan las pruebas de cortes de red y de energía (✅ en `@contafi/local`) e instalación limpia en Windows 10 y 11 (👤 ⬜ descargar el instalador de GitHub Actions y probarlo en un PC con Windows).
+
+## Fase 4 — Funciones contables completas del MVP (semanas 20–27) · adelantada
+
+| Tarea | Estado |
+|---|---|
+| Importación de XML/ZIP de la DIAN con reglas por proveedor | ✅ duplicados por CUFE (también entre PC), tercero automático, cuenta y retenciones aprendidas por proveedor |
+| Retenciones e ICA | ✅ conceptos configurables por empresa (sin tarifas en el código), UVT por año · ⬜ sincronizar esta configuración entre PC (hoy es por equipo) |
+| Cierres mensuales y anual | ✅ |
+| Saldos iniciales | ✅ desde CSV (Excel), con validación por fila |
+| Conciliación bancaria con importación de extractos | ✅ CSV de los bancos (valor con signo o débito/crédito), emparejamiento automático, manual, y registro de cargos desde el extracto · ⬜ formatos específicos por banco si alguno no se reconoce |
+| Reportes NIIF y libros en PDF y Excel | ✅ libro diario, mayor y balances, auxiliares, situación financiera y resultados · ⬜ flujo de efectivo y cambios en el patrimonio (versión 1.x) |
+| Panel multi-empresa del contador | ✅ |
+
+**Criterio de salida:** el asesor valida los reportes con una empresa real de prueba (👤 ⬜).
 
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
@@ -68,14 +82,20 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 3. Un tercero creado sin conexión y usado en un comprobante habría sido rechazado por el servidor. Ahora viaja en el lote (D-014).
 4. "1.234" escrito por el usuario se leía como 1,23. Ahora `leerMontoUsuario` lo lee como 1.234 pesos.
 5. En la Fase 0 se había copiado el prototipo equivocado (sin Liquid Glass). Corregido (D-016).
+6. La misma factura DIAN importada en dos PC dejaba dos copias en el segundo PC. Corregido con `id_servidor` (verificado con sabotaje).
+7. Las notas crédito no reversaban la retención cuando su valor no alcanzaba la base mínima. Ahora se reversa (la base se evalúa en la factura original).
+8. El emparejamiento bancario tomaba parejas lejanas por orden de llegada. Ahora prioriza las más cercanas en fecha.
+9. En las ventanas modales, escribir en un campo que no fuera el primero hacía saltar el foco (en "Cargar extracto" solo quedaba el primer dígito del saldo). Corregido.
+10. 10 campos no tenían estilo porque el CSS del prototipo solo aplica a `input[type=text]`.
+11. El CI cancelaba la compilación de Windows con cada push nuevo. Corregido.
 
-## Pruebas automáticas (30/09/2026) — 116 en total
-- `@contafi/shared`: 14 ✓
-- `@contafi/motor`: 28 ✓ (incluye propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, todo documento genera un asiento válido, el kardex no pierde centavos)
+## Pruebas automáticas (30/09/2026) — 143 en total
+- `@contafi/shared`: 15 ✓
+- `@contafi/motor`: 38 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
 - `@contafi/dian-xml`: 11 ✓
-- `@contafi/sync`: 19 ✓ (orden, reintentos, rechazos por línea, período cerrado, borradores, acceso entre firmas, montos de 16 dígitos, descarga paginada, PC compartido, terceros sin conexión y duplicados entre PC)
-- `@contafi/local`: 16 ✓ (sección 13: dos PC sin conexión, corte de red a mitad del envío, apagón a mitad de un lote, apagón real con el proceso muerto, reinstalación; período cerrado, aprobación, anulación, saldos provisionales, aviso de 7 días, transporte HTTP)
+- `@contafi/sync`: 20 ✓
+- `@contafi/local`: 31 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa)
 - `supabase` (PGlite con privilegios de Supabase): 28 ✓
-- `apps/web`: compila con `next build`; rutas probadas por HTTP
-- `apps/escritorio`: compila; recorrido de punta a punta en Firefox (`pnpm --filter @contafi/escritorio e2e`): acceso, panel, comprobante nuevo → pendiente → número oficial, autoguardado, balance, terceros, plan de cuentas, sincronización, tema oscuro, sin transparencia y pantalla angosta, sin errores en consola
-- Verificación de las pruebas: al sabotear la idempotencia del servidor, las pruebas de `sync` y `local` fallan (como deben)
+- `apps/web`: compila; rutas probadas por HTTP
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 8 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

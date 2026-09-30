@@ -85,3 +85,13 @@ fuentes Geist empaquetadas (sin Google Fonts: funciona sin internet). Los ajuste
 En la Fase 0 se copió por error la versión original del prototipo (Descargas) en lugar de la rediseñada
 con Liquid Glass (Documentos). Se corrigió: `docs/referencia/prototipo-liquid-glass.html` es ahora la
 correcta y la original quedó como `prototipo-original.html`. La lógica del motor es idéntica en ambas.
+
+## D-017 · Parámetros tributarios configurados por el contador (2026-09-30)
+UVT por año y conceptos de retención (tarifa, base mínima en UVT, cuenta) se guardan por empresa en la
+base local; Contafi no trae valores escritos. Pendiente: sincronizarlos entre PC por el servidor.
+
+## D-018 · Período de la conciliación bancaria (2026-09-30)
+Por defecto va del primer día del mes del extracto a su última fecha (editable): así los movimientos
+de libros de los primeros días del mes pueden emparejarse aunque el banco los registre después.
+La diferencia se calcula como: saldo extracto − (saldo libros − partidas de libros en tránsito +
+partidas del banco sin registrar).

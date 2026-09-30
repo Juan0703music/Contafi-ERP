@@ -6,10 +6,14 @@ import { balanceGeneral } from '@contafi/motor';
 import { comprobantesParaReportes, hoyContable } from '@contafi/local';
 
 const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string }[] }[] = [
-  { grupo: 'General', items: [{ ruta: 'panel', etiqueta: 'Panel', icono: 'dashboard' }] },
+  { grupo: 'General', items: [
+    { ruta: 'empresas', etiqueta: 'Mis empresas', icono: 'building' },
+    { ruta: 'panel', etiqueta: 'Panel', icono: 'dashboard' },
+  ] },
   { grupo: 'Contabilidad', items: [
     { ruta: 'comprobantes', etiqueta: 'Comprobantes', icono: 'file' },
     { ruta: 'importar', etiqueta: 'Importar DIAN', icono: 'receipt' },
+    { ruta: 'bancos', etiqueta: 'Conciliación bancaria', icono: 'bank' },
     { ruta: 'cuentas', etiqueta: 'Plan de cuentas', icono: 'tree' },
     { ruta: 'balance', etiqueta: 'Balance de prueba', icono: 'scale' },
     { ruta: 'cierres', etiqueta: 'Períodos y cierres', icono: 'lock' },

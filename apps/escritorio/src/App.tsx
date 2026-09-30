@@ -13,11 +13,13 @@ import { Libros } from './pantallas/Libros.tsx';
 import { ImportarDian } from './pantallas/ImportarDian.tsx';
 import { Cierres } from './pantallas/Cierres.tsx';
 import { Impuestos } from './pantallas/Impuestos.tsx';
+import { Bancos } from './pantallas/Bancos.tsx';
+import { Empresas } from './pantallas/Empresas.tsx';
 import { SaldosIniciales } from './pantallas/SaldosIniciales.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
-import { EMPRESA_DEMO, sembrarDemo, transporteDemo } from './datos/demo.ts';
+import { sembrarDemo, transporteDemo } from './datos/demo.ts';
 import { configuracionNube, dispositivoLocal, empresasDelUsuario, transporteNube } from './datos/nube.ts';
 
 const VERSION_APP = '0.3.0';
@@ -40,9 +42,11 @@ function Pantallas() {
   const abrirNuevo = useCallback(() => setNuevo(true), []);
   return (
     <Marco>
+      {ruta === 'empresas' && <Empresas />}
       {ruta === 'panel' && <Panel nuevoComprobante={abrirNuevo} />}
       {ruta === 'comprobantes' && <Comprobantes nuevoComprobante={abrirNuevo} />}
       {ruta === 'importar' && <ImportarDian />}
+      {ruta === 'bancos' && <Bancos />}
       {ruta === 'cuentas' && <Cuentas />}
       {ruta === 'cierres' && <Cierres />}
       {ruta === 'saldos' && <SaldosIniciales />}
@@ -66,7 +70,7 @@ export function App() {
     const { base, aviso: a } = await abrirBase();
     if ((await empresasLocales(base)).length === 0) await sembrarDemo(base);
     setSesion({
-      base, modo: 'demo', usuario: { nombre: 'Invitado', correo: 'Demostración' }, empresas: [EMPRESA_DEMO],
+      base, modo: 'demo', usuario: { nombre: 'Invitado', correo: 'Demostración' }, empresas: await empresasLocales(base),
       transporte: transporteDemo(base), dispositivo: dispositivoLocal(VERSION_APP), avisoInicial: a,
       cerrarSesion: async () => { await cerrarBaseTauri(); setSesion(null); },
       cambiarPeriodo: (empresa, anio, mes, estado) => cambiarPeriodoLocal(base, empresa, anio, mes, estado),

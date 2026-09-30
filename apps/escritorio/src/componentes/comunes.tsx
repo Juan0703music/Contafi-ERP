@@ -45,12 +45,17 @@ export function Modal({ titulo, ancho, alCerrar, pie, children }: {
   titulo: string; ancho?: boolean | 'xl'; alCerrar: () => void; pie?: ReactNode; children: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  // La función de cierre puede cambiar en cada render (p. ej. una flecha en línea): se guarda en una
+  // referencia para que el efecto no se repita, porque al repetirse movía el foco al primer campo
+  // mientras la persona escribía en otro.
+  const cerrar = useRef(alCerrar);
+  cerrar.current = alCerrar;
   useEffect(() => {
-    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') alCerrar(); };
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'Escape') cerrar.current(); };
     document.addEventListener('keydown', tecla);
     ref.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
     return () => document.removeEventListener('keydown', tecla);
-  }, [alCerrar]);
+  }, []);
   return createPortal(
     <div className="modal-back" onMouseDown={(e) => { if (e.target === e.currentTarget) alCerrar(); }}>
       <div ref={ref} className={`modal${ancho ? ' wide' : ''}${ancho === 'xl' ? ' xl' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
