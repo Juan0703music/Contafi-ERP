@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aCentavos, leerMontoUsuario, aDecimal, aplicarTarifa, dividirRedondeado, formatoCOP, prorratear,
+  aCentavos, leerMontoUsuario, leerTarifaUsuario, formatoTarifa, aDecimal, aplicarTarifa, dividirRedondeado, formatoCOP, prorratear,
   hoyBogota, periodoDe, esFechaValida, diasEntre,
   calcularDV, validarNitConDV, formatearNit,
   PUC_SEMILLA, aceptaMovimientoEnPlantilla, codigoPadre, CUENTAS_POR_DEFECTO,
@@ -57,6 +57,18 @@ describe('montos escritos por el usuario', () => {
   });
   it('rechaza lo que no es un monto', () => {
     for (const x of ['', 'abc', '1,2,3', '12.34.5', '1.23.456', '--5']) expect(leerMontoUsuario(x), x).toBeNull();
+  });
+});
+
+describe('tarifas escritas por el usuario', () => {
+  it('lee porcentajes con coma o punto y los devuelve en millonésimas', () => {
+    expect(leerTarifaUsuario('19')).toBe(190_000n);
+    expect(leerTarifaUsuario('2,5')).toBe(25_000n);
+    expect(leerTarifaUsuario('0.966 %')).toBe(9_660n);
+    expect(leerTarifaUsuario('100')).toBe(1_000_000n);
+    for (const x of ['', 'abc', '101', '1,23456', '-1']) expect(leerTarifaUsuario(x), x).toBeNull();
+    expect(formatoTarifa(25_000n)).toBe('2,5 %');
+    expect(formatoTarifa(190_000n)).toBe('19 %');
   });
 });
 

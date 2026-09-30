@@ -78,6 +78,20 @@ export function leerMontoUsuario(texto: string): Centavos | null {
   }
 }
 
+/** Lee una tarifa escrita como porcentaje ("19", "2,5", "0,966 %") y la devuelve en millonésimas. */
+export function leerTarifaUsuario(texto: string): TarifaPpm | null {
+  const m = /^(\d{1,3})(?:[.,](\d{1,4}))?$/.exec(texto.trim().replace(/\s|%/g, ''));
+  if (!m) return null;
+  const ppm = BigInt(m[1]!) * 10_000n + BigInt((m[2] ?? '').padEnd(4, '0'));
+  return ppm <= 1_000_000n ? ppm : null;
+}
+
+/** 190000 -> "19 %"; 9660 -> "0,966 %". */
+export function formatoTarifa(ppm: TarifaPpm): string {
+  const dec = (ppm % 10_000n).toString().padStart(4, '0').replace(/0+$/, '');
+  return `${ppm / 10_000n}${dec ? `,${dec}` : ''} %`;
+}
+
 /** "1234567.89" — formato de intercambio (XML, JSON, base de datos numeric). */
 export function aDecimal(c: Centavos): string {
   const neg = c < 0n;

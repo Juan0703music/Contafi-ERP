@@ -66,13 +66,34 @@ await page.keyboard.press('Escape');
 await ir('Balance de prueba');
 await page.waitForSelector('table');
 await foto('08-balance');
-// Importación DIAN: subir los XML de ejemplo, cambiar la cuenta de la factura y contabilizar
+// Impuestos: UVT y un concepto de retención (VALORES DE EJEMPLO; en la realidad, la norma vigente)
+await ir('Impuestos y retenciones');
+await page.type('#uValor', '52.374');
+await boton('Guardar UVT');
+await boton('Nuevo concepto');
+await page.waitForSelector('#rCod');
+await page.type('#rCod', 'RF-COMPRAS');
+await page.type('#rNom', 'Retención en la fuente por compras');
+await page.type('#rTar', '2,5');
+await page.$eval('#rBase', (n) => { n.value = ''; });
+await page.type('#rBase', '10');
+await page.select('#rCta', '236540');
+await boton('Guardar');
+await page.waitForSelector('tbody tr td.mono', { timeout: 5000 });
+await foto('07a-impuestos');
+
+// Importación DIAN: subir los XML de ejemplo, cambiar la cuenta de la factura, aplicar la retención y contabilizar
 await ir('Importar DIAN');
 const fixtures = new URL('../../../packages/dian-xml/test/fixtures/', import.meta.url).pathname;
 const archivo = await page.$('input[type=file]');
 await archivo.uploadFile(`${fixtures}factura-compra-attached.xml`, `${fixtures}nota-credito.xml`);
 await page.waitForSelector('select[aria-label="Cuenta de SN-10457"]', { timeout: 10000 });
 await page.select('select[aria-label="Cuenta de SN-10457"]', '519530');
+const filaFactura = (await page.$$('tbody tr'))[0];
+const casilla = await filaFactura.$('label.hint input[type=checkbox]');
+await casilla.click();
+await new Promise((r) => setTimeout(r, 600));
+console.log('Retención aplicada:', await filaFactura.$eval('label.hint', (n) => n.textContent.trim()));
 await foto('07b-importar-dian');
 const botonImportar = await page.$$('button');
 for (const b of botonImportar) { if ((await b.evaluate((n) => n.textContent)).includes('Contabilizar 2')) { await b.click(); break; } }
@@ -119,6 +140,12 @@ await boton('Resultados');
 await foto('08e-resultados');
 await ir('Terceros');
 await foto('09-terceros');
+await boton('Nuevo tercero');
+await page.waitForSelector('#tNum');
+await page.type('#tNum', '800197268');
+await page.type('#tNombre', 'DIAN');
+await foto('09b-nuevo-tercero');
+await page.keyboard.press('Escape');
 await ir('Plan de cuentas');
 await foto('10-cuentas');
 await ir('Sincronización');

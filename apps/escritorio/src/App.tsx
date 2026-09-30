@@ -12,6 +12,7 @@ import { Sincronizacion } from './pantallas/Sincronizacion.tsx';
 import { Libros } from './pantallas/Libros.tsx';
 import { ImportarDian } from './pantallas/ImportarDian.tsx';
 import { Cierres } from './pantallas/Cierres.tsx';
+import { Impuestos } from './pantallas/Impuestos.tsx';
 import { SaldosIniciales } from './pantallas/SaldosIniciales.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
@@ -49,6 +50,7 @@ function Pantallas() {
       {ruta === 'libros' && <Libros />}
       {ruta === 'estados' && <Estados />}
       {ruta === 'terceros' && <Terceros />}
+      {ruta === 'impuestos' && <Impuestos />}
       {ruta === 'sincronizacion' && <Sincronizacion />}
       {nuevo && <NuevoComprobante alCerrar={() => setNuevo(false)} />}
     </Marco>

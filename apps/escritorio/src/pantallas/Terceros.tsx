@@ -78,9 +78,9 @@ function NuevoTercero({ alCerrar }: { alCerrar: () => void }) {
             {Object.entries(TIPOS_DOC).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select></div>
         <div className="field"><label htmlFor="tNum">Número{dv != null ? ` (DV ${dv})` : ''}</label>
-          <input id="tNum" className="mono" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder={tipoDoc === '31' ? '900123456' : ''} /></div>
+          <input type="text" id="tNum" className="mono" value={numero} onChange={(e) => setNumero(e.target.value)} placeholder={tipoDoc === '31' ? '900123456' : ''} /></div>
       </div>
-      <div className="field"><label htmlFor="tNombre">Nombre o razón social</label><input id="tNombre" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
+      <div className="field"><label htmlFor="tNombre">Nombre o razón social</label><input type="text" id="tNombre" value={nombre} onChange={(e) => setNombre(e.target.value)} /></div>
       <div className="field"><label htmlFor="tCorreo">Correo (opcional)</label><input id="tCorreo" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} /></div>
       <div className="field"><label>Es</label>
         <div className="btn-row">{TIPOS_TERCERO.map((t) => (

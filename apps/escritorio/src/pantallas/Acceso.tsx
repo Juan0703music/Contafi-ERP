@@ -102,7 +102,7 @@ export function Acceso({ supabase, alEntrar, alEntrarDemo }: {
               </div>
             )}
             <div className="field"><label htmlFor="codigo">Código</label>
-              <input id="codigo" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={codigo} onChange={(e) => setCodigo(e.target.value)} /></div>
+              <input type="text" id="codigo" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required value={codigo} onChange={(e) => setCodigo(e.target.value)} /></div>
             {error && <div className="notice danger" role="alert">{error}</div>}
             <button className="btn primary block" disabled={ocupado}>{ocupado ? 'Verificando…' : 'Verificar'}<Icono nombre="check" /></button>
           </form>

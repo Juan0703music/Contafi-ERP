@@ -19,7 +19,10 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
     { ruta: 'libros', etiqueta: 'Libros', icono: 'bookOpen' },
     { ruta: 'estados', etiqueta: 'Estados financieros', icono: 'barChart' },
   ] },
-  { grupo: 'Maestros', items: [{ ruta: 'terceros', etiqueta: 'Terceros', icono: 'users' }] },
+  { grupo: 'Maestros', items: [
+    { ruta: 'terceros', etiqueta: 'Terceros', icono: 'users' },
+    { ruta: 'impuestos', etiqueta: 'Impuestos y retenciones', icono: 'sliders' },
+  ] },
   { grupo: 'Sistema', items: [{ ruta: 'sincronizacion', etiqueta: 'Sincronización', icono: 'shield' }] },
 ];
 

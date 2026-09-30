@@ -170,9 +170,9 @@ export function NuevoComprobante({ alCerrar }: { alCerrar: () => void }) {
                   {catalogos?.terceros.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
                 </select></td>
                 <td><input aria-label={`Nota línea ${i + 1}`} type="text" placeholder="Opcional" style={{ width: 120 }} value={f.nota} onChange={(e) => cambiarFila(i, 'nota', e.target.value)} /></td>
-                <td><input aria-label={`Débito línea ${i + 1}`} className="mono" inputMode="decimal" placeholder="0" style={{ width: 130, textAlign: 'right' }} value={f.debito}
+                <td><input type="text" aria-label={`Débito línea ${i + 1}`} className="mono" inputMode="decimal" placeholder="0" style={{ width: 130, textAlign: 'right' }} value={f.debito}
                   onChange={(e) => cambiarFila(i, 'debito', e.target.value)} /></td>
-                <td><input aria-label={`Crédito línea ${i + 1}`} className="mono" inputMode="decimal" placeholder="0" style={{ width: 130, textAlign: 'right' }} value={f.credito}
+                <td><input type="text" aria-label={`Crédito línea ${i + 1}`} className="mono" inputMode="decimal" placeholder="0" style={{ width: 130, textAlign: 'right' }} value={f.credito}
                   onChange={(e) => cambiarFila(i, 'credito', e.target.value)} /></td>
                 <td><button className="btn ghost sm" aria-label={`Quitar línea ${i + 1}`} disabled={form.filas.length <= 2}
                   onClick={() => cambiar((x) => ({ ...x, filas: x.filas.filter((_, j) => j !== i) }))}>✕</button></td>

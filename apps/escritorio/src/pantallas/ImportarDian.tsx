@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import {
-  contabilizarImportacion, cuentasLocales, prepararImportacion, type ItemImportacion,
+  conceptosRetencion, contabilizarImportacion, cuentasLocales, prepararImportacion, recalcularPropuesta, type ItemImportacion,
 } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, Vacio, dinero, fechaCorta } from '../componentes/comunes.tsx';
@@ -18,19 +18,33 @@ export function ImportarDian() {
   const [items, setItems] = useState<ItemImportacion[]>([]);
   const [elegidos, setElegidos] = useState<Set<number>>(new Set());
   const [cuentas, setCuentas] = useState<Record<number, string>>({});
+  const [retCambiadas, setRetCambiadas] = useState<Set<number>>(new Set());
   const [ocupado, setOcupado] = useState(false);
   const [arrastrando, setArrastrando] = useState(false);
   const entrada = useRef<HTMLInputElement>(null);
-  const { datos: auxiliares } = useDatos(async () => (await cuentasLocales(base, empresa.id)).filter((c) => c.aceptaMovimiento && c.activa), [base, empresa.id, version]);
+  const { datos: catalogos } = useDatos(async () => ({
+    auxiliares: (await cuentasLocales(base, empresa.id)).filter((c) => c.aceptaMovimiento && c.activa),
+    retenciones: (await conceptosRetencion(base, empresa.id, true)).filter((c) => c.aplicaEn === 'compras'),
+  }), [base, empresa.id, version]);
+  const auxiliares = catalogos?.auxiliares;
+
+  async function cambiarRetencion(i: number, codigo: string, activa: boolean) {
+    const item = items[i]!;
+    const codigos = activa ? [...item.retenciones, codigo] : item.retenciones.filter((c) => c !== codigo);
+    const nuevo = await recalcularPropuesta(base, empresa, item, codigos);
+    setItems((xs) => xs.map((x, j) => (j === i ? nuevo : x)));
+    setRetCambiadas((s) => new Set(s).add(i));
+  }
 
   async function leer(archivos: FileList | File[]) {
     setOcupado(true);
     try {
       const entradas = await Promise.all([...archivos].map(async (f) => ({ nombre: f.name, contenido: new Uint8Array(await f.arrayBuffer()) })));
-      const nuevos = await prepararImportacion(base, empresa, entradas, { anio: new Date().getFullYear(), uvt: 0n });
+      const nuevos = await prepararImportacion(base, empresa, entradas);
       setItems(nuevos);
       setElegidos(new Set(nuevos.map((x, i) => (x.estado === 'nuevo' ? i : -1)).filter((i) => i >= 0)));
       setCuentas({});
+      setRetCambiadas(new Set());
     } catch (e) {
       avisar(`No se pudieron leer los archivos: ${(e as Error).message}`, 'danger');
     } finally {
@@ -41,7 +55,7 @@ export function ImportarDian() {
   async function contabilizar() {
     setOcupado(true);
     try {
-      const seleccion = [...elegidos].map((i) => ({ item: items[i]!, cuenta: cuentas[i] }));
+      const seleccion = [...elegidos].map((i) => ({ item: items[i]!, cuenta: cuentas[i], retencionesCambiadas: retCambiadas.has(i) }));
       const r = await contabilizarImportacion(base, empresa, seleccion);
       if (r.contabilizados.length) avisar(`${r.contabilizados.length} documento(s) contabilizados${r.tercerosCreados ? `, ${r.tercerosCreados} tercero(s) creados` : ''}.`, 'ok');
       if (r.fallidos.length) avisar(`${r.fallidos.length} no se pudieron contabilizar: ${r.fallidos.map((f) => `${f.numero}: ${f.mensaje}`).join(' · ')}`, 'danger');
@@ -110,6 +124,17 @@ export function ImportarDian() {
                       {auxiliares?.map((c) => <option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nombre}</option>)}
                     </select>) : null}
                     {p && x.estado === 'nuevo' && p.cuentaSugerida.origen === 'regla' && cuentas[i] === undefined && <div className="hint">Cuenta aprendida del proveedor</div>}
+                    {p && x.estado === 'nuevo' && p.sentido === 'compra' && (catalogos?.retenciones.length ?? 0) > 0 && (
+                      <div style={{ marginTop: 6, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {catalogos!.retenciones.map((r) => {
+                          const valor = p.retenciones.find((x2) => x2.codigo === r.codigo);
+                          return (
+                            <label key={r.codigo} className="hint" style={{ display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
+                              <input type="checkbox" checked={x.retenciones.includes(r.codigo)} onChange={(e) => void cambiarRetencion(i, r.codigo, e.target.checked)} />
+                              {r.codigo}{valor ? ` ${dinero(valor.valor)}` : x.retenciones.includes(r.codigo) ? ' (no alcanza la base)' : ''}
+                            </label>);
+                        })}
+                      </div>)}
                   </td>
                   <td><span className={`pill ${clase}`} title={x.mensaje ?? ''}>{texto}</span></td>
                 </tr>);

@@ -83,6 +83,22 @@ export const MIGRACIONES: readonly string[][] = [
        primary key (empresa_id, nit)
      ) strict`,
   ],
+  // 3 · Parámetros tributarios configurables (regla de oro: nada fijo en el código)
+  [
+    `create table parametros_anuales (anio integer primary key, uvt integer not null check (uvt > 0)) strict`,
+    `create table conceptos_retencion (
+       empresa_id text not null, codigo text not null,
+       tipo text not null check (tipo in ('RETEFUENTE', 'RETEIVA', 'RETEICA')),
+       nombre text not null, tarifa_ppm integer not null check (tarifa_ppm between 0 and 1000000),
+       base_minima_uvt text not null default '0', cuenta text not null,
+       aplica_en text not null check (aplica_en in ('compras', 'ventas')), activo integer not null default 1,
+       primary key (empresa_id, codigo)
+     ) strict`,
+    // Retenciones que se practican a cada proveedor: se aprenden al importar, como las cuentas.
+    `create table retenciones_proveedor (
+       empresa_id text not null, nit text not null, codigo text not null, primary key (empresa_id, nit, codigo)
+     ) strict`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;
