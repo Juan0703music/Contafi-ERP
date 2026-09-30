@@ -5,7 +5,7 @@ import {
   type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ResumenSincronizacion, type Transporte,
 } from '@contafi/local';
 
-export type Ruta = 'panel' | 'comprobantes' | 'cuentas' | 'balance' | 'terceros' | 'sincronizacion';
+export type Ruta = 'panel' | 'comprobantes' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion';
 
 export interface Sesion {
   base: BaseLocal;

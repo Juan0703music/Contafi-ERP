@@ -4,3 +4,16 @@
 .modal.xl{max-width:1120px;}
 .entry-lines-table tbody td{padding:8px 8px;}
 .entry-lines-table thead th{padding-left:8px; padding-right:8px;}
+
+/* Reportes: encabezado solo al imprimir y controles ocultos en papel/PDF. */
+.solo-impresion{display:none;}
+.encabezado-reporte{padding:16px 20px 4px; font-size:13px; line-height:1.5;}
+.filtros-reporte{display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;}
+.filtros-reporte .field{margin:0; min-width:170px;}
+.fila-total td{font-weight:700; border-top:2px solid var(--line-strong);}
+.fila-seccion td{font-weight:600; background:var(--well);}
+@media print{
+  .solo-impresion{display:block;}
+  .no-imprimir{display:none!important;}
+  .panel{break-inside:auto;}
+}

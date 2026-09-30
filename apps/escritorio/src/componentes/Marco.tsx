@@ -12,6 +12,10 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
     { ruta: 'cuentas', etiqueta: 'Plan de cuentas', icono: 'tree' },
     { ruta: 'balance', etiqueta: 'Balance de prueba', icono: 'scale' },
   ] },
+  { grupo: 'Reportes', items: [
+    { ruta: 'libros', etiqueta: 'Libros', icono: 'bookOpen' },
+    { ruta: 'estados', etiqueta: 'Estados financieros', icono: 'barChart' },
+  ] },
   { grupo: 'Maestros', items: [{ ruta: 'terceros', etiqueta: 'Terceros', icono: 'users' }] },
   { grupo: 'Sistema', items: [{ ruta: 'sincronizacion', etiqueta: 'Sincronización', icono: 'shield' }] },
 ];

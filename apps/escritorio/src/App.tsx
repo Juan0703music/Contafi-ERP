@@ -9,6 +9,8 @@ import { Cuentas } from './pantallas/Cuentas.tsx';
 import { Balance } from './pantallas/Balance.tsx';
 import { Terceros } from './pantallas/Terceros.tsx';
 import { Sincronizacion } from './pantallas/Sincronizacion.tsx';
+import { Libros } from './pantallas/Libros.tsx';
+import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
 import { EMPRESA_DEMO, sembrarDemo, transporteDemo } from './datos/demo.ts';
@@ -38,6 +40,8 @@ function Pantallas() {
       {ruta === 'comprobantes' && <Comprobantes nuevoComprobante={abrirNuevo} />}
       {ruta === 'cuentas' && <Cuentas />}
       {ruta === 'balance' && <Balance />}
+      {ruta === 'libros' && <Libros />}
+      {ruta === 'estados' && <Estados />}
       {ruta === 'terceros' && <Terceros />}
       {ruta === 'sincronizacion' && <Sincronizacion />}
       {nuevo && <NuevoComprobante alCerrar={() => setNuevo(false)} />}

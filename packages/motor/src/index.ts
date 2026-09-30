@@ -7,3 +7,4 @@ export * from './documentos.ts';
 export * from './inventario.ts';
 export * from './cierre.ts';
 export * from './permisos.ts';
+export * from './libros.ts';
