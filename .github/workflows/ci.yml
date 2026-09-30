@@ -6,9 +6,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# En main no se cancela nada: cada push se compila completo (el instalador de Windows tarda).
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   pruebas:
