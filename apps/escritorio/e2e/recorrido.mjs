@@ -82,6 +82,26 @@ const filasFC = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.textCont
 console.log('Importados con número oficial:', filasFC.map((t) => t.match(/(FC|NC)-\d{6}/)?.[0]).join(', '));
 await foto('07c-importados');
 
+// Períodos y cierres: cerrar marzo en el modo demostración
+await ir('Períodos y cierres');
+await page.waitForSelector('tbody tr');
+const filasMes = await page.$$('tbody tr');
+for (const f of filasMes) {
+  if ((await f.evaluate((n) => n.textContent)).startsWith('Marzo')) { const b = await f.$('button'); await b.click(); break; }
+}
+await new Promise((r) => setTimeout(r, 800));
+const marzo = await page.$$eval('tbody tr', (trs) => trs.find((t) => t.textContent.startsWith('Marzo'))?.textContent);
+console.log('Marzo tras cerrar:', marzo.includes('Cerrado') ? 'Cerrado' : marzo);
+await foto('07d-cierres');
+
+// Saldos iniciales desde CSV
+await ir('Saldos iniciales');
+const csv = await page.$('#sArchivo');
+await csv.uploadFile(new URL('./saldos-ejemplo.csv', import.meta.url).pathname);
+await page.waitForSelector('.fila-total', { timeout: 5000 });
+console.log('Saldos iniciales:', await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent));
+await foto('07e-saldos-iniciales');
+
 await ir('Libros');
 await page.waitForSelector('table');
 await foto('08b-libro-diario');

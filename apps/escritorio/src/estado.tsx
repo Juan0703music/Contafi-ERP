@@ -5,7 +5,7 @@ import {
   type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ResumenSincronizacion, type Transporte,
 } from '@contafi/local';
 
-export type Ruta = 'panel' | 'comprobantes' | 'importar' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion';
+export type Ruta = 'panel' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion';
 
 export interface Sesion {
   base: BaseLocal;
@@ -15,6 +15,8 @@ export interface Sesion {
   transporte: Transporte;
   dispositivo: { id: string; nombre: string; version_app: string };
   cerrarSesion: () => Promise<void>;
+  /** Cierra o reabre un mes. En la nube lo hace el servidor (exige permiso de cierres y conexión). */
+  cambiarPeriodo: (empresa: string, anio: number, mes: number, estado: 'abierto' | 'cerrado') => Promise<void>;
   /** Mensaje de la apertura de la base (p. ej. "se restauró el respaldo"). */
   avisoInicial: string | null;
 }

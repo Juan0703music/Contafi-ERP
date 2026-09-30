@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { migrar, empresasLocales, guardarEmpresas, type BaseLocal } from '@contafi/local';
+import { migrar, empresasLocales, guardarEmpresas, cambiarPeriodoLocal, type BaseLocal } from '@contafi/local';
 import { ProveedorApp, useApp, type Sesion } from './estado.tsx';
 import { Marco } from './componentes/Marco.tsx';
 import { Acceso } from './pantallas/Acceso.tsx';
@@ -11,6 +11,8 @@ import { Terceros } from './pantallas/Terceros.tsx';
 import { Sincronizacion } from './pantallas/Sincronizacion.tsx';
 import { Libros } from './pantallas/Libros.tsx';
 import { ImportarDian } from './pantallas/ImportarDian.tsx';
+import { Cierres } from './pantallas/Cierres.tsx';
+import { SaldosIniciales } from './pantallas/SaldosIniciales.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
@@ -41,6 +43,8 @@ function Pantallas() {
       {ruta === 'comprobantes' && <Comprobantes nuevoComprobante={abrirNuevo} />}
       {ruta === 'importar' && <ImportarDian />}
       {ruta === 'cuentas' && <Cuentas />}
+      {ruta === 'cierres' && <Cierres />}
+      {ruta === 'saldos' && <SaldosIniciales />}
       {ruta === 'balance' && <Balance />}
       {ruta === 'libros' && <Libros />}
       {ruta === 'estados' && <Estados />}
@@ -63,6 +67,7 @@ export function App() {
       base, modo: 'demo', usuario: { nombre: 'Invitado', correo: 'Demostración' }, empresas: [EMPRESA_DEMO],
       transporte: transporteDemo(base), dispositivo: dispositivoLocal(VERSION_APP), avisoInicial: a,
       cerrarSesion: async () => { await cerrarBaseTauri(); setSesion(null); },
+      cambiarPeriodo: (empresa, anio, mes, estado) => cambiarPeriodoLocal(base, empresa, anio, mes, estado),
     });
   }, []);
 
@@ -81,6 +86,10 @@ export function App() {
       base, modo: 'nube', empresas, transporte: transporteNube(supabase, api), dispositivo: dispositivoLocal(VERSION_APP), avisoInicial: a,
       usuario: { nombre: (data.user?.user_metadata?.['nombre'] as string | undefined) ?? data.user?.email ?? 'Usuario', correo: data.user?.email ?? '' },
       cerrarSesion: async () => { await supabase.auth.signOut(); await cerrarBaseTauri(); setSesion(null); },
+      cambiarPeriodo: async (empresa, anio, mes, estado) => {
+        const { error } = await supabase.rpc('cambiar_estado_periodo', { p_empresa: empresa, p_anio: anio, p_mes: mes, p_estado: estado });
+        if (error) throw new Error(error.message.includes('SIN_PERMISO') ? 'Tu rol no tiene permiso para cerrar o reabrir períodos.' : error.message.includes('fetch') ? 'Cerrar un período requiere conexión a internet.' : error.message);
+      },
     });
   }, [nube]);
 

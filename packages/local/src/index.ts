@@ -3,3 +3,4 @@ export * from './esquema.ts';
 export * from './contabilidad.ts';
 export * from './sincronizacion.ts';
 export * from './importacion.ts';
+export * from './cierres.ts';

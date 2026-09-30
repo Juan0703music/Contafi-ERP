@@ -12,6 +12,8 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
     { ruta: 'importar', etiqueta: 'Importar DIAN', icono: 'receipt' },
     { ruta: 'cuentas', etiqueta: 'Plan de cuentas', icono: 'tree' },
     { ruta: 'balance', etiqueta: 'Balance de prueba', icono: 'scale' },
+    { ruta: 'cierres', etiqueta: 'Períodos y cierres', icono: 'lock' },
+    { ruta: 'saldos', etiqueta: 'Saldos iniciales', icono: 'calendar' },
   ] },
   { grupo: 'Reportes', items: [
     { ruta: 'libros', etiqueta: 'Libros', icono: 'bookOpen' },
