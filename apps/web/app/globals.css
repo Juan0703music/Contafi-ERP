@@ -1,0 +1,15 @@
+:root {
+  --fondo: #f5f6f8; --superficie: #ffffff; --texto: #16181d; --suave: #5b6270; --borde: #e2e5ea; --acento: #2f5bea;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fondo: #101216; --superficie: #191c22; --texto: #eceef2; --suave: #9aa3b2; --borde: #2a2f38; --acento: #7c9bff; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); color: var(--texto); font: 16px/1.55 "Geist", "Segoe UI", system-ui, sans-serif; }
+main { max-width: 640px; margin: 0 auto; padding: 48px 16px; }
+h1 { font-size: 28px; margin: 0 0 8px; }
+p { color: var(--suave); }
+.tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 20px; margin-top: 24px; }
+code { font-family: "Geist Mono", ui-monospace, Consolas, monospace; font-size: 14px; word-break: break-all; }
+button { font: inherit; background: var(--acento); color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }

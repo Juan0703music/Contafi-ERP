@@ -9,3 +9,7 @@ target/
 *.db-shm
 coverage/
 .DS_Store
+.next/
+next-env.d.ts
+*.tsbuildinfo
+.vercel

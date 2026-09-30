@@ -24,6 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm --filter @contafi/web build
 
   poc-windows:
     name: Instalador Windows de la prueba de concepto (sin firmar)

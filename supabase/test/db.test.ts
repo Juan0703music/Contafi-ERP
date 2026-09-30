@@ -1,8 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { PGlite } from '@electric-sql/pglite';
-
-const leer = (ruta: string) => readFileSync(new URL(ruta, import.meta.url), 'utf8');
+import type { PGlite } from '@electric-sql/pglite';
+import { crearBaseDePrueba, como as comoSesion, registrarUsuario } from './entorno.ts';
 
 const U = {
   ana: '00000000-0000-4000-8000-00000000000a',     // propietaria de la firma 1
@@ -18,15 +16,9 @@ const T1 = '30000000-0000-4000-8000-000000000001';
 
 let db: PGlite;
 
-/** Ejecuta como un usuario autenticado (rol authenticated + JWT sub), igual que PostgREST en Supabase. */
-async function como<T = Record<string, unknown>>(usuario: string, sql: string, params: unknown[] = []) {
-  await db.exec(`reset role; select set_config('request.jwt.claim.sub', '${usuario}', false); set role authenticated;`);
-  try {
-    return (await db.query<T>(sql, params)).rows;
-  } finally {
-    await db.exec('reset role;');
-  }
-}
+/** Ejecuta como un usuario autenticado con MFA verificado (aal2), igual que PostgREST en Supabase. */
+const como = <T = Record<string, unknown>>(usuario: string, sql: string, params: unknown[] = []) =>
+  comoSesion<T>(db, { sub: usuario, aal: 'aal2' }, sql, params);
 
 const lineas = (...ls: [string, string, string, string?][]) =>
   ls.map(([cuenta, debito, credito, tercero]) => ({ cuenta, debito, credito, tercero_id: tercero ?? null }));
@@ -43,25 +35,10 @@ async function registrar(usuario: string, p: object) {
 }
 
 beforeAll(async () => {
-  db = new PGlite();
-  await db.exec(leer('./auth-stub.sql'));
-  const dir = new URL('../migrations/', import.meta.url);
-  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
-    await db.exec(readFileSync(new URL(f, dir), 'utf8'));
-  }
-  // Privilegios por defecto que Supabase otorga al rol authenticated (RLS decide qué filas ve).
+  db = await crearBaseDePrueba();
+  for (const [nombre, id] of Object.entries(U)) await registrarUsuario(db, id, `${nombre}@x.co`, nombre);
+  // Datos semilla (como administrador de la base).
   await db.exec(`
-    grant usage on schema public to authenticated;
-    grant select on all tables in schema public to authenticated;
-    grant insert, update on public.firmas, public.usuarios, public.membresias, public.empresas, public.empresa_permisos,
-      public.sucursales, public.centros_costo, public.dispositivos, public.cuentas, public.terceros,
-      public.tipos_comprobante, public.impuestos, public.documentos_electronicos to authenticated;
-  `);
-  // Datos semilla (como administrador).
-  await db.exec(`
-    insert into auth.users (id) values ('${U.ana}'), ('${U.beto}'), ('${U.carla}'), ('${U.diego}');
-    insert into public.usuarios (id, nombre, correo) values
-      ('${U.ana}', 'Ana', 'ana@x.co'), ('${U.beto}', 'Beto', 'beto@x.co'), ('${U.carla}', 'Carla', 'carla@x.co'), ('${U.diego}', 'Diego', 'diego@x.co');
     insert into public.firmas (id, nombre) values ('${F1}', 'Firma Ana'), ('${F2}', 'Firma Beto');
     insert into public.membresias values ('${F1}', '${U.ana}', 'propietario'), ('${F2}', '${U.beto}', 'propietario'),
       ('${F1}', '${U.carla}', 'miembro'), ('${F1}', '${U.diego}', 'miembro');
@@ -188,13 +165,15 @@ describe('RLS: el usuario A nunca ve la empresa B', () => {
     expect(await como(U.carla, 'select * from public.auditoria')).toEqual([]);
     expect((await como(U.diego, 'select * from public.auditoria')).length).toBeGreaterThan(0); // gerente: auditoría READ
   });
-  it('sin sesión no se ve nada', async () => {
-    await db.exec(`select set_config('request.jwt.claim.sub', '', false); set role authenticated;`);
-    try {
-      expect((await db.query('select * from public.comprobantes')).rows).toEqual([]);
-    } finally {
-      await db.exec('reset role;');
-    }
+  it('sin sesión (anon) no hay acceso a nada', async () => {
+    await expect(comoSesion(db, { sub: null }, 'select * from public.comprobantes')).rejects.toThrow(/permission denied/);
+    await expect(comoSesion(db, { sub: null }, `select public.registrar_comprobante('{}'::jsonb)`)).rejects.toThrow(/permission denied/);
+  });
+  it('nadie puede llamar directamente a contabilizar_interno (salta los permisos)', async () => {
+    const r = await registrar(U.carla, comprobante(E1, '2026-09-06', lineas(['519595', '1', '0'], ['111005', '0', '1'])));
+    expect(r.estado).toBe('borrador');
+    await expect(como(U.carla, 'select public.contabilizar_interno($1)', [r.id])).rejects.toThrow(/permission denied/);
+    await expect(como(U.beto, 'select public.contabilizar_interno($1)', [r.id])).rejects.toThrow(/permission denied/);
   });
 });
 

@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 30 de septiembre de 2026.
+Última actualización: 30 de septiembre de 2026 (tarde).
 
 Leyenda: ✅ hecho · 🟡 avanzado, falta una parte · ⬜ pendiente · 👤 lo tienes que hacer tú (o con el asesor o el abogado)
 
@@ -33,10 +33,12 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Corregir el error de fechas UTC del prototipo | ✅ `hoyBogota()` |
 | Pruebas: unitarias y por propiedades (fast-check) | ✅ |
 | Casos contables de referencia del asesor | 👤 ⬜ los prepara el asesor; se agregan como pruebas |
-| RPC de sincronización: idempotencia, consecutivos, rechazo con motivo, cambios incrementales | ✅ en Postgres · ⬜ API en Vercel que revalide con el motor |
-| Autenticación: registro, MFA e invitaciones | ⬜ |
+| RPC de sincronización: idempotencia, consecutivos, rechazo con motivo, cambios incrementales | ✅ |
+| API en Vercel (`apps/web`): envío y recepción, revalidando con el motor | ✅ probada contra Postgres (PGlite) y con HTTP real · ⬜ probar contra un Supabase real |
+| Autenticación: registro, MFA obligatorio para administradores, alta de firmas y empresas, invitaciones por correo | ✅ servidor · ⬜ pantallas (Fase 3) |
+| Límite de peticiones a la API | ⬜ configurar Vercel Firewall al desplegar |
 
-**Criterio de salida:** 100 % de los casos del asesor correctos, pruebas por propiedades sin fallas (✅) y RLS probado en todas las tablas (🟡 probado en las contables).
+**Criterio de salida:** 100 % de los casos del asesor correctos, pruebas por propiedades sin fallas (✅) y RLS probado en todas las tablas (🟡 probado en las contables, en invitaciones y en dispositivos).
 
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
@@ -46,8 +48,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 5. Consecutivos del lado del cliente → los asigna solo el servidor, sin huecos.
 6. Carga Chart.js y las fuentes desde internet: sin conexión no hay gráficas. En la Fase 3 se empaquetan dentro de la app.
 
-## Pruebas automáticas (30/09/2026)
+## Hallazgos en el servidor (corregidos)
+1. Con los privilegios por defecto de Supabase, cualquier usuario podía ejecutar `contabilizar_interno` y contabilizar borradores ajenos saltándose los permisos. Corregido en la migración `0200` (D-011).
+2. Dos usuarios que comparten un PC no podían sincronizar. Corregido en la migración `0300` (D-010).
+
+## Pruebas automáticas (30/09/2026) — 94 en total
 - `@contafi/shared`: 12 ✓
 - `@contafi/motor`: 28 ✓ (incluye propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, todo documento genera un asiento válido, el kardex no pierde centavos)
 - `@contafi/dian-xml`: 11 ✓
-- `supabase` (PGlite): 15 ✓ (consecutivos sin huecos, idempotencia, rechazos, período cerrado, inmutabilidad, auditoría solo-agregar, RLS entre firmas)
+- `@contafi/sync`: 15 ✓ (envío en orden, reintentos sin duplicar, rechazos del motor por línea sin huecos en la numeración, período cerrado después del envío, borradores del auxiliar, acceso entre firmas, montos de 16 dígitos, descarga paginada e incremental, PC compartido)
+- `supabase` (PGlite con privilegios de Supabase): 28 ✓ (consecutivos, idempotencia, inmutabilidad, auditoría, RLS entre firmas, anon sin acceso, MFA para administradores, alta de empresas con PUC, DV en SQL = TypeScript, invitaciones)
+- `apps/web`: compila con `next build`; rutas probadas por HTTP (401, 400, 413, 502, 503, encabezados de seguridad)

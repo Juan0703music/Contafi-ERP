@@ -6,12 +6,19 @@
   "description": "Migraciones SQL, RLS y pruebas de la base de datos (PGlite: Postgres en proceso, sin Docker).",
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "generar-puc": "node scripts/generar-plantilla-puc.ts"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",
     "@types/node": "^24.0.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
+  },
+  "exports": {
+    "./test/entorno": "./test/entorno.ts"
+  },
+  "dependencies": {
+    "@contafi/shared": "workspace:*"
   }
 }

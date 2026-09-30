@@ -39,3 +39,27 @@ se prefiere un "período 13".
 ## D-007 · Prueba de concepto con el prototipo sin cambios (2026-09-30)
 La Fase 0 empaqueta el HTML actual tal cual en Tauri para medir tamaño, arranque, RAM y SQLite.
 No se reescribe ninguna pantalla antes de validar el nicho.
+
+## D-008 · MFA exigido en la base de datos (2026-09-30)
+Un propietario o administrador solo ejerce como tal si la sesión es `aal2` (TOTP verificado).
+`es_admin_firma()` lo exige y de ella dependen `rol_en_empresa`, RLS y las funciones de
+administración. La app consulta `requiere_mfa()` para saber si debe pedir el código.
+
+## D-009 · La API actúa como el usuario, nunca con service_role (2026-09-30)
+Las rutas de Vercel crean el cliente de Supabase con la llave pública y el token de la sesión.
+Si la API tuviera un error, RLS sigue protegiendo los datos.
+
+## D-010 · Un PC compartido por varios usuarios (2026-09-30)
+`dispositivos` tiene la clave primaria (id del PC, usuario). Lo encontraron las pruebas de sincronización:
+con la clave original, el segundo usuario de un mismo PC no podía sincronizar.
+
+## D-011 · Las pruebas imitan los privilegios por defecto de Supabase (2026-09-30)
+Supabase otorga EXECUTE sobre toda función nueva de `public` a `anon` y `authenticated`. La primera
+migración dejó `contabilizar_interno` (que no revisa permisos) invocable por cualquier usuario; la
+migración `0200` lo corrige. Las pruebas ahora arrancan con esos privilegios por defecto para detectar
+estos olvidos. Regla: toda función SECURITY DEFINER que no revise permisos se revoca de
+`public, anon, authenticated`.
+
+## D-012 · Plantilla del PUC generada desde TypeScript (2026-09-30)
+`supabase/migrations/…_plantilla_puc.sql` se genera desde `packages/shared/src/puc.ts`
+(`pnpm --filter @contafi/supabase generar-puc`). Una prueba falla si se desincronizan.

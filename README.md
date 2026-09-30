@@ -6,6 +6,7 @@ con base local, se sincroniza con la nube, funciona sin internet e incluye un as
 - Plan completo: [`docs/Plan de proyecto - Contafi ERP.txt`](docs/Plan%20de%20proyecto%20-%20Contafi%20ERP.txt)
 - Avance por fases: [`docs/ESTADO.md`](docs/ESTADO.md)
 - Decisiones técnicas: [`docs/DECISIONES.md`](docs/DECISIONES.md)
+- Protocolo de sincronización e inicio de sesión: [`docs/SINCRONIZACION-Y-AUTENTICACION.md`](docs/SINCRONIZACION-Y-AUTENTICACION.md)
 
 ## Estructura
 
@@ -14,7 +15,9 @@ packages/shared     Dinero en centavos (bigint), fechas America/Bogota, NIT y DV
 packages/motor      Motor contable puro: reglas de la sección 8, impuestos, documentos,
                     kardex por costo promedio, reportes y cierre anual
 packages/dian-xml   Lectura de XML/ZIP de la DIAN (UBL 2.1 / AttachedDocument) y propuesta de asiento
-supabase/           Migraciones SQL: esquema, RLS, triggers de respaldo y RPC de sincronización
+packages/sync       Protocolo de sincronización (zod) y servicio: revalida con el motor y registra
+supabase/           Migraciones SQL: esquema, RLS, triggers, autenticación/MFA, invitaciones, sincronización
+apps/web            Next.js en Vercel: /api/sync/enviar, /api/sync/cambios, /api/invitaciones, /api/salud
 apps/poc-escritorio Fase 0: Tauri + prototipo actual + SQLite (WAL/FULL), script de prueba de IA
 docs/               Plan, estado, decisiones, material de la Fase 0 y referencia (prototipo, diseño)
 ```
@@ -28,7 +31,8 @@ docs/               Plan, estado, decisiones, material de la Fase 0 y referencia
 
 ```bash
 pnpm install          # instala dependencias
-pnpm test             # pruebas: motor, XML DIAN y base de datos (Postgres en proceso con PGlite)
+pnpm test             # pruebas: motor, XML DIAN, sincronización y base de datos (Postgres en proceso con PGlite)
+pnpm --filter @contafi/web dev   # API local (copie apps/web/.env.example como .env.local)
 pnpm typecheck        # verificación de tipos
 
 # Fase 0: leer XML reales de la DIAN (archivo, ZIP o carpeta) y ver el asiento propuesto
