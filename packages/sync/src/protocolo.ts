@@ -85,7 +85,14 @@ export interface ErrorItem {
 }
 
 export interface ResultadoItem {
+  /** Id con que el PC envió el comprobante. */
   id: string;
+  /**
+   * Id del comprobante en el servidor. Si difiere de `id`, el servidor ya tenía ese documento
+   * (misma clave, p. ej. la misma factura DIAN importada en otro PC): el PC descarta su copia y
+   * recibe la del servidor en la siguiente descarga de cambios.
+   */
+  id_servidor: string | null;
   clave_idempotencia: string;
   /** contabilizado: tiene número oficial · borrador: espera aprobación · rechazado: corregir y reenviar con otra clave. */
   estado: 'contabilizado' | 'borrador' | 'rechazado';

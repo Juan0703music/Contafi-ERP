@@ -66,6 +66,22 @@ await page.keyboard.press('Escape');
 await ir('Balance de prueba');
 await page.waitForSelector('table');
 await foto('08-balance');
+// Importación DIAN: subir los XML de ejemplo, cambiar la cuenta de la factura y contabilizar
+await ir('Importar DIAN');
+const fixtures = new URL('../../../packages/dian-xml/test/fixtures/', import.meta.url).pathname;
+const archivo = await page.$('input[type=file]');
+await archivo.uploadFile(`${fixtures}factura-compra-attached.xml`, `${fixtures}nota-credito.xml`);
+await page.waitForSelector('select[aria-label="Cuenta de SN-10457"]', { timeout: 10000 });
+await page.select('select[aria-label="Cuenta de SN-10457"]', '519530');
+await foto('07b-importar-dian');
+const botonImportar = await page.$$('button');
+for (const b of botonImportar) { if ((await b.evaluate((n) => n.textContent)).includes('Contabilizar 2')) { await b.click(); break; } }
+await page.waitForSelector('.page-head h1', { timeout: 5000 });
+await new Promise((r) => setTimeout(r, 2500));
+const filasFC = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.textContent).filter((t) => /FC-|NC-/.test(t)));
+console.log('Importados con número oficial:', filasFC.map((t) => t.match(/(FC|NC)-\d{6}/)?.[0]).join(', '));
+await foto('07c-importados');
+
 await ir('Libros');
 await page.waitForSelector('table');
 await foto('08b-libro-diario');

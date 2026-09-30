@@ -154,7 +154,14 @@ export interface DatosComprobante {
  * número local temporal ("CG-LOCAL-7F3A") y queda en la cola de salida. Todo en una sola transacción.
  */
 export async function crearComprobante(
-  base: BaseLocal, empresa: string, datos: DatosComprobante, opciones: { claveBorrador?: string } = {},
+  base: BaseLocal, empresa: string, datos: DatosComprobante,
+  opciones: {
+    claveBorrador?: string;
+    /** Clave de idempotencia propia (p. ej. "dian:<empresa>:<CUFE>" para que dos PC no dupliquen una factura). */
+    clave?: string;
+    /** Sentencias que deben guardarse en la MISMA transacción que el comprobante. */
+    extra?: (id: string) => Sentencia[];
+  } = {},
 ): Promise<{ id: string; numeroLocal: string }> {
   const errores = validarComprobante(datos, await contextoLocal(base, empresa));
   const terceros = [...new Set(datos.lineas.map((l) => l.terceroId).filter((t): t is string => !!t))];
@@ -173,7 +180,7 @@ export async function crearComprobante(
   const sentencias: Sentencia[] = [
     s(`insert into comprobantes (id, empresa_id, tipo, numero_local, fecha, concepto, estado, origen, clave_idempotencia, reversa_de, creado_en)
        values (?, ?, ?, ?, ?, ?, 'pendiente_sync', ?, ?, ?, ?)`,
-      id, empresa, datos.tipo, local, datos.fecha, datos.concepto.trim(), datos.origen ?? 'manual', `pc:${id}`, datos.reversaDe ?? null, t),
+      id, empresa, datos.tipo, local, datos.fecha, datos.concepto.trim(), datos.origen ?? 'manual', opciones.clave ?? `pc:${id}`, datos.reversaDe ?? null, t),
     ...datos.lineas.map((l, i) => s(
       `insert into lineas (comprobante_id, orden, cuenta, tercero_id, centro_costo_id, debito, credito, base_impuesto, nota)
        values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -181,6 +188,7 @@ export async function crearComprobante(
     s(`insert into cola_salida (empresa_id, tipo, registro_id, creado_en) values (?, 'comprobante', ?, ?)`, empresa, id, t),
   ];
   if (opciones.claveBorrador) sentencias.push(s('delete from borradores where clave = ?', opciones.claveBorrador));
+  if (opciones.extra) sentencias.push(...opciones.extra(id));
   await base.lote(sentencias);
   return { id, numeroLocal: local };
 }

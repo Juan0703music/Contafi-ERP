@@ -10,6 +10,9 @@ importers:
 
   apps/escritorio:
     dependencies:
+      '@contafi/dian-xml':
+        specifier: workspace:*
+        version: link:../../packages/dian-xml
       '@contafi/local':
         specifier: workspace:*
         version: link:../../packages/local
@@ -142,6 +145,9 @@ importers:
 
   packages/local:
     dependencies:
+      '@contafi/dian-xml':
+        specifier: workspace:*
+        version: link:../dian-xml
       '@contafi/motor':
         specifier: workspace:*
         version: link:../motor
@@ -161,6 +167,9 @@ importers:
       '@types/node':
         specifier: ^24.0.0
         version: 24.19.0
+      fflate:
+        specifier: ^0.8.3
+        version: 0.8.3
       typescript:
         specifier: ^5.9.0
         version: 5.9.3

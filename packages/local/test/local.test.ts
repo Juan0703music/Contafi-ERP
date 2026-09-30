@@ -55,9 +55,9 @@ beforeAll(async () => {
 describe('base local', () => {
   it('aplica las migraciones una sola vez y rechaza una base de una versión más nueva', async () => {
     const b = baseNode();
-    expect(await migrar(b)).toBe(1);
+    expect(await migrar(b)).toBe(2);
     expect(await migrar(b)).toBe(0);
-    expect(await versionEsquema(b)).toBe(1);
+    expect(await versionEsquema(b)).toBe(2);
     b.db.exec('pragma user_version = 99');
     await expect(migrar(b)).rejects.toThrow(/versión más nueva/);
   });

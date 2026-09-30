@@ -91,8 +91,9 @@ function codigoDeMotivo(motivo: string | null): string {
   return m ? m[1]! : 'RECHAZADO_SERVIDOR';
 }
 
-const aResultado = (clave: string, r: ResultadoRegistro): ResultadoItem => ({
-  id: r.id,
+const aResultado = (idEnviado: string, clave: string, r: ResultadoRegistro): ResultadoItem => ({
+  id: idEnviado,
+  id_servidor: r.estado === 'rechazado' ? null : r.id,
   clave_idempotencia: clave,
   estado: r.estado,
   numero: r.numero,
@@ -134,12 +135,12 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
       // Puede ser un reintento de algo que ya entró (y, por ejemplo, el período se cerró después).
       const existente = await repo.buscarPorClave(lote.empresa_id, c.clave_idempotencia);
       resultados.push(existente
-        ? aResultado(c.clave_idempotencia, { ...existente, repetido: true })
-        : { id: c.id, clave_idempotencia: c.clave_idempotencia, estado: 'rechazado', numero: null, errores, repetido: false });
+        ? aResultado(c.id, c.clave_idempotencia, { ...existente, repetido: true })
+        : { id: c.id, id_servidor: null, clave_idempotencia: c.clave_idempotencia, estado: 'rechazado', numero: null, errores, repetido: false });
       continue;
     }
     const r = await repo.registrar({ ...c, empresa_id: lote.empresa_id, dispositivo_id: lote.dispositivo.id });
-    resultados.push(aResultado(c.clave_idempotencia, r));
+    resultados.push(aResultado(c.id, c.clave_idempotencia, r));
   }
   await repo.marcarSincronizacion(lote.dispositivo);
   return { version_protocolo: VERSION_PROTOCOLO, terceros, resultados };

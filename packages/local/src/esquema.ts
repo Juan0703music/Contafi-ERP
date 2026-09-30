@@ -69,6 +69,20 @@ export const MIGRACIONES: readonly string[][] = [
        clave text primary key, empresa_id text, contenido text not null, actualizado_en text not null
      ) strict`,
   ],
+  // 2 · Importación de facturas electrónicas de la DIAN (Fase 4)
+  [
+    `create table documentos_dian (
+       empresa_id text not null, cufe text not null, tipo text not null, sentido text not null check (sentido in ('compra', 'venta')),
+       numero text not null, tercero_nit text not null, tercero_nombre text not null, fecha text not null,
+       total integer not null, comprobante_id text, importado_en text not null,
+       primary key (empresa_id, cufe)
+     ) strict`,
+    // Cuenta que el contador eligió para cada proveedor: se "aprende" al importar (sección 11.1).
+    `create table reglas_proveedor (
+       empresa_id text not null, nit text not null, cuenta text not null, actualizado_en text not null,
+       primary key (empresa_id, nit)
+     ) strict`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

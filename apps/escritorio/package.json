@@ -23,7 +23,8 @@
     "@tauri-apps/api": "^2.12.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "write-excel-file": "^4.1.1"
+    "write-excel-file": "^4.1.1",
+    "@contafi/dian-xml": "workspace:*"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.0",

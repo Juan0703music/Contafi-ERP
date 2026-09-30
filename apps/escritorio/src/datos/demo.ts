@@ -44,7 +44,7 @@ export async function sembrarDemo(base: BaseLocal): Promise<void> {
   const f = (mes: number, dia: number) => `${anio}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
   const movimientos: [string, string, string, Linea[]][] = [
     ['SI', f(1, 2), 'Saldos iniciales — aporte de los socios', [D('111005', '50000000'), D('110505', '5000000'), C('310505', '55000000')]],
-    ['FC', f(1, 15), 'Compra de mercancía SN-10457', [D('143505', '18000000', norte), D('240810', '3420000', norte), C('220505', '20970000', norte), C('236540', '450000', norte)]],
+    ['FC', f(1, 15), 'Compra de mercancía SN-10321', [D('143505', '18000000', norte), D('240810', '3420000', norte), C('220505', '20970000', norte), C('236540', '450000', norte)]],
     ['FV', f(2, 10), 'Venta FE-1001 a El Roble', [D('130505', '29750000', roble), C('413595', '25000000', roble), C('240805', '4750000', roble)]],
     ['CG', f(2, 10), 'Costo de la venta FE-1001', [D('613595', '14400000'), C('143505', '14400000')]],
     ['RC', f(3, 5), 'Recaudo FE-1001', [D('111005', '29750000', roble), C('130505', '29750000', roble)]],
@@ -83,11 +83,11 @@ export function transporteDemo(base: BaseLocal): Transporte {
           lineas: c.lineas.map((l) => ({ cuenta: l.cuenta, terceroId: l.tercero_id, debito: aCentavos(l.debito), credito: aCentavos(l.credito) })),
         }, ctx);
         if (errores.length) {
-          resultados.push({ id: c.id, clave_idempotencia: c.clave_idempotencia, estado: 'rechazado', numero: null, errores, repetido: false });
+          resultados.push({ id: c.id, id_servidor: null, clave_idempotencia: c.clave_idempotencia, estado: 'rechazado', numero: null, errores, repetido: false });
           continue;
         }
         const [{ n }] = await base.consultar<{ n: number }>(`select count(*) as n from comprobantes where empresa_id = ? and tipo = ? and numero is not null`, [lote.empresa_id, c.tipo]) as [{ n: number }];
-        resultados.push({ id: c.id, clave_idempotencia: c.clave_idempotencia, estado: 'contabilizado', numero: formatearConsecutivo(c.tipo, Number(n) + 1 + resultados.filter((r) => r.numero?.startsWith(`${c.tipo}-`)).length), errores: [], repetido: false });
+        resultados.push({ id: c.id, id_servidor: c.id, clave_idempotencia: c.clave_idempotencia, estado: 'contabilizado', numero: formatearConsecutivo(c.tipo, Number(n) + 1 + resultados.filter((r) => r.numero?.startsWith(`${c.tipo}-`)).length), errores: [], repetido: false });
       }
       await new Promise((r) => setTimeout(r, 600)); // que se note el estado "sincronizando"
       return {

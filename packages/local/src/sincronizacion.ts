@@ -139,6 +139,17 @@ function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSi
   }
   for (const x of r.resultados) {
     resumen.enviados++;
+    if (x.id_servidor && x.id_servidor !== x.id) {
+      // El servidor ya tenía este documento (p. ej. la misma factura DIAN importada en otro PC):
+      // se descarta la copia local; la del servidor llega en la descarga de cambios.
+      if (x.estado === 'contabilizado') resumen.contabilizados++; else resumen.porAprobar++;
+      out.push(
+        s('update documentos_dian set comprobante_id = ? where comprobante_id = ?', x.id_servidor, x.id),
+        s(`delete from cola_salida where tipo = 'comprobante' and registro_id = ?`, x.id),
+        s('delete from comprobantes where id = ?', x.id),
+      );
+      continue;
+    }
     if (x.estado === 'rechazado') {
       resumen.rechazados++;
       out.push(s(`update comprobantes set estado = 'rechazado', errores = ?, sincronizado_en = ? where id = ?`, JSON.stringify(x.errores), t, x.id));

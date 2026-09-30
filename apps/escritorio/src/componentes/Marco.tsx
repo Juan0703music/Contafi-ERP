@@ -9,6 +9,7 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
   { grupo: 'General', items: [{ ruta: 'panel', etiqueta: 'Panel', icono: 'dashboard' }] },
   { grupo: 'Contabilidad', items: [
     { ruta: 'comprobantes', etiqueta: 'Comprobantes', icono: 'file' },
+    { ruta: 'importar', etiqueta: 'Importar DIAN', icono: 'receipt' },
     { ruta: 'cuentas', etiqueta: 'Plan de cuentas', icono: 'tree' },
     { ruta: 'balance', etiqueta: 'Balance de prueba', icono: 'scale' },
   ] },

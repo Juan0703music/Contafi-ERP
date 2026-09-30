@@ -60,7 +60,7 @@ describe('envío de la cola de salida (sección 9.2)', () => {
     const l = lote([cg('2026-09-03', [['519595', '80000', '0'], ['111005', '0', '80000']])]);
     const primero = await procesarEnvio(repo(), l);
     const segundo = await procesarEnvio(repo(), l);
-    expect(segundo.resultados[0]).toMatchObject({ id: primero.resultados[0]!.id, numero: 'CG-000003', repetido: true });
+    expect(segundo.resultados[0]).toMatchObject({ id: primero.resultados[0]!.id, id_servidor: primero.resultados[0]!.id, numero: 'CG-000003', repetido: true });
   });
 
   it('el motor rechaza antes de tocar la base, con el detalle por línea, y no deja huecos en la numeración', async () => {
@@ -148,6 +148,17 @@ describe('terceros creados sin conexión', () => {
 
   it('un usuario sin permiso de crear no registra terceros', async () => {
     await expect(procesarEnvio(repositorioPglite(db, beto), lote([], [nuevoTercero('800197268', 4, 'DIAN')]))).rejects.toThrow(ErrorAcceso);
+  });
+});
+
+describe('mismo documento enviado desde dos PC con distinto id', () => {
+  it('el segundo recibe el id del servidor para descartar su copia', async () => {
+    const pc1 = cg('2026-09-13', [['519595', '300', '0'], ['111005', '0', '300']], { clave_idempotencia: 'dian:empresa:CUFE-ABC' });
+    const pc2 = { ...pc1, id: randomUUID() };
+    const r1 = await procesarEnvio(repositorioPglite(db, ana), lote([pc1]));
+    const r2 = await procesarEnvio(repositorioPglite(db, ana), lote([pc2]));
+    expect(r1.resultados[0]).toMatchObject({ id: pc1.id, id_servidor: pc1.id, repetido: false });
+    expect(r2.resultados[0]).toMatchObject({ id: pc2.id, id_servidor: pc1.id, repetido: true, numero: r1.resultados[0]!.numero });
   });
 });
 

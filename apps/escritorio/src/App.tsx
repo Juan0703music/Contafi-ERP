@@ -10,6 +10,7 @@ import { Balance } from './pantallas/Balance.tsx';
 import { Terceros } from './pantallas/Terceros.tsx';
 import { Sincronizacion } from './pantallas/Sincronizacion.tsx';
 import { Libros } from './pantallas/Libros.tsx';
+import { ImportarDian } from './pantallas/ImportarDian.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
@@ -38,6 +39,7 @@ function Pantallas() {
     <Marco>
       {ruta === 'panel' && <Panel nuevoComprobante={abrirNuevo} />}
       {ruta === 'comprobantes' && <Comprobantes nuevoComprobante={abrirNuevo} />}
+      {ruta === 'importar' && <ImportarDian />}
       {ruta === 'cuentas' && <Cuentas />}
       {ruta === 'balance' && <Balance />}
       {ruta === 'libros' && <Libros />}
