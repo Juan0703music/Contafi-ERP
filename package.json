@@ -1,0 +1,21 @@
+{
+  "name": "contafi",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Contafi ERP — software contable multi-empresa para contadores en Colombia",
+  "packageManager": "pnpm@10.34.6",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "check": "pnpm typecheck && pnpm test"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@tauri-apps/cli"
+    ]
+  }
+}

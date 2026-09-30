@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    name: Tipos y pruebas (motor, XML DIAN, base de datos)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  poc-windows:
+    name: Instalador Windows de la prueba de concepto (sin firmar)
+    runs-on: windows-latest
+    needs: pruebas
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/poc-escritorio/src-tauri
+      - run: pnpm install --frozen-lockfile
+      - uses: tauri-apps/tauri-action@v0
+        with:
+          projectPath: apps/poc-escritorio
+          tauriScript: pnpm tauri
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contafi-poc-windows
+          path: |
+            apps/poc-escritorio/src-tauri/target/release/bundle/nsis/*.exe
+            apps/poc-escritorio/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error

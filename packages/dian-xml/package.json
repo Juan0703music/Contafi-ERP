@@ -1,0 +1,25 @@
+{
+  "name": "@contafi/dian-xml",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lectura de facturas electrónicas de la DIAN (UBL 2.1 / AttachedDocument) y propuesta de asiento.",
+  "exports": { ".": "./src/index.ts" },
+  "bin": { "contafi-leer-xml": "./src/cli.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "leer": "node src/cli.ts"
+  },
+  "dependencies": {
+    "@contafi/motor": "workspace:*",
+    "@contafi/shared": "workspace:*",
+    "fast-xml-parser": "^5.2.0",
+    "fflate": "^0.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

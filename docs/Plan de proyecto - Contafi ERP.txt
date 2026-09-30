@@ -1,0 +1,985 @@
+===============================================================================================
+PLAN DE PROYECTO — CONTAFI ERP
+Software contable para Windows, conectado a la nube, con modo sin conexión y asesor de IA local
+Versión 1.0 · 29 de septiembre de 2026
+===============================================================================================
+
+CÓMO USAR ESTE DOCUMENTO
+- Las secciones 1 a 14 son la referencia: qué se va a construir y por qué.
+- La sección 15 es el paso a paso. Cada fase tiene tareas, entregables y un criterio de salida.
+  No pases a la siguiente fase sin cumplir el criterio de salida.
+- Todo lo normativo (DIAN, NIIF, datos personales, IVA) debe confirmarlo tu contador asesor y un
+  abogado. Las normas y resoluciones cambian; aquí se citan como punto de partida.
+- Los precios de terceros y los costos son estimados a septiembre de 2026. Cotízalos antes de
+  comprometerte.
+
+ÍNDICE
+   1. Resumen ejecutivo
+   2. Punto de partida: el prototipo actual
+   3. Nicho, propuesta de valor y validación
+   4. Equipo y apoyo externo
+   5. Requisitos legales, tributarios y de empresa
+   6. Arquitectura técnica
+   7. Modelo de datos
+   8. Reglas del motor contable
+   9. Modo sin conexión, sincronización y fallas de energía
+  10. Seguridad y protección de datos
+  11. Funcionalidades: MVP y versiones posteriores
+  12. Asesor de IA local ("Jarvis")
+  13. Calidad y pruebas
+  14. Infraestructura, despliegue y operación
+  15. Fases de ejecución (paso a paso)
+  16. Cronograma resumido
+  17. Modelo de negocio y precios
+  18. Costos y presupuesto
+  19. Comercialización, onboarding y soporte
+  20. Riesgos y mitigaciones
+  21. Indicadores (KPI)
+  22. Checklist de lanzamiento
+  23. Primeras dos semanas: qué hacer ya
+
+
+===============================================================================================
+1. RESUMEN EJECUTIVO
+===============================================================================================
+
+QUÉ ES
+  Contafi es un software contable para Colombia que se instala en Windows, trabaja sobre una base
+  de datos local y se sincroniza con la nube. Sigue funcionando sin internet y después de cortes
+  de energía, e incluye un asesor de IA que corre en el propio PC.
+
+PARA QUIÉN
+  Contadores independientes y firmas contables pequeñas que llevan la contabilidad de varias
+  empresas (micro y pequeñas empresas, NIIF Grupo 2 y Grupo 3).
+
+POR QUÉ LO ELEGIRÍAN
+  - Un solo programa multi-empresa pensado para el contador. La competencia cobra por empresa.
+  - Funciona sin internet y resiste cortes de luz.
+  - Contabilidad automática a partir de las facturas electrónicas (XML de la DIAN).
+  - Asesor de IA local: sin costo por consulta y sin enviar datos de clientes a terceros.
+
+MODELO DE NEGOCIO
+  Suscripción mensual o anual por contador, con un paquete de empresas incluido.
+  Desde $119.000 al mes (antes de IVA). Detalle en la sección 17.
+
+TIEMPO ESTIMADO (una persona a tiempo completo)
+  - Unos 7–8 meses hasta empezar el piloto.
+  - Unos 10 meses hasta terminar el piloto (dos cierres mensuales reales).
+  - Unos 11–12 meses hasta el lanzamiento comercial.
+  A medio tiempo, casi el doble.
+
+COSTO FIJO DE OPERACIÓN AL INICIO
+  Unos US$80 al mes (Supabase Pro, Vercel Pro que ya pagas, dominio y respaldos), más el
+  certificado de firma de código anual. Detalle en la sección 18.
+
+
+===============================================================================================
+2. PUNTO DE PARTIDA: EL PROTOTIPO ACTUAL
+===============================================================================================
+
+ARCHIVOS
+  - Prototipo: ~/Descargas/resoluciones_2021/Contafi ERP — Núcleo Financiero-Contable.html
+    (ya con el rediseño Liquid Glass).
+  - Respaldo del original: "... (respaldo antes del rediseño).html", en la misma carpeta.
+  - Lienzo de diseño: https://claude.ai/artifact/WFLurEJZzxDWHAi1NAdey7
+
+QUÉ SE REUTILIZA
+  - El sistema visual: tokens de color claro/oscuro, tipografía Geist + Geist Mono, componentes,
+    modo "reducir transparencia".
+  - La lógica del motor como especificación funcional:
+      postEntry, approveEntry, annulEntry        -> comprobantes, aprobación y anulación
+      createSalesInvoice                         -> venta con IVA y costo de ventas
+      createPurchaseBill                         -> compra con costo promedio ponderado
+      registerCollection, registerPayment        -> recaudos y pagos
+      registerCashMovement                       -> movimientos de tesorería
+      trialBalance, incomeStatement, balanceSheet -> reportes
+      cierres de período, auditoría, matriz de permisos (PERMS)
+  - El PUC semilla y los datos de demostración.
+
+QUÉ NO SIRVE PARA PRODUCCIÓN (HAY QUE REHACERLO)
+  - Los datos viven en el localStorage del navegador: se pierden al limpiarlo y no tienen respaldo.
+  - Permisos y contraseñas se validan en el cliente; las contraseñas se guardan en texto plano.
+  - Cualquiera puede alterar saldos o comprobantes desde la consola del navegador.
+  - Los montos usan números de punto flotante y se redondean a pesos enteros.
+  - La numeración de comprobantes no controla que dos equipos pidan el mismo número.
+  - Error de fechas: todayISO() usa toISOString() (hora UTC). Después de las 7:00 p. m. en
+    Colombia registra la fecha del día siguiente. Hay que usar la zona America/Bogota.
+  - Faltan retenciones, tarifas múltiples de IVA, notas crédito y débito, y cierre anual.
+
+
+===============================================================================================
+3. NICHO, PROPUESTA DE VALOR Y VALIDACIÓN
+===============================================================================================
+
+HIPÓTESIS
+  Los contadores independientes que llevan entre 5 y 50 empresas pierden muchas horas pasando
+  facturas a mano, pagan licencias de escritorio caras o dependen de que cada cliente pague una
+  suscripción. Pagarían por un programa multi-empresa que:
+  - funcione sin internet,
+  - contabilice automáticamente las facturas electrónicas,
+  - les avise de vencimientos y problemas de todas sus empresas en un solo lugar.
+
+MENSAJE COMERCIAL
+  "Lleva todas tus empresas en un solo programa, aunque se vaya el internet, con un asesor de IA
+  que no manda tus datos a nadie."
+
+VALIDACIÓN (FASE 0)
+  - Entrevistar 8–10 contadores (guion en la Fase 0 de la sección 15).
+  - Criterio de éxito: al menos 5 de 10 pagarían $119.000 al mes o más y 3 aceptan ser piloto.
+  - Si no se cumple: ajustar el nicho (por ejemplo, vender directo a pymes) ANTES de construir.
+
+
+===============================================================================================
+4. EQUIPO Y APOYO EXTERNO
+===============================================================================================
+
+  TÚ                   Producto, desarrollo y soporte inicial.
+
+  CONTADOR ASESOR      Contador público con tarjeta profesional. Valida el PUC, NIIF, impuestos
+                       y reportes; prepara los casos de prueba contables; revisa el piloto.
+                       Por horas, o con participación en el negocio. Idealmente es también uno
+                       de los pilotos.
+
+  ABOGADO              Una vez al inicio y luego por consultas: términos, licencia de uso,
+                       política de datos, contratos y registro de marca.
+
+  CONTADOR DE TU SAS   Lleva la contabilidad y declaraciones de tu propia empresa (puede ser el
+                       mismo asesor).
+
+  PILOTOS              2–3 contadores con empresas reales.
+
+  MÁS ADELANTE         Soporte/ventas a medio tiempo y un diseñador para material comercial.
+
+
+===============================================================================================
+5. REQUISITOS LEGALES, TRIBUTARIOS Y DE EMPRESA
+===============================================================================================
+
+5.1 TU EMPRESA
+  [ ] Verificar que el nombre "Contafi" esté libre:
+        - Consulta de antecedentes marcarios en la SIC (clases de Niza 9 "software" y
+          42 "software como servicio").
+        - Homonimia en el RUES (registro mercantil).
+        - Dominio (.co / .com) y redes sociales.
+      Si está ocupado, elige otro nombre YA, antes de invertir en marca.
+  [ ] Constituir una SAS en la Cámara de Comercio: estatutos, PRE-RUT y registro mercantil.
+  [ ] RUT definitivo en la DIAN con la actividad económica correcta (por ejemplo CIIU 6201
+      "desarrollo de sistemas informáticos"; confirmar con el contador).
+  [ ] Abrir cuenta bancaria empresarial.
+  [ ] Habilitarte como facturador electrónico y solicitar la numeración de facturación en la
+      DIAN. Al inicio puedes usar la solución gratuita de facturación de la DIAN.
+  [ ] Definir el régimen tributario (ordinario o Simple) con el contador.
+  [ ] Solicitar el registro de la marca en la SIC (clases 9 y 42).
+  [ ] Registrar el software en la Dirección Nacional de Derecho de Autor (DNDA). Es un trámite en
+      línea y gratuito que prueba la autoría del código.
+
+5.2 IVA DE TU SERVICIO Y REGISTRO DE TUS INGRESOS
+  - Confirmar con el contador si tu suscripción califica como servicio de computación en la nube
+    excluido de IVA (artículo 476 del Estatuto Tributario y su reglamentación) o si lleva IVA del
+    19 %. Como Contafi es app instalable + nube, la forma en que estructures la oferta puede
+    cambiar la calificación. Defínelo antes de publicar precios.
+  - Cobros anuales por anticipado: se registran como ingreso recibido por anticipado (pasivo,
+    cuenta 2705 del PUC) y se reconocen como ingreso mes a mes, a medida que prestas el servicio.
+
+5.3 DATOS PERSONALES (Ley 1581 de 2012, Decreto 1377 de 2013, compilados en el Decreto 1074 de 2015)
+  Eres RESPONSABLE de los datos de tus usuarios (contadores) y ENCARGADO de los datos que ellos
+  cargan de sus clientes (terceros, empleados).
+  [ ] Política de tratamiento de datos publicada.
+  [ ] Autorización expresa de tratamiento al registrarse.
+  [ ] Contrato de transmisión de datos (encargado) con cada cliente, incluido en los términos.
+  [ ] Procedimiento de consultas y reclamos (habeas data) con los plazos legales.
+  [ ] Transferencia o transmisión internacional: tus servidores (Supabase, Vercel) están fuera de
+      Colombia. Validar con el abogado los requisitos de la SIC sobre países con nivel adecuado de
+      protección.
+  [ ] Registro Nacional de Bases de Datos (RNBD) en la SIC, si tu empresa queda obligada (hoy
+      aplica a sociedades con activos superiores a 100.000 UVT; verificar).
+  [ ] Protocolo de incidentes de seguridad: a quién, cómo y en cuánto tiempo se reporta (SIC y
+      afectados).
+
+5.4 TÉRMINOS Y CONTRATOS
+  [ ] Términos de servicio y licencia de uso (EULA) del programa de escritorio.
+  [ ] Cláusula de responsabilidad: la responsabilidad profesional sobre la contabilidad es del
+      contador; Contafi es una herramienta.
+  [ ] Acuerdo de nivel de servicio sencillo: disponibilidad, tiempos de respuesta de soporte y
+      respaldos.
+  [ ] Retención y portabilidad: el cliente puede exportar todos sus datos cuando quiera y durante
+      un plazo definido después de cancelar.
+  [ ] Aceptación electrónica válida (Ley 527 de 1999): guardar versión del documento, fecha,
+      usuario e IP de cada aceptación.
+
+5.5 NORMATIVA QUE EL SOFTWARE DEBE CUMPLIR (validar vigencia con el asesor)
+  - NIIF: Ley 1314 de 2009 y Decreto 2420 de 2015 (Grupo 2: NIIF para Pymes; Grupo 3:
+    microempresas).
+  - Libros de comercio: Código de Comercio, artículos 48 a 60. Conservación de libros y soportes
+    por 10 años (artículo 28 de la Ley 962 de 2005).
+  - Facturación electrónica: Resolución 000165 de 2023 (anexo técnico) y sus actualizaciones.
+  - Documento soporte en adquisiciones a no obligados a facturar: Resolución 000167 de 2021.
+  - Nómina electrónica: Resolución 000013 de 2021 (solo si se integra nómina).
+  - Información exógena: resolución anual de la DIAN; los formatos cambian por año gravable.
+  - Retención en la fuente, IVA, ICA (municipal), UVT anual y calendario tributario anual.
+
+  REGLA DE ORO: todo lo que cambia cada año (UVT, tarifas, bases, calendario, formatos) va en
+  tablas de parámetros que se actualizan desde el servidor. Nunca escrito fijo en el código.
+
+5.6 LICENCIAS DE TERCEROS
+  [ ] Verificar que todo lo que se distribuye permita uso comercial y cumplir sus avisos (incluir
+      un archivo de licencias en el instalador). Tauri (MIT/Apache 2.0), llama.cpp (MIT), SQLite
+      (dominio público), SQLCipher (edición comunitaria, tipo BSD). Revisar la licencia del modelo
+      de IA elegido (preferir Apache 2.0).
+
+
+===============================================================================================
+6. ARQUITECTURA TÉCNICA
+===============================================================================================
+
+6.1 DIAGRAMA
+
+  PC CON WINDOWS — Contafi (aplicación de escritorio Tauri)
+   ├─ Interfaz React + TypeScript (diseño Liquid Glass)
+   ├─ Motor contable (paquete TypeScript compartido)
+   ├─ SQLite local cifrado (SQLCipher)        <- se trabaja aquí, con o sin internet
+   ├─ Cola de sincronización (outbox)         <- lo pendiente de subir
+   ├─ IA local: llama.cpp + modelo GGUF       -> consulta el motor mediante herramientas
+   └─ Actualizador automático firmado
+                 ⇅  HTTPS cuando hay conexión
+  NUBE
+   ├─ Supabase: Postgres (fuente oficial), Auth + MFA, RLS, Storage
+   ├─ Vercel Pro: API de sincronización, importación de XML, PDF/Excel, cobros,
+   │              actualizaciones, sitio web y versión web opcional
+   └─ Proveedor tecnológico DIAN (facturación electrónica, versión 2)
+
+6.2 TECNOLOGÍAS
+  App de escritorio  Tauri 2 (instalador NSIS/MSI; usa WebView2, incluido en Windows 10/11).
+  Interfaz           React + TypeScript + Vite. TanStack Query (datos), TanStack Table (tablas
+                     grandes, virtualizadas), react-hook-form + zod (formularios y validación),
+                     Chart.js (gráficas).
+  Base local         SQLite con SQLCipher, accedida desde Rust (rusqlite) mediante comandos de
+                     Tauri. La llave de cifrado se protege con Windows DPAPI (ligada al usuario
+                     de Windows).
+  Motor contable     Paquete TypeScript puro (@contafi/motor), sin acceso a disco ni red. Lo usan
+                     la app y el servidor.
+  Dinero             Enteros en centavos (bigint) o decimal.js. NUNCA el tipo number de
+                     JavaScript para montos.
+  Servidor           Supabase (Postgres, Auth con MFA, RLS, Storage). API en Vercel (Next.js,
+                     route handlers) para sincronización, importación de XML, generación de
+                     PDF/Excel, webhooks de pagos y publicación de actualizaciones.
+  Tareas programadas Vercel Cron: respaldos lógicos, alertas, recordatorios de vencimientos,
+                     renovaciones de suscripción.
+  IA local           llama.cpp (llama-server) como proceso auxiliar en 127.0.0.1; modelo GGUF
+                     cuantizado; sqlite-vec para búsqueda semántica.
+  Otros servicios    Sentry (errores de la app y del servidor), Resend (correos), pasarela de
+                     pagos colombiana con cobro recurrente (Wompi o ePayco; confirmar
+                     condiciones) + transferencia/PSE para planes anuales.
+
+  Archivos grandes: Vercel limita el tamaño de lo que se envía a sus funciones (alrededor de
+  4.5 MB). Los ZIP de facturas se suben directo a Supabase Storage y una función los procesa
+  desde ahí.
+
+6.3 ESTRUCTURA DEL REPOSITORIO (monorepo con pnpm workspaces)
+  apps/desktop       App Tauri + React
+  apps/web           Next.js: sitio, cuenta del cliente, API
+  packages/motor     Reglas contables + pruebas
+  packages/ui        Componentes y tokens de diseño
+  packages/shared    Tipos, esquemas zod, catálogos (PUC, municipios, impuestos)
+  supabase/          Migraciones SQL, políticas RLS, datos semilla
+
+6.4 PRINCIPIOS
+  - El servidor es la fuente oficial; el PC trabaja con una copia local.
+  - El mismo motor corre en ambos lados; el servidor revalida TODO lo que llega.
+  - La base de datos tiene reglas de último recurso (partida doble, inmutabilidad) aunque el
+    código falle.
+  - Nada contable se borra ni se edita después de contabilizado: se anula con un reverso.
+  - Los parámetros tributarios están versionados por año y se actualizan sin reinstalar.
+
+
+===============================================================================================
+7. MODELO DE DATOS (tablas principales)
+===============================================================================================
+
+ORGANIZACIÓN Y ACCESO
+  firmas              id, nombre, plan, estado
+  usuarios            id (Supabase Auth), nombre, correo
+  membresias          firma_id, usuario_id, rol en la firma
+  empresas            id, firma_id, nit, dv, razon_social, grupo_niif, regimen, municipio,
+                      responsabilidades_fiscales
+  empresa_permisos    empresa_id, usuario_id, rol en esa empresa
+  sucursales, centros_costo
+
+CONTABILIDAD
+  cuentas             empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento,
+                      exige_tercero, exige_centro_costo, activa
+  periodos            empresa_id, año, mes, estado (abierto/cerrado), cerrado_por, cerrado_en
+  tipos_comprobante   empresa_id, codigo, nombre, prefijo
+  consecutivos        empresa_id, tipo, siguiente  (solo el servidor los asigna)
+  comprobantes        id (UUID), empresa_id, tipo, numero (vacío mientras está pendiente),
+                      fecha, concepto, estado (borrador / pendiente_sync / contabilizado /
+                      anulado / rechazado), origen, creado_por, dispositivo_id,
+                      clave_idempotencia, reversa_de
+  lineas              comprobante_id, cuenta, tercero_id, centro_costo_id, debito, credito,
+                      base_impuesto, nota
+
+TERCEROS E IMPUESTOS
+  terceros            empresa_id, tipo_doc, numero, dv, nombre, tipo (cliente / proveedor /
+                      empleado / otro), responsabilidades, direccion, municipio, correo
+  impuestos           codigo, tipo (IVA / RETEFUENTE / RETEIVA / RETEICA), tarifa, cuenta,
+                      vigencia_desde, vigencia_hasta
+  conceptos_retencion codigo, base_minima_uvt, tarifa, vigencia
+  parametros_anuales  año, uvt, topes y bases del año
+
+DOCUMENTOS
+  facturas_venta, facturas_compra, notas_credito, notas_debito, documentos_soporte
+                      cabecera + ítems, enlazados a su comprobante
+  documentos_electronicos  cufe/cude, xml, estado_dian, fuente (importado / emitido)
+
+INVENTARIO
+  productos, bodegas, movimientos_inventario (costo promedio ponderado)
+
+TESORERÍA
+  cuentas_bancarias, extractos, lineas_extracto, conciliaciones
+
+ACTIVOS FIJOS (versión posterior)
+  activos, depreciaciones
+
+SISTEMA
+  auditoria           solo se agregan registros: quién, qué, cuándo, antes/después,
+                      dispositivo, IP
+  cambios             secuencia por empresa para la sincronización incremental
+  dispositivos        id, usuario, nombre, ultima_sync, version_app
+  adjuntos            archivo en Storage + hash
+  alertas, suscripciones, pagos, aceptaciones_legales
+
+
+===============================================================================================
+8. REGLAS DEL MOTOR CONTABLE (no se pueden romper)
+===============================================================================================
+
+   1. Cada comprobante cumple: suma de débitos = suma de créditos > 0, con al menos dos líneas.
+   2. Una línea tiene débito o crédito, nunca ambos; ningún valor es negativo.
+   3. Solo las cuentas de movimiento (auxiliares) reciben líneas. Si la cuenta exige tercero o
+      centro de costo, es obligatorio.
+   4. No se contabiliza en períodos cerrados. Reabrir un período exige permiso y queda en
+      auditoría.
+   5. El consecutivo es único y sin huecos por tipo y empresa, y lo asigna SOLO el servidor al
+      contabilizar.
+   6. Un comprobante contabilizado es inmutable. Para corregirlo se anula con un comprobante de
+      reverso que indica el motivo.
+   7. Todo movimiento de inventario, cartera o bancos nace de un comprobante (trazabilidad).
+   8. Redondeo en centavos exactos, con una política documentada para los impuestos (por línea o
+      por total), igual a la del XML de la DIAN.
+   9. El balance de prueba siempre cuadra; activo = pasivo + patrimonio (incluido el resultado del
+      ejercicio).
+  10. El cierre anual cancela las cuentas de resultado (clases 4, 5, 6 y 7) contra la cuenta de
+      resultado del ejercicio y abre el nuevo año.
+
+  RESPALDO EN POSTGRES
+  - Un trigger rechaza comprobantes descuadrados al pasar a contabilizado.
+  - Reglas que impiden modificar o borrar comprobantes contabilizados y registros de auditoría.
+  - RLS por empresa en todas las tablas.
+
+
+===============================================================================================
+9. MODO SIN CONEXIÓN, SINCRONIZACIÓN Y FALLAS DE ENERGÍA
+===============================================================================================
+
+9.1 ESCRITURA
+  - Toda operación se guarda primero en SQLite, dentro de una transacción, con un id único
+    (UUID) y una clave de idempotencia.
+  - Se agrega a la cola de salida con estado "pendiente".
+  - Los comprobantes hechos sin conexión se muestran como "Pendiente de sincronizar", sin número
+    oficial (por ejemplo "CG-LOCAL-7F3A").
+
+9.2 ENVÍO
+  - Cuando hay conexión, la app envía la cola en orden. El servidor valida con el mismo motor,
+    asigna el consecutivo, contabiliza y responde.
+  - Idempotencia: si un envío se repite (por ejemplo, un corte a mitad del envío), el servidor
+    reconoce la clave y no lo duplica.
+  - Si el servidor rechaza (período cerrado, sin permiso, descuadre, cuenta inactiva), el
+    comprobante queda "Rechazado" con el motivo, para que el usuario lo corrija.
+
+9.3 RECEPCIÓN
+  - La app pide los cambios desde la última secuencia que conoce (sincronización incremental por
+    empresa) y actualiza su copia local.
+  - Primera instalación o PC nuevo: descarga inicial de la empresa con barra de progreso.
+
+9.4 CONFLICTOS
+  - Comprobantes: casi no hay conflictos, porque no se editan.
+  - Datos maestros (terceros, productos, cuentas): gana el último cambio confirmado por el
+    servidor. El cambio que pierde queda en auditoría y se avisa al usuario.
+  - Inventario: las ventas sin conexión pueden dejar stock negativo; el servidor lo acepta pero
+    genera una alerta (configurable).
+  - Los saldos que la app muestra sin conexión llevan la marca "a la última sincronización
+    (fecha y hora)".
+
+9.5 FALLAS DE ENERGÍA
+  - SQLite en modo WAL con synchronous=FULL: lo que se confirmó sobrevive a un apagón.
+  - Autoguardado de formularios cada 3–5 segundos como borrador local.
+  - Al iniciar la app: verificación de integridad (PRAGMA integrity_check). Si hay daño, se
+    restaura el último respaldo local y se vuelve a sincronizar desde el servidor.
+  - Respaldo local diario cifrado (se conservan los últimos 7) y exportación manual.
+  - En el material de bienvenida, recomendar a los clientes una UPS.
+
+9.6 FACTURACIÓN ELECTRÓNICA SIN CONEXIÓN (versión 2)
+  - Sin internet no se puede validar ante la DIAN. Implementar el procedimiento de contingencia
+    que defina la DIAN (confirmar con el asesor) y la transmisión posterior.
+
+9.7 LÍMITES
+  - Aviso visible si un equipo lleva más de 7 días sin sincronizar.
+  - La app funciona sin conexión hasta un plazo definido (por ejemplo 30 días) antes de pedir que
+    se valide la suscripción en línea.
+
+
+===============================================================================================
+10. SEGURIDAD Y PROTECCIÓN DE DATOS
+===============================================================================================
+
+  - Una cuenta por persona (no por rol), contraseña segura y MFA (TOTP) obligatorio para
+    administradores.
+  - Los permisos por empresa se aplican en el servidor (RLS). La app los replica solo para
+    mostrar u ocultar opciones.
+  - Base local cifrada (SQLCipher) con llave protegida por DPAPI. Al cerrar sesión, la llave se
+    borra de la memoria.
+  - Comunicación solo por HTTPS, con tokens de corta duración que se renuevan.
+  - La IA local escucha solo en 127.0.0.1, en un puerto aleatorio y con un token por sesión.
+  - Los secretos viven solo en el servidor. Nunca poner la llave service_role de Supabase en la
+    app.
+  - Auditoría inmutable de accesos y cambios.
+  - Límite de intentos de inicio de sesión y de peticiones a la API.
+  - Actualizaciones firmadas (el actualizador de Tauri verifica la firma antes de instalar).
+  - Revisión de seguridad antes del piloto:
+      - pruebas de RLS (el usuario A nunca ve la empresa B),
+      - revisión de dependencias (npm audit, cargo audit),
+      - revisión con la guía OWASP.
+  - Respaldos: los diarios de Supabase + una exportación propia nocturna, cifrada, en otro
+    proveedor, con retención de 10 años para períodos cerrados. Prueba de restauración cada mes.
+  - Plan de incidentes escrito: quién responde, cómo y en cuánto tiempo se notifica a la SIC y a
+    los clientes.
+
+
+===============================================================================================
+11. FUNCIONALIDADES: MVP Y VERSIONES POSTERIORES
+===============================================================================================
+
+11.1 MVP (lo necesario para el piloto)
+  GENERAL
+    - Inicio de sesión; firmas, empresas, usuarios y roles; selector de empresa.
+    - Modo sin conexión, sincronización, actualizaciones automáticas.
+    - Tema claro/oscuro y "reducir transparencia".
+  CONTABILIDAD
+    - PUC por empresa (plantilla y personalizable).
+    - Comprobantes manuales; libro diario y libro mayor.
+    - Balance de prueba por niveles; auxiliares por cuenta y por tercero.
+    - Cierres mensuales y cierre anual.
+    - Saldos iniciales por importación (plantilla Excel/CSV).
+  IMPUESTOS
+    - IVA 19 %, 5 %, exento y excluido.
+    - Retención en la fuente con conceptos y bases en UVT; reteIVA; reteICA por municipio
+      (tarifas configurables).
+    - Auxiliares de impuestos por período.
+  TERCEROS
+    - Con cálculo del dígito de verificación del NIT, responsabilidades fiscales e importación
+      masiva.
+  VENTAS Y COMPRAS (sin emisión electrónica todavía)
+    - Registro de facturas y notas; cartera y cuentas por pagar por edades; recaudos y pagos.
+  IMPORTACIÓN DE LA DIAN (la función estrella)
+    - Carga de XML/ZIP de facturas electrónicas emitidas y recibidas (UBL 2.1).
+    - Reconoce tercero, impuestos y totales, y propone el asiento.
+    - Reglas por proveedor o concepto: "aprende" la cuenta que usa cada proveedor.
+    - Revisión y contabilización en lote; detección de duplicados por CUFE.
+  TESORERÍA
+    - Bancos y caja; importación de extractos (Excel/CSV de los bancos principales).
+    - Conciliación bancaria asistida.
+  INVENTARIO BÁSICO
+    - Productos y kardex por costo promedio ponderado.
+  REPORTES
+    - Estado de situación financiera, estado de resultados, auxiliares.
+    - Exportación a PDF y Excel; libros oficiales.
+  PANEL DEL CONTADOR
+    - Todas sus empresas en una sola vista: pendientes, alertas y vencimientos.
+  JARVIS V1
+    - Preguntas sobre los datos con herramientas + alertas proactivas (sección 12).
+
+11.2 VERSIÓN 1.x (después del piloto)
+  - Estado de flujo de efectivo, estado de cambios en el patrimonio y notas básicas.
+  - Activos fijos y depreciación; centros de costo con reportes.
+  - Información exógena (formatos del año gravable).
+  - Borradores de declaraciones de IVA y retención como papel de trabajo.
+  - Jarvis con normativa (búsqueda en la ley) y voz.
+
+11.3 VERSIÓN 2 (con clientes pagando)
+  - Emisión de factura electrónica, notas y documento soporte mediante un proveedor tecnológico
+    autorizado (por API). No convertirse en proveedor tecnológico: los requisitos son pesados y
+    exige firma digital propia.
+  - Nómina electrónica (propia o integrada).
+  - Portal web para que la empresa cliente suba sus soportes al contador.
+  - Presupuestos y multi-moneda.
+
+
+===============================================================================================
+12. ASESOR DE IA LOCAL ("JARVIS")
+===============================================================================================
+
+12.1 PRINCIPIO: LA IA NO CALCULA
+  Los modelos pequeños inventan cifras. El modelo entiende la pregunta en español, llama
+  herramientas del motor contable y explica los resultados. Toda cifra que ve el usuario sale del
+  motor, nunca del modelo.
+
+12.2 COMPONENTES
+  - Motor: llama.cpp (llama-server) como proceso auxiliar de Tauri, con API compatible con
+    OpenAI en 127.0.0.1.
+  - Modelo: formato GGUF cuantizado (Q4_K_M). Candidatos a probar: familia Qwen (licencia
+    Apache 2.0, buen español y buen uso de herramientas) en tamaños de 4B y 8B parámetros.
+    Compararlos con Gemma y Llama pequeños, revisando sus licencias para uso comercial. Se elige
+    con la evaluación del punto 12.5.
+  - Descarga: el modelo NO va dentro del instalador. Se descarga dentro de la app, de forma
+    opcional (2–5 GB), reanudable y verificada con hash.
+  - Niveles según el hardware (se detecta al instalar):
+        Menos de 8 GB de RAM   -> IA desactivada; queda el asistente por reglas actual
+        8 a 15 GB de RAM       -> modelo de ~3–4B parámetros
+        16 GB o más            -> modelo de ~7–8B parámetros
+        Con GPU compatible     -> aceleración opcional (Vulkan o CUDA)
+  - El proceso de IA arranca cuando se necesita y libera la memoria tras unos minutos sin uso.
+
+12.3 HERRAMIENTAS (funciones que el modelo puede llamar)
+  saldo_cuenta, movimientos_cuenta, cartera_por_edades, cuentas_por_pagar, estado_resultados,
+  balance_general, comparar_periodos, iva_periodo, retenciones_periodo, top_gastos,
+  inventario_bajo, vencimientos_tributarios, buscar_tercero, buscar_comprobante,
+  alertas_empresa.
+  - Versión 1: solo lectura.
+  - Versión 2: acciones con confirmación (por ejemplo, "crea el borrador del comprobante de
+    nómina"), siempre como borrador que el contador revisa.
+
+12.4 ALERTAS PROACTIVAS (las calculan reglas, no la IA)
+  - Cartera vencida a más de 30, 60 y 90 días.
+  - Pagos a proveedores próximos a vencer.
+  - Vencimientos del calendario tributario de cada empresa (según el último dígito del NIT).
+  - IVA estimado del período.
+  - Descuadres y comprobantes rechazados.
+  - Períodos sin cerrar.
+  - Inventario bajo.
+  - Facturas importadas sin contabilizar.
+  - Gastos inusuales frente al promedio.
+  La IA redacta el resumen: "Buenos días, esta semana tienes 3 vencimientos...".
+
+12.5 EVALUACIÓN ANTES DE ELEGIR MODELO
+  - Banco de 150 preguntas reales de contadores (del piloto), cada una con su respuesta esperada.
+  - Metas:
+        herramienta correcta elegida           90 % o más
+        cifras correctas                       100 % (vienen de la herramienta)
+        tiempo de respuesta en PC de 8 GB      menos de 10 segundos en respuestas cortas
+        calidad del español                    revisión manual
+  - Repetir la evaluación cada vez que cambie el modelo o las instrucciones.
+
+12.6 NORMATIVA (fase posterior)
+  - Biblioteca curada (Estatuto Tributario, decretos y resoluciones clave, calendario, NIIF para
+    Pymes) dividida en fragmentos, con embeddings multilingües y sqlite-vec.
+  - Respuestas con cita de la fuente y su fecha, y el aviso "orientación; no reemplaza el
+    criterio del contador".
+  - La biblioteca se actualiza desde el servidor. Los valores anuales (UVT, tarifas) vienen de
+    parametros_anuales, nunca de la memoria del modelo.
+
+12.7 VOZ (opcional, al final)
+  whisper.cpp (voz a texto) y Piper (texto a voz, con voces en español), ambos locales.
+
+12.8 PRIVACIDAD
+  Nada sale del PC. Si algún día se usa un modelo en la nube, que sea solo con consentimiento
+  explícito y en planes de pago del proveedor: los planes gratuitos pueden usar los datos para
+  entrenar sus modelos.
+
+
+===============================================================================================
+13. CALIDAD Y PRUEBAS
+===============================================================================================
+
+  MOTOR
+    - Pruebas unitarias (Vitest) de cada regla de la sección 8.
+    - Pruebas basadas en propiedades (fast-check): miles de operaciones aleatorias, y el balance
+      debe cuadrar siempre.
+    - Casos contables de referencia preparados con el contador asesor (facturas con retenciones,
+      notas crédito, cierre anual, costo promedio), cada uno con su asiento esperado.
+  SINCRONIZACIÓN
+    - Pruebas de integración que simulan cortes: red caída a mitad del envío, apagón, dos PC sin
+      conexión creando documentos, reinstalación.
+  DE PUNTA A PUNTA
+    - Playwright sobre la app: iniciar sesión, crear comprobante, importar XML, conciliar, cerrar
+      período.
+  SEGURIDAD
+    - Pruebas automáticas de RLS para cada tabla.
+  RENDIMIENTO
+    - Empresa de prueba con 200.000 líneas contables: balance de prueba en menos de 2 segundos;
+      tablas virtualizadas.
+  COMPATIBILIDAD
+    - Windows 10 y 11; PC de 8 GB sin tarjeta gráfica; pantallas de 1366×768 y 1920×1080;
+      escalado de 125 % y 150 %.
+  PILOTO EN DOBLE CORRIDA
+    - Cada cierre mensual se compara con el software que el piloto usa hoy. Diferencia aceptada:
+      $0.
+  CRITERIO PARA VENDER
+    - Dos cierres mensuales seguidos sin diferencias en los 3 pilotos.
+
+
+===============================================================================================
+14. INFRAESTRUCTURA, DESPLIEGUE Y OPERACIÓN
+===============================================================================================
+
+  - Supabase Pro en la región más cercana (São Paulo), con tres entornos separados: desarrollo,
+    pruebas (staging) y producción.
+  - Migraciones SQL versionadas (supabase/migrations) que aplica el CI. La base local también
+    tiene migraciones versionadas que se ejecutan al abrir la app.
+  - Vercel Pro: apps/web con entornos de vista previa y producción, y dominio propio.
+  - CI con GitHub Actions:
+      - pruebas en cada cambio,
+      - compilación del instalador en un runner Windows con tauri-action,
+      - firma de código,
+      - publicación de la actualización en canal beta y luego estable.
+  - Firma de código: certificado OV o EV de una autoridad reconocida (la llave privada debe
+    estar en un token de hardware o en un servicio de firma en la nube). La reputación en
+    SmartScreen se gana con las descargas: puede haber avisos las primeras semanas.
+  - Actualizaciones: actualizador de Tauri con firma. Actualización obligatoria cuando cambie la
+    normativa o el protocolo de sincronización.
+  - Monitoreo: Sentry (errores de app y servidor), métricas de sincronización (colas pendientes
+    por cliente) y monitor de disponibilidad con página de estado.
+  - Respaldos: diarios (Supabase) + exportación nocturna propia a un almacenamiento externo.
+    Prueba de restauración mensual documentada.
+  - Pruebas en Windows desde tu PC con Linux: máquina virtual con Windows (QEMU o VirtualBox) y
+    un PC físico de gama baja (8 GB) para medir la IA.
+  - Herramienta interna de soporte: ver el estado de sincronización de un cliente (colas,
+    rechazos, versión de la app) sin acceder a su contabilidad.
+
+
+===============================================================================================
+15. FASES DE EJECUCIÓN (PASO A PASO)
+===============================================================================================
+
+-----------------------------------------------------------------------------------------------
+FASE 0 — VALIDACIÓN Y PRUEBA DE CONCEPTO                                     Semanas 1 a 3
+-----------------------------------------------------------------------------------------------
+  TAREAS
+  [ ] Entrevistar a 8–10 contadores con el guion de abajo.
+  [ ] Conseguir el contador asesor y 2–3 pilotos comprometidos.
+  [ ] Verificar la marca "Contafi" (SIC, RUES, dominio).
+  [ ] Prueba técnica: Tauri + el HTML actual + SQLite + llama.cpp con un modelo de 4B,
+      instalada en un PC de 8 GB. Medir tamaño del instalador, tiempo de arranque, RAM y
+      velocidad de la IA.
+  [ ] Prueba de importación: leer 20 XML reales de facturas de la DIAN y extraer tercero,
+      impuestos y totales.
+
+  GUION DE ENTREVISTA (15–20 minutos)
+    1. ¿Cuántas empresas llevas y de qué tamaño son?
+    2. ¿Qué software usas? ¿Cuánto pagas tú y cuánto pagan tus clientes?
+    3. ¿Cómo te llega la información (XML, Excel, papel, fotos)?
+    4. ¿Qué tarea te quita más horas al mes?
+    5. ¿Cada cuánto te afecta la falta de internet o de luz?
+    6. ¿Qué PC usas (RAM, versión de Windows)?
+    7. ¿Qué te haría cambiarte de software?
+    8. ¿Pagarías $119.000 al mes por un programa para 10 empresas?
+    9. ¿Te gustaría ser piloto, con precio de fundador?
+
+  ENTREGABLES
+    Resumen de las entrevistas, informe de la prueba técnica y alcance del MVP cerrado.
+
+  CRITERIO DE SALIDA
+    - Al menos 5 de 10 contadores pagarían.
+    - 3 pilotos comprometidos.
+    - La IA responde en menos de 10 segundos en un PC de 8 GB. Si no, se usa un modelo más
+      pequeño o la IA se deja para después.
+
+-----------------------------------------------------------------------------------------------
+FASE 1 — EMPRESA Y LEGAL                                  Semanas 2 a 8 (en paralelo)
+-----------------------------------------------------------------------------------------------
+  [ ] Constituir la SAS, sacar el RUT, abrir la cuenta bancaria y activar tu facturación
+      electrónica (sección 5.1).
+  [ ] Solicitar el registro de marca (SIC) y el registro de software (DNDA).
+  [ ] Con el abogado: términos, licencia de uso, política de datos, contrato de transmisión y
+      aviso de privacidad.
+  [ ] Definir con el contador el IVA del servicio y el régimen tributario.
+  [ ] Cotizar el certificado de firma de código.
+
+-----------------------------------------------------------------------------------------------
+FASE 2 — NÚCLEO: MOTOR Y SERVIDOR                                           Semanas 4 a 11
+-----------------------------------------------------------------------------------------------
+  [ ] Monorepo, CI y entornos de Supabase (desarrollo, pruebas, producción).
+  [ ] Esquema de la sección 7 con migraciones, RLS y triggers de respaldo.
+  [ ] Paquete del motor en TypeScript: portar la lógica del prototipo + reglas de la sección 8
+      + impuestos (IVA y retenciones). Corregir el error de fechas UTC.
+  [ ] Pruebas del motor: unitarias, por propiedades y casos del asesor.
+  [ ] API de sincronización: envío con idempotencia, recepción incremental, asignación de
+      consecutivos.
+  [ ] Autenticación: registro, MFA, invitaciones de usuarios a la firma y a cada empresa, roles.
+
+  CRITERIO DE SALIDA
+    - 100 % de los casos del asesor correctos.
+    - Pruebas por propiedades sin fallas.
+    - RLS probado en todas las tablas.
+
+-----------------------------------------------------------------------------------------------
+FASE 3 — APLICACIÓN DE ESCRITORIO                                          Semanas 12 a 19
+-----------------------------------------------------------------------------------------------
+  [ ] Proyecto Tauri + React; pasar el diseño Liquid Glass a componentes.
+  [ ] Capa local: SQLite cifrado, migraciones locales, cola de salida, autoguardado, respaldo
+      diario y verificación de integridad.
+  [ ] Sincronización con indicadores visibles: en línea, sin conexión, pendientes, rechazados.
+  [ ] Pantallas base del MVP: empresas, PUC, terceros, comprobantes, libros y balances.
+  [ ] Instalador firmado, actualizaciones automáticas (beta y estable) y Sentry.
+
+  CRITERIO DE SALIDA
+    - Pasan las pruebas de cortes de red y de energía.
+    - Instalación limpia en Windows 10 y Windows 11.
+
+-----------------------------------------------------------------------------------------------
+FASE 4 — FUNCIONES CONTABLES COMPLETAS DEL MVP                             Semanas 20 a 27
+-----------------------------------------------------------------------------------------------
+  [ ] Importación de XML/ZIP de la DIAN con reglas por proveedor.
+  [ ] Retenciones, ICA, cierres mensuales y anual, saldos iniciales.
+  [ ] Conciliación bancaria con importación de extractos.
+  [ ] Reportes NIIF y libros en PDF y Excel.
+  [ ] Panel multi-empresa del contador.
+
+  CRITERIO DE SALIDA
+    El asesor valida los reportes con una empresa real de prueba.
+
+-----------------------------------------------------------------------------------------------
+FASE 5 — JARVIS V1                                                         Semanas 28 a 31
+-----------------------------------------------------------------------------------------------
+  [ ] Proceso auxiliar llama.cpp, descarga del modelo y detección de hardware.
+  [ ] Herramientas de solo lectura (12.3) y motor de alertas (12.4).
+  [ ] Banco de preguntas y evaluación (12.5).
+
+  CRITERIO DE SALIDA
+    Las metas del punto 12.5 se cumplen en un PC de 8 GB.
+
+-----------------------------------------------------------------------------------------------
+FASE 6 — PILOTO                                                            Semanas 32 a 40
+-----------------------------------------------------------------------------------------------
+  [ ] Instalación y bienvenida de 3 contadores, con migración asistida de sus saldos.
+  [ ] Doble corrida durante 2 cierres mensuales; reunión de retroalimentación cada 15 días.
+  [ ] Corregir errores y medir la sincronización y la carga de soporte.
+  [ ] Recoger testimonios.
+
+  CRITERIO DE SALIDA
+    Se cumple el criterio de la sección 13 (cero diferencias) y los pilotos están dispuestos a
+    pagar.
+
+-----------------------------------------------------------------------------------------------
+FASE 7 — LANZAMIENTO COMERCIAL                                             Semanas 41 a 46
+-----------------------------------------------------------------------------------------------
+  [ ] Sitio web con precios, descarga, documentación y videos.
+  [ ] Cobro recurrente y facturación electrónica automática de tus suscripciones.
+  [ ] Canal de soporte y base de conocimiento.
+  [ ] Completar el checklist de la sección 22.
+  [ ] Campaña a contadores (sección 19).
+
+-----------------------------------------------------------------------------------------------
+FASE 8 — CRECIMIENTO                                                  Después del lanzamiento
+-----------------------------------------------------------------------------------------------
+  Versiones 1.x y 2 (secciones 11.2 y 11.3), empezando por lo que más pidan los clientes que ya
+  pagan.
+
+
+===============================================================================================
+16. CRONOGRAMA RESUMIDO (una persona a tiempo completo)
+===============================================================================================
+
+  Semanas  1–3     Fase 0   Validación y prueba de concepto
+  Semanas  2–8     Fase 1   Empresa y legal (en paralelo)
+  Semanas  4–11    Fase 2   Motor y servidor
+  Semanas 12–19    Fase 3   Aplicación de escritorio
+  Semanas 20–27    Fase 4   Funciones contables del MVP
+  Semanas 28–31    Fase 5   Jarvis v1
+  Semanas 32–40    Fase 6   Piloto (2 cierres mensuales)
+  Semanas 41–46    Fase 7   Lanzamiento comercial
+
+  Total: unos 11 meses hasta el lanzamiento. A medio tiempo, casi el doble.
+
+
+===============================================================================================
+17. MODELO DE NEGOCIO Y PRECIOS
+===============================================================================================
+
+PLANES (precios mensuales, antes de IVA)
+  Independiente     1 usuario,  hasta 10 empresas      $119.000
+  Firma             3 usuarios, hasta 30 empresas      $299.000
+  Firma Plus        8 usuarios, hasta 80 empresas      $649.000
+  Empresa adicional                                    $10.000
+
+REGLAS
+  - Pago anual: 2 meses gratis.
+  - Precio de fundador: 50 % de descuento de por vida para los primeros 20 contadores, a cambio
+    de retroalimentación y testimonios.
+  - Prueba gratis de 30 días con datos de demostración y una empresa real.
+  - Jarvis incluido en todos los planes (no te cuesta nada por consulta).
+  - Solo suscripción, no licencia de pago único: hay costos de servidor todos los meses y la
+    normativa cambia cada año.
+  - Migración asistida como servicio opcional (precio a definir).
+  - Facturación electrónica (versión 2): paquetes de documentos con margen sobre el costo del
+    proveedor tecnológico.
+
+REFERENCIA DE LA COMPETENCIA (septiembre de 2026; verificar)
+  Alegra Contabilidad   por empresa    $74.900 a $319.900 al mes (25 % menos pagando el año)
+  Siigo Nube            por empresa    unos $146.000 a $208.000 al mes (plan anual)
+  Loggro                               $108.990 a $279.990 al mes
+  World Office Escritorio Pyme         licencia de unos $2.750.000 (con descuento)
+  Todos cobran por empresa; el contador entra gratis como invitado.
+
+PROYECCIÓN DE REFERENCIA
+  50 contadores Independiente + 10 firmas = unos $8.900.000 al mes (unos $107 millones al año).
+
+
+===============================================================================================
+18. COSTOS Y PRESUPUESTO (estimados; cotizar)
+===============================================================================================
+
+MENSUALES
+  Supabase Pro                         unos US$25 (+ uso adicional si se supera el plan)
+  Vercel Pro                           US$20 (ya lo pagas)
+  Almacenamiento de respaldos externo  unos US$5
+  Sentry, Resend, monitor de
+  disponibilidad                       planes gratuitos al inicio
+  Pasarela de pagos                    comisión por transacción (cotizar con Wompi o ePayco)
+
+ANUALES
+  Dominio                              unos US$15
+  Certificado de firma de código       del orden de cientos de dólares, según tipo y proveedor
+
+ÚNICOS (al inicio)
+  Constitución de la SAS               depende del capital; cotizar con la Cámara de Comercio
+  Registro de marca en la SIC          tarifa oficial vigente por clase (2 clases); hay
+                                       descuento para MiPymes
+  Registro de software en la DNDA      gratuito
+  Abogado                              paquete único (términos, datos, contratos); cotizar
+  Contador asesor                      por horas en las fases 2, 4 y 6
+  PC Windows de gama baja para pruebas si no tienes uno
+
+PUNTO DE EQUILIBRIO DE LA INFRAESTRUCTURA
+  3 contadores en el plan Independiente. El costo real está en tu tiempo, el soporte y el
+  asesor: tenlo en cuenta antes de bajar precios.
+
+
+===============================================================================================
+19. COMERCIALIZACIÓN, ONBOARDING Y SOPORTE
+===============================================================================================
+
+CANALES
+  - Grupos y comunidades de contadores (WhatsApp, Facebook, LinkedIn).
+  - Asociaciones y colegios de contadores; universidades y semilleros de contaduría.
+  - Webinars sobre temas que les duelen: exógena, cierre anual, facturación electrónica.
+  - Tutoriales cortos en YouTube.
+  - Programa de referidos: un mes gratis por cada referido que pague.
+  - Alianzas con proveedores tecnológicos de facturación electrónica.
+
+ONBOARDING
+  - Prueba de 30 días.
+  - Asistente para la primera empresa: plantilla de PUC, saldos iniciales y terceros.
+  - Videos de 2–3 minutos por tarea.
+  - Migración asistida desde Excel, World Office o Siigo con plantillas de importación.
+
+SOPORTE
+  - WhatsApp Business + correo, con horario publicado.
+  - Base de conocimiento.
+  - Tiempos de respuesta: crítico menos de 4 horas hábiles; normal menos de 1 día hábil.
+  - Reforzar el soporte en temporadas altas: cierre de año, exógena y renta.
+
+RETENCIÓN
+  Encuesta cada trimestre, hoja de ruta pública y un indicador de horas ahorradas dentro de la
+  app.
+
+
+===============================================================================================
+20. RIESGOS Y MITIGACIONES
+===============================================================================================
+
+   1. Error contable o tributario del software (daña tu reputación y a los clientes).
+      -> Contador asesor, casos de prueba, doble corrida en el piloto, cláusula de
+         responsabilidad, parámetros actualizables.
+   2. Cambios normativos (DIAN, UVT, reformas tributarias).
+      -> Parámetros por año, actualizaciones obligatorias, seguimiento de las publicaciones de la
+         DIAN, tiempo reservado para mantenimiento cada año.
+   3. Pérdida o daño de datos.
+      -> WAL, respaldos locales y en la nube, pruebas de restauración mensuales.
+   4. Fallas de sincronización (documentos duplicados o perdidos).
+      -> Idempotencia, pruebas de cortes, métricas de colas, herramienta de soporte.
+   5. La IA inventa cifras o da una orientación equivocada.
+      -> Solo herramientas para cifras, citas de fuentes, avisos visibles, evaluación continua.
+   6. PC de clientes muy débiles.
+      -> Niveles de IA, app ligera, requisitos mínimos publicados.
+   7. SmartScreen o el antivirus bloquean el instalador.
+      -> Firma de código, reputación con descargas, instrucciones claras.
+   8. La competencia baja precios o copia funciones.
+      -> Nicho definido, relación cercana con contadores, sin conexión + IA local.
+   9. Todo depende de una sola persona.
+      -> Documentación, código con pruebas, respaldo del repositorio, acuerdo con un
+         desarrollador de apoyo.
+  10. Demasiado soporte en temporadas altas.
+      -> Base de conocimiento, videos, horario definido, soporte premium pagado.
+  11. Robo de un PC o filtración de datos.
+      -> Cifrado local, MFA, RLS, plan de incidentes.
+  12. Falta de dinero antes de tener ingresos.
+      -> Precio de fundador con pago anual anticipado de los pilotos y costos fijos bajos.
+
+
+===============================================================================================
+21. INDICADORES (KPI)
+===============================================================================================
+
+PRODUCTO
+  - Empresas activas por contador.
+  - Comprobantes al mes.
+  - Porcentaje de XML importados sin corrección manual.
+  - Tiempo que toma el cierre mensual.
+  - Errores de sincronización por cada 1.000 operaciones.
+  - Uso de Jarvis.
+
+NEGOCIO
+  - Conversión de prueba a pago (meta: 25 % o más).
+  - Cancelación mensual (meta: menos de 3 %).
+  - Ingreso mensual recurrente (MRR).
+  - Costo de conseguir un cliente.
+  - Satisfacción (NPS).
+
+OPERACIÓN
+  - Tiempo de respuesta de soporte.
+  - Disponibilidad del servicio (meta: 99,5 % o más).
+  - Restauraciones de respaldo exitosas.
+
+
+===============================================================================================
+22. CHECKLIST DE LANZAMIENTO
+===============================================================================================
+
+  [ ] Empresa constituida, RUT, cuenta bancaria y facturación electrónica propia activa.
+  [ ] Marca solicitada y software registrado en la DNDA.
+  [ ] Términos, licencia de uso, política de datos y contrato de transmisión publicados, con
+      registro de cada aceptación.
+  [ ] IVA del servicio definido con el contador; precios publicados indicando claramente si
+      incluyen IVA.
+  [ ] Instalador firmado; actualizaciones probadas (beta y luego estable).
+  [ ] Respaldos automáticos activos y una restauración probada en el último mes.
+  [ ] Pruebas de RLS y revisión de seguridad aprobadas.
+  [ ] 3 pilotos con 2 cierres sin diferencias, y sus testimonios.
+  [ ] Parámetros tributarios del año cargados (UVT, calendario, tarifas).
+  [ ] Documentación y videos de las tareas principales.
+  [ ] Soporte con horario y tiempos de respuesta publicados.
+  [ ] Monitoreo (Sentry y disponibilidad) con alertas activas.
+  [ ] Cobro recurrente probado de punta a punta: pago, factura, renovación y cancelación.
+  [ ] Plan de incidentes de seguridad escrito.
+
+
+===============================================================================================
+23. PRIMERAS DOS SEMANAS: QUÉ HACER YA
+===============================================================================================
+
+  Días 1–2    Hacer una lista de 20 contadores para contactar, preparar el guion y agendar
+              10 entrevistas.
+  Días 1–3    Buscar "Contafi" en la SIC, el RUES y los dominios. Si está ocupado, elegir otro
+              nombre de inmediato.
+  Días 3–5    Prueba técnica: Tauri + el HTML actual + SQLite.
+  Días 6–8    llama.cpp + un modelo de 4B en un PC de 8 GB; medir velocidad y memoria.
+  Días 8–10   Leer 20 XML reales de la DIAN (pedir a un contador ejemplos sin datos sensibles).
+  Días 9–12   Hacer las entrevistas y buscar al contador asesor.
+  Días 13–14  Decidir: seguir o ajustar el nicho, cerrar el alcance del MVP y fijar la fecha de
+              inicio de la Fase 2.
+
+
+-----------------------------------------------------------------------------------------------
+Documento orientativo. Confirma todo lo normativo, tributario y legal con tu contador asesor y
+tu abogado antes de ejecutarlo.
+-----------------------------------------------------------------------------------------------

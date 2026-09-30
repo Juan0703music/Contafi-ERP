@@ -1,0 +1,15 @@
+{
+  "name": "@contafi/poc-escritorio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fase 0 — prueba de concepto: Tauri + prototipo HTML + SQLite (WAL/FULL). Se compila en Windows (CI).",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "iconos": "tauri icon icono.png"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@contafi/supabase",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Migraciones SQL, RLS y pruebas de la base de datos (PGlite: Postgres en proceso, sin Docker).",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

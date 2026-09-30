@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Documento SINTÉTICO de prueba: nota crédito por devolución de 1 tóner de la factura SN-10457. -->
+<CreditNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2"
+  xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+  xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">
+  <cbc:CustomizationID>20</cbc:CustomizationID>
+  <cbc:ID>NC-311</cbc:ID>
+  <cbc:UUID schemeName="CUDE-SHA384">ffee00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbcc</cbc:UUID>
+  <cbc:IssueDate>2026-09-20</cbc:IssueDate>
+  <cbc:CreditNoteTypeCode>91</cbc:CreditNoteTypeCode>
+  <cbc:DocumentCurrencyCode>COP</cbc:DocumentCurrencyCode>
+  <cac:DiscrepancyResponse><cbc:ReferenceID>SN-10457</cbc:ReferenceID><cbc:ResponseCode>1</cbc:ResponseCode><cbc:Description>Devolución de parte de los bienes</cbc:Description></cac:DiscrepancyResponse>
+  <cac:BillingReference>
+    <cac:InvoiceDocumentReference>
+      <cbc:ID>SN-10457</cbc:ID>
+      <cbc:UUID schemeName="CUFE-SHA384">a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90</cbc:UUID>
+      <cbc:IssueDate>2026-09-15</cbc:IssueDate>
+    </cac:InvoiceDocumentReference>
+  </cac:BillingReference>
+  <cac:AccountingSupplierParty><cac:Party><cac:PartyTaxScheme>
+    <cbc:RegistrationName>IMPORTADORA SUMINISTROS DEL NORTE S.A.S.</cbc:RegistrationName>
+    <cbc:CompanyID schemeID="9" schemeName="31">901223556</cbc:CompanyID>
+    <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+  </cac:PartyTaxScheme></cac:Party></cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty><cac:Party><cac:PartyTaxScheme>
+    <cbc:RegistrationName>COMERCIALIZADORA ANDINA S.A.S.</cbc:RegistrationName>
+    <cbc:CompanyID schemeID="8" schemeName="31">900123456</cbc:CompanyID>
+    <cac:TaxScheme><cbc:ID>01</cbc:ID></cac:TaxScheme>
+  </cac:PartyTaxScheme></cac:Party></cac:AccountingCustomerParty>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="COP">72200.00</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="COP">380000.00</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="COP">72200.00</cbc:TaxAmount>
+      <cac:TaxCategory><cbc:Percent>19.00</cbc:Percent><cac:TaxScheme><cbc:ID>01</cbc:ID><cbc:Name>IVA</cbc:Name></cac:TaxScheme></cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="COP">380000.00</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="COP">380000.00</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="COP">452200.00</cbc:TaxInclusiveAmount>
+    <cbc:PayableAmount currencyID="COP">452200.00</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:CreditNoteLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:CreditedQuantity unitCode="94">1</cbc:CreditedQuantity>
+    <cbc:LineExtensionAmount currencyID="COP">380000.00</cbc:LineExtensionAmount>
+    <cac:Item><cbc:Description>Tóner láser negro</cbc:Description></cac:Item>
+    <cac:Price><cbc:PriceAmount currencyID="COP">380000.00</cbc:PriceAmount></cac:Price>
+  </cac:CreditNoteLine>
+</CreditNote>

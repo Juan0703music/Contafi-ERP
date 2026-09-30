@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contafi — Prueba de concepto</title>
+<style>
+  :root {
+    --fondo: #f5f6f8; --superficie: #ffffff; --texto: #16181d; --suave: #5b6270; --borde: #e2e5ea;
+    --acento: #2f5bea; --ok: #1d8a4e; --error: #c0362c;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo: #101216; --superficie: #191c22; --texto: #eceef2; --suave: #9aa3b2; --borde: #2a2f38;
+            --acento: #7c9bff; --ok: #4cc38a; --error: #ff7b72; color-scheme: dark; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto);
+         font: 15px/1.5 "Geist", "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 24px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { color: var(--suave); margin: 0 0 24px; }
+  section { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  button, a.boton { font: inherit; background: var(--acento); color: #fff; border: 0; border-radius: 8px;
+                    padding: 8px 16px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button:disabled { opacity: .6; cursor: progress; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; margin-top: 12px; }
+  td { padding: 6px 0; border-top: 1px solid var(--borde); vertical-align: top; }
+  td:first-child { color: var(--suave); width: 45%; }
+  code, .mono { font-family: "Geist Mono", ui-monospace, Consolas, monospace; font-size: 13px; word-break: break-all; }
+  .ok { color: var(--ok); } .mal { color: var(--error); }
+  ol { margin: 0; padding-left: 20px; } li { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Contafi — Prueba de concepto (Fase 0)</h1>
+  <p class="sub">Mide lo que pide el plan: tamaño del instalador, arranque, RAM y SQLite. Anota los resultados en <code>docs/fase-0/informe-prueba-tecnica.md</code>.</p>
+
+  <section>
+    <h2>1. Arranque</h2>
+    <table><tbody>
+      <tr><td>Tiempo hasta mostrar esta página</td><td id="arranque" class="mono">—</td></tr>
+      <tr><td>Ejecutándose dentro de Tauri</td><td id="tauri" class="mono">—</td></tr>
+      <tr><td>Navegador (WebView2)</td><td id="ua" class="mono">—</td></tr>
+    </tbody></table>
+  </section>
+
+  <section>
+    <h2>2. SQLite (WAL + synchronous=FULL)</h2>
+    <button id="probar">Ejecutar diagnóstico</button>
+    <table><tbody id="sqlite"></tbody></table>
+  </section>
+
+  <section>
+    <h2>3. Prototipo</h2>
+    <p>El prototipo actual corre sin cambios dentro de la app. Pruébalo también <strong>sin internet</strong>: hoy carga Chart.js y las fuentes desde un CDN, así que las gráficas no aparecerán sin conexión (en la Fase 3 se empaquetan dentro de la app).</p>
+    <a class="boton" href="prototipo.html">Abrir el prototipo</a>
+  </section>
+
+  <section>
+    <h2>4. Qué medir a mano</h2>
+    <ol>
+      <li>Tamaño del instalador <code>.exe</code> (NSIS) y <code>.msi</code>.</li>
+      <li>RAM del proceso en el Administrador de tareas (<code>Contafi POC</code> + <code>msedgewebview2</code>), en reposo y usando el prototipo.</li>
+      <li>Apagón simulado: ejecutar el diagnóstico, cerrar a la fuerza con el Administrador de tareas y volver a abrir: la integridad debe decir <code>ok</code> y las filas deben seguir ahí.</li>
+      <li>Aviso de SmartScreen al instalar (esperado: el instalador de la prueba no está firmado).</li>
+    </ol>
+  </section>
+</main>
+<script>
+  const ms = Math.round(performance.now());
+  document.getElementById('arranque').textContent = ms + ' ms (desde que el WebView empezó a cargar)';
+  const tauri = window.__TAURI__;
+  document.getElementById('tauri').innerHTML = tauri ? '<span class="ok">sí</span>' : '<span class="mal">no (abierto en un navegador)</span>';
+  document.getElementById('ua').textContent = navigator.userAgent;
+
+  const etiquetas = {
+    ruta: 'Archivo', version_sqlite: 'Versión de SQLite', journal_mode: 'journal_mode (esperado: wal)',
+    synchronous: 'synchronous (esperado: 2 = FULL)', integridad: 'integrity_check (esperado: ok)',
+    filas_totales: 'Filas acumuladas', cuadre_centavos: 'Débitos − créditos (esperado: 0)',
+    ms_insertar_10000: 'Insertar 10.000 líneas (ms)', ms_consulta_suma: 'Sumar todas las líneas (ms)',
+  };
+  const esperado = { journal_mode: 'wal', synchronous: 2, integridad: 'ok', cuadre_centavos: 0 };
+  const boton = document.getElementById('probar');
+  const cuerpo = document.getElementById('sqlite');
+  function fila(etiqueta, valor, clase) {
+    const tr = document.createElement('tr');
+    const a = document.createElement('td'); a.textContent = etiqueta;
+    const b = document.createElement('td'); b.textContent = valor; b.className = 'mono ' + (clase || '');
+    tr.append(a, b); cuerpo.append(tr);
+  }
+  boton.addEventListener('click', async () => {
+    cuerpo.replaceChildren();
+    if (!tauri) { fila('Error', 'Esta prueba solo funciona dentro de la app de escritorio.', 'mal'); return; }
+    boton.disabled = true;
+    try {
+      const r = await tauri.core.invoke('diagnostico_sqlite');
+      for (const [k, v] of Object.entries(r)) {
+        const clase = k in esperado ? (v === esperado[k] ? 'ok' : 'mal') : '';
+        fila(etiquetas[k] || k, String(v), clase);
+      }
+    } catch (e) {
+      fila('Error', String(e), 'mal');
+    } finally {
+      boton.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
