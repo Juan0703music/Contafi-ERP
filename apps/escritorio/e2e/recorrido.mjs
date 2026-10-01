@@ -232,6 +232,20 @@ await foto('08b-libro-diario');
 await boton('Mayor y balances');
 await foto('08c-mayor');
 await boton('Excel'); // no debe producir errores
+// Auxiliar de impuestos del año (IVA y retenciones con su base)
+await boton('Impuestos');
+await page.evaluate(() => {
+  const i = document.querySelector('#lDesde');
+  const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+  set.call(i, `${new Date().getFullYear()}-01-01`);
+  i.dispatchEvent(new Event('input', { bubbles: true }));
+});
+await page.waitForFunction(() => document.querySelectorAll('.kpi-card').length === 3, { timeout: 5000 });
+const ivaKpis = await page.$$eval('.kpi-card', (ks) => ks.map((k) => k.textContent));
+await foto('08c2-auxiliar-impuestos');
+// Incluye el IVA de la factura FE-1001 de febrero (4.750.000) y el de la venta del recorrido.
+const generado = Number(ivaKpis[0].replace(/\D/g, ''));
+verificar('Auxiliar de impuestos', ivaKpis[0].startsWith('IVA generado') && generado >= 4_940_000, ivaKpis.join(' · '));
 await ir('Estados financieros');
 await page.waitForSelector('table');
 const desdeInicio = await page.$('#eCorte');
