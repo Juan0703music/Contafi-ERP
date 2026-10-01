@@ -9,6 +9,7 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
   { grupo: 'General', items: [
     { ruta: 'empresas', etiqueta: 'Mis empresas', icono: 'building' },
     { ruta: 'panel', etiqueta: 'Panel', icono: 'dashboard' },
+    { ruta: 'jarvis', etiqueta: 'Jarvis', icono: 'sparkles' },
   ] },
   { grupo: 'Contabilidad', items: [
     { ruta: 'comprobantes', etiqueta: 'Comprobantes', icono: 'file' },

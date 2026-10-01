@@ -39,6 +39,15 @@ await new Promise((r) => setTimeout(r, 500));
 const misEmpresas = await page.$eval('.page-head p', (n) => n.textContent);
 verificar('Panel multi-empresa', misEmpresas.startsWith('2 empresa(s)'), misEmpresas);
 await foto('02b-mis-empresas');
+// Jarvis (en el navegador: asistente por reglas, con cifras del motor)
+await ir('Jarvis');
+await page.waitForSelector('.suggest-chip');
+const chips = await page.$$('.suggest-chip');
+await chips[0].click();
+await page.waitForFunction(() => document.querySelectorAll('.msg.bot').length >= 2, { timeout: 15000 });
+const respuestaJarvis = await page.$$eval('.msg.bot', (ms) => ms.at(-1).textContent);
+verificar('Jarvis responde con cifras del motor', /\$ [\d.]+/.test(respuestaJarvis) && respuestaJarvis.includes('Cifras del motor'), respuestaJarvis.slice(0, 90));
+await foto('02c-jarvis');
 await ir('Comprobantes');
 await foto('03-comprobantes');
 

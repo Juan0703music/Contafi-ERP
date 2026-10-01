@@ -248,7 +248,8 @@ pub fn ia_iniciar(app: AppHandle, estado: State<'_, EstadoIA>, modelo: String, h
     comando
         .arg("-m").arg(&ruta_modelo)
         .args(["--host", "127.0.0.1", "--port", &puerto.to_string(), "--api-key", &token])
-        .args(["-c", "4096", "--jinja", "-t", &hilos.to_string()])
+        // Un solo usuario por PC: un "slot", para que la caché de las instrucciones se reutilice siempre.
+        .args(["-c", "4096", "-np", "1", "--jinja", "-t", &hilos.to_string()])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());

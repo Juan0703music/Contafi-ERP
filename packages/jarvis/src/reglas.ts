@@ -144,3 +144,15 @@ export async function preguntarConReglas(pregunta: string, ctx: ContextoJarvis):
 }
 
 export { dinero };
+
+/**
+ * Camino rápido: si la pregunta es corta y coincide con UNA sola intención conocida, las reglas la
+ * responden al instante y con exactitud; la IA queda para lo demás (redacciones nuevas, preguntas de
+ * seguimiento, preguntas abiertas). Así las preguntas frecuentes tardan milisegundos y no segundos.
+ */
+export function intencionClara(pregunta: string): string | null {
+  const n = normalizar(pregunta);
+  if (n.split(/\s+/).filter(Boolean).length > 14) return null;
+  const coinciden = INTENCIONES.filter(([re]) => re.test(n));
+  return coinciden.length === 1 ? coinciden[0]![1].herramienta : null;
+}

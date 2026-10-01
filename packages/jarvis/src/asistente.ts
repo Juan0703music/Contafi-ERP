@@ -29,7 +29,8 @@ export function clienteLlamaServer(o: { url: string; token?: string; fetch?: typ
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(o.token ? { Authorization: `Bearer ${o.token}` } : {}) },
         body: JSON.stringify({
-          messages: mensajes, tools: herramientas, tool_choice: 'auto', temperature: 0.1, max_tokens: 400,
+          messages: mensajes, tools: herramientas, tool_choice: 'auto', temperature: 0.1, max_tokens: 160,
+          cache_prompt: true,
           // Modelos Qwen3: sin "modo pensamiento", para responder rápido en PC modestos.
           chat_template_kwargs: { enable_thinking: false },
         }),
@@ -81,14 +82,19 @@ export interface RespuestaJarvis {
   milisegundos: number;
 }
 
-export function instruccionesSistema(empresa: string, hoy: FechaISO): string {
+/**
+ * Instrucciones FIJAS (sin empresa ni fecha): así el modelo procesa una sola vez instrucciones y
+ * herramientas (~1.900 tokens, más de un minuto en un PC modesto) y las reutiliza de su caché en
+ * todas las preguntas, empresas y días. La empresa y la fecha van en cada pregunta.
+ */
+export function instruccionesSistema(): string {
   return [
-    `Eres Jarvis, el asistente contable de Contafi. Empresa: ${empresa}. Hoy es ${hoy} (Colombia).`,
+    'Eres Jarvis, el asistente contable de Contafi para empresas colombianas. Cada pregunta trae entre corchetes la empresa y la fecha de hoy.',
     'Reglas obligatorias:',
     '1. NUNCA calcules, sumes ni inventes cifras. Toda cifra debe salir de una herramienta; cópiala EXACTAMENTE como la devuelve (con el signo $ y los puntos de miles).',
     '2. Si la pregunta necesita datos de la empresa, llama la herramienta adecuada antes de responder.',
     '3. Las fechas van en formato AAAA-MM-DD. "Este mes" es desde el día 1 del mes actual hasta hoy; "este año", desde el 1 de enero.',
-    '4. Responde en español de Colombia, en máximo 4 frases, sin tablas ni markdown.',
+    '4. Responde en español de Colombia, en una o dos frases cortas, sin tablas ni markdown.',
     '5. Si ninguna herramienta sirve, di con qué sí puedes ayudar. Das orientación; no reemplazas el criterio del contador.',
   ].join('\n');
 }
@@ -104,9 +110,9 @@ export async function preguntarConIA(
   const cifras = new Set<bigint>();
   const usadas: RespuestaJarvis['herramientas'] = [];
   const mensajes: MensajeLLM[] = [
-    { role: 'system', content: instruccionesSistema(ctx.empresa.razon_social, d.hoy) },
+    { role: 'system', content: instruccionesSistema() },
     ...historial,
-    { role: 'user', content: pregunta },
+    { role: 'user', content: `[Empresa: ${ctx.empresa.razon_social} · Hoy: ${d.hoy}]\n${pregunta}` },
   ];
   const definiciones = definicionesOpenAI();
   let texto = '';
@@ -144,4 +150,12 @@ export function ejecutarHerramienta(nombre: string, argumentosJson: string, d: D
   } catch (e) {
     return { argumentos, salida: { error: (e as Error).message } };
   }
+}
+
+/**
+ * Calienta la caché del modelo con las instrucciones y las herramientas apenas arranca, para que la
+ * primera pregunta del contador no pague ese costo (más de un minuto en un PC de gama baja).
+ */
+export async function calentarModelo(cliente: ClienteLLM): Promise<void> {
+  await cliente.completar([{ role: 'system', content: instruccionesSistema() }, { role: 'user', content: 'Hola' }], definicionesOpenAI());
 }

@@ -91,6 +91,16 @@ describe('asistente por reglas (PC sin IA)', () => {
   });
 });
 
+describe('camino rápido', () => {
+  it('solo toma preguntas cortas con una sola intención clara', async () => {
+    const { intencionClara } = await import('../src/index.ts');
+    expect(intencionClara('¿Cuánta plata tenemos en bancos?')).toBe('saldo_cuenta');
+    expect(intencionClara('¿Cuánto IVA hay que pagar?')).toBe('iva_periodo');
+    expect(intencionClara('¿y el mes pasado?')).toBeNull(); // seguimiento: lo resuelve la IA con el historial
+    expect(intencionClara('¿Por qué la utilidad fue menor que los gastos de bancos?')).toBeNull(); // varias intenciones
+  });
+});
+
 describe('asistente con IA (con un modelo simulado)', () => {
   /** Simula al modelo: pide una herramienta y luego responde con el texto indicado. */
   function modelo(llamada: { nombre: string; argumentos: object } | null, respuesta: (resultado: string) => string): ClienteLLM & { recibidos: MensajeLLM[][] } {
@@ -112,7 +122,9 @@ describe('asistente con IA (con un modelo simulado)', () => {
     expect(r).toMatchObject({ motor: 'ia', texto: 'Tienen $ 42.450.000 en caja y bancos.', cifrasNoVerificadas: [] });
     expect(r.herramientas.map((h) => h.nombre)).toEqual(['saldo_cuenta']);
     expect(m.recibidos[0]![0]!.content).toContain('NUNCA calcules');
-    expect(m.recibidos[0]![0]!.content).toContain('Hoy es 2026-09-30');
+    // La empresa y la fecha van en la pregunta, no en las instrucciones (caché del modelo)
+    expect(m.recibidos[0]![0]!.content).not.toContain('2026');
+    expect(m.recibidos[0]!.at(-1)!.content).toBe('[Empresa: Comercializadora Andina S.A.S. · Hoy: 2026-09-30]\n¿Cuánta plata hay?');
   });
 
   it('marca la respuesta si el modelo inventa o redondea una cifra', async () => {

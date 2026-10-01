@@ -13,6 +13,9 @@ importers:
       '@contafi/dian-xml':
         specifier: workspace:*
         version: link:../../packages/dian-xml
+      '@contafi/jarvis':
+        specifier: workspace:*
+        version: link:../../packages/jarvis
       '@contafi/local':
         specifier: workspace:*
         version: link:../../packages/local

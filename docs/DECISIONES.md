@@ -95,3 +95,21 @@ Por defecto va del primer día del mes del extracto a su última fecha (editable
 de libros de los primeros días del mes pueden emparejarse aunque el banco los registre después.
 La diferencia se calcula como: saldo extracto − (saldo libros − partidas de libros en tránsito +
 partidas del banco sin registrar).
+
+## D-019 · Jarvis: la IA elige y explica; el motor calcula; las cifras se verifican (2026-10-01)
+El modelo solo elige herramientas de solo lectura y redacta. Cada herramienta registra las cifras
+que devuelve y la respuesta se revisa: si trae un monto que no vino de una herramienta, la app lo
+marca "Cifra no verificada". Las alertas proactivas las calculan reglas, no la IA.
+
+## D-020 · Catálogo de IA fijo y verificado (2026-10-01)
+El motor (llama.cpp) y los modelos se descargan de URL fijas con su SHA-256 (catálogo en
+`apps/escritorio/src/datos/ia.ts`). No se usa "la última versión": la versión marcada como `latest`
+de llama.cpp en GitHub no trae binarios, y descargar algo distinto cada vez rompe la reproducibilidad.
+Modelos: Qwen3 4B (8–15 GB de RAM) y 8B (16 GB o más), licencia Apache 2.0.
+
+## D-021 · Instrucciones fijas, calentamiento y camino rápido (2026-10-01)
+Medido en un i5-8265U: leer las instrucciones y las 13 herramientas (~1.900 tokens) toma más de un
+minuto; después el modelo genera unas 4–5 palabras por segundo. Por eso: (1) las instrucciones no
+llevan empresa ni fecha (van en la pregunta), así quedan en la caché del modelo para siempre;
+(2) al abrir Jarvis se "calienta" el modelo; (3) las preguntas cortas con una intención clara las
+responden las reglas al instante; la IA atiende lo demás (redacciones nuevas, seguimientos).
