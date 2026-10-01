@@ -263,7 +263,7 @@ describe('flujos con el servidor', () => {
 });
 
 describe('transporte HTTP', () => {
-  const lote = { version_protocolo: 1 as const, empresa_id: randomUUID(), dispositivo: { id: randomUUID(), nombre: 'x', version_app: '1' }, cuentas: [], terceros: [], productos: [], comprobantes: [] };
+  const lote = { version_protocolo: 1 as const, empresa_id: randomUUID(), dispositivo: { id: randomUUID(), nombre: 'x', version_app: '1' }, cuentas: [], reglas: [], terceros: [], productos: [], comprobantes: [] };
   it('renueva el token una vez si el servidor responde 401', async () => {
     const tokens: string[] = [];
     const f = (async (_u: string, init: RequestInit) => {

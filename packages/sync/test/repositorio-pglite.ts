@@ -27,6 +27,7 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
   centros_costo: 'select * from public.centros_costo where empresa_id = $1 and id = any($2::uuid[])',
   uvt: `select u.anio, u.uvt::text as uvt from public.uvt_firma u join public.empresas e on e.firma_id = u.firma_id
          where e.id = $1 and u.anio::text = any($2::text[])`,
+  reglas_proveedor: 'select nit, cuenta, retenciones from public.reglas_proveedor where empresa_id = $1 and nit = any($2::text[])',
   conceptos_empresa: `select codigo, tipo, nombre, tarifa_ppm::int as tarifa_ppm, base_minima_uvt::text as base_minima_uvt, cuenta, aplica_en, activo
                         from public.conceptos_empresa where empresa_id = $1 and codigo = any($2::text[])`,
   // Columnas explícitas y fechas como texto, igual que las entrega PostgREST.
@@ -79,6 +80,13 @@ export function repositorioPglite(db: PGlite, sesion: Sesion): RepositorioSync {
     async registrarCuenta(p) {
       try {
         await q('select public.registrar_cuenta($1::jsonb)', [JSON.stringify(p)]);
+      } catch (e) {
+        comoErrorRegistro(e);
+      }
+    },
+    async aprenderRegla(p) {
+      try {
+        await q('select public.aprender_regla_proveedor($1::jsonb)', [JSON.stringify(p)]);
       } catch (e) {
         comoErrorRegistro(e);
       }

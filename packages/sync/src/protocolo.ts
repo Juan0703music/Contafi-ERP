@@ -83,19 +83,31 @@ export const cuentaSync = z.object({
   activa: z.boolean().default(true),
 });
 
+/**
+ * Lo que la importación aprendió de un proveedor. null = no se aprendió en este PC (no borra lo que haya
+ * aprendido otro); retenciones [] = el contador quitó todas.
+ */
+export const reglaProveedorSync = z.object({
+  nit: z.string().regex(/^\d{5,15}$/),
+  cuenta: z.string().regex(/^[1-9][0-9]*$/).nullish(),
+  retenciones: z.array(z.string().regex(/^[A-Z0-9-]{2,20}$/)).max(30).nullish(),
+});
+
 export const loteEnvio = z.object({
   version_protocolo: z.literal(VERSION_PROTOCOLO),
   empresa_id: uuid,
   dispositivo: z.object({ id: uuid, nombre: z.string().trim().min(1).max(100), version_app: z.string().max(50) }),
   /** Cuentas nuevas o editadas: van primero (productos y comprobantes pueden usarlas). */
   cuentas: z.array(cuentaSync).max(500).default([]),
+  /** Reglas aprendidas por proveedor (después de las cuentas, que pueden usar). */
+  reglas: z.array(reglaProveedorSync).max(500).default([]),
   /** Terceros nuevos o editados: se registran ANTES que los comprobantes que los usan. */
   terceros: z.array(terceroSync).max(500).default([]),
   /** Productos nuevos o editados: también antes que los comprobantes. */
   productos: z.array(productoSync).max(500).default([]),
   /** En el orden en que se crearon en el PC. */
   comprobantes: z.array(comprobanteSync).max(200).default([]),
-}).refine((l) => l.cuentas.length + l.terceros.length + l.productos.length + l.comprobantes.length > 0, 'El lote está vacío.');
+}).refine((l) => l.cuentas.length + l.reglas.length + l.terceros.length + l.productos.length + l.comprobantes.length > 0, 'El lote está vacío.');
 
 export const consultaCambios = z.object({
   empresa_id: uuid,
@@ -105,6 +117,7 @@ export const consultaCambios = z.object({
 });
 
 export type CuentaSync = z.infer<typeof cuentaSync>;
+export type ReglaProveedorSync = z.infer<typeof reglaProveedorSync>;
 export type TerceroSync = z.infer<typeof terceroSync>;
 export type ProductoSync = z.infer<typeof productoSync>;
 export type LineaSync = z.infer<typeof lineaSync>;
@@ -160,6 +173,8 @@ export interface RespuestaEnvio {
   version_protocolo: typeof VERSION_PROTOCOLO;
   /** Ausente en servidores anteriores al PUC personalizable. */
   cuentas?: ResultadoCuenta[];
+  /** Un rechazo no deshace nada en el PC: la regla es una preferencia local hasta que el servidor la acepte. */
+  reglas?: { nit: string; estado: 'registrado' | 'rechazado'; errores: ErrorItem[] }[];
   terceros: ResultadoTercero[];
   /** Mismo formato que los terceros: id_servidor distinto si otro PC ya creó ese código. */
   productos: ResultadoTercero[];
@@ -167,10 +182,13 @@ export interface RespuestaEnvio {
 }
 
 /**
- * Tablas que bajan a los PC. `uvt` es la UVT de la firma por año (clave: el año) y `conceptos_empresa`
- * los conceptos de retención de la empresa (clave: el código).
+ * Tablas que bajan a los PC. `uvt` es la UVT de la firma por año (clave: el año), `conceptos_empresa`
+ * los conceptos de retención de la empresa (clave: el código) y `reglas_proveedor` lo aprendido al
+ * importar (clave: el NIT).
  */
-export const TABLAS_SYNC = ['cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'uvt', 'conceptos_empresa', 'comprobantes'] as const;
+export const TABLAS_SYNC = [
+  'cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'uvt', 'conceptos_empresa', 'reglas_proveedor', 'comprobantes',
+] as const;
 export type TablaSync = (typeof TABLAS_SYNC)[number];
 
 export interface Cambio {

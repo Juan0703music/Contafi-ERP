@@ -157,7 +157,8 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
   }
   if (huerfanos.length) await base.lote(huerfanos);
   if (cuentas.length + terceros.length + productos.length + comprobantes.length === 0) return null;
-  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, cuentas, terceros, productos, comprobantes };
+  // Las reglas aprendidas por proveedor todavía no se envían desde el PC (pendiente: migración local 7).
+  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, cuentas, reglas: [], terceros, productos, comprobantes };
 }
 
 function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSincronizacion): Sentencia[] {

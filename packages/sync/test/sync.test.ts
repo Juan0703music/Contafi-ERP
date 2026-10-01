@@ -28,7 +28,7 @@ function cg(fecha: string, lineas: [string, string, string][], extra: Partial<Co
   };
 }
 const lote = (comprobantes: ComprobanteSync[], terceros: LoteEnvio['terceros'] = []): LoteEnvio =>
-  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, cuentas: [], terceros, productos: [], comprobantes });
+  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, cuentas: [], reglas: [], terceros, productos: [], comprobantes });
 
 const nuevoTercero = (numero: string, dv: number | null, nombre: string): LoteEnvio['terceros'][number] =>
   ({ id: randomUUID(), tipo_doc: '31', numero, dv, nombre, tipos: ['proveedor'], responsabilidades: [], activo: true });
@@ -283,5 +283,22 @@ describe('recepción incremental (sección 9.3)', () => {
   it('dos usuarios pueden compartir el mismo PC', async () => {
     const filas = await como<{ usuario_id: string }>(db, carla, 'select usuario_id from public.dispositivos where id = $1', [PC.id]);
     expect(filas.map((f) => f.usuario_id)).toEqual([carla.sub]); // cada uno ve solo su registro
+  });
+});
+
+describe('reglas aprendidas por proveedor (importación DIAN)', () => {
+  it('viajan en el lote; null no borra lo que aprendió otro PC; la cuenta debe ser auxiliar', async () => {
+    const repo = repositorioPglite(db, ana);
+    const r1 = await procesarEnvio(repo, { ...lote([]), reglas: [{ nit: '901223556', cuenta: '519595', retenciones: null }] });
+    expect(r1.reglas).toEqual([{ nit: '901223556', estado: 'registrado', errores: [] }]);
+    // Otro PC aprendió solo las retenciones de ese proveedor: la cuenta se conserva
+    await procesarEnvio(repo, { ...lote([]), reglas: [{ nit: '901223556', cuenta: null, retenciones: ['RF-COMPRAS'] }] });
+    expect(await como(db, ana, `select cuenta, retenciones from public.reglas_proveedor where nit = '901223556'`))
+      .toEqual([{ cuenta: '519595', retenciones: ['RF-COMPRAS'] }]);
+    const mala = await procesarEnvio(repo, { ...lote([]), reglas: [{ nit: '830945221', cuenta: '1105', retenciones: [] }] });
+    expect(mala.reglas![0]).toMatchObject({ estado: 'rechazado', errores: [{ codigo: 'CUENTA_INVALIDA' }] });
+    // Llegan a los demás PC como cambios
+    const c = await obtenerCambios(repo, { empresa_id: empresa, desde: 0, limite: 1000 });
+    expect(c.registros.reglas_proveedor).toEqual([{ nit: '901223556', cuenta: '519595', retenciones: ['RF-COMPRAS'] }]);
   });
 });

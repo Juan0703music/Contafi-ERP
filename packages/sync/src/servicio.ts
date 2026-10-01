@@ -3,7 +3,7 @@ import { contextoDesdeCuentas, validarComprobante, type Cuenta, type Linea } fro
 import {
   TABLAS_SYNC, VERSION_PROTOCOLO,
   type Cambio, type ComprobanteSync, type ConsultaCambios, type ErrorItem, type LoteEnvio, type RespuestaCambios,
-  type CuentaSync, type ProductoSync, type RespuestaEnvio, type ResultadoCuenta, type ResultadoItem, type ResultadoTercero, type TablaSync, type TerceroSync,
+  type CuentaSync, type ProductoSync, type ReglaProveedorSync, type RespuestaEnvio, type ResultadoCuenta, type ResultadoItem, type ResultadoTercero, type TablaSync, type TerceroSync,
 } from './protocolo.ts';
 
 export interface ResultadoRegistro {
@@ -26,6 +26,8 @@ export interface RepositorioSync {
   registrar(p: ComprobanteSync & { empresa_id: string; dispositivo_id: string }): Promise<ResultadoRegistro>;
   /** Crea o edita una cuenta del PUC. Lanza ErrorRegistro si viola las reglas del plan de cuentas. */
   registrarCuenta(p: CuentaSync & { empresa_id: string }): Promise<void>;
+  /** Guarda lo aprendido de un proveedor. Lanza ErrorRegistro si la cuenta no sirve. */
+  aprenderRegla(p: ReglaProveedorSync & { empresa_id: string }): Promise<void>;
   /** Devuelve el id definitivo. Lanza ErrorRegistro si los datos no son válidos. */
   registrarTercero(p: TerceroSync & { empresa_id: string }): Promise<string>;
   /** Devuelve el id definitivo. Lanza ErrorRegistro si los datos no son válidos. */
@@ -126,6 +128,16 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
       cuentas.push({ codigo: c.codigo, estado: 'rechazado', errores: [{ codigo: e.codigo, mensaje: e.message }], actual: actual ?? null });
     }
   }
+  const reglas: NonNullable<RespuestaEnvio['reglas']> = [];
+  for (const r of lote.reglas) {
+    try {
+      await repo.aprenderRegla({ ...r, empresa_id: lote.empresa_id });
+      reglas.push({ nit: r.nit, estado: 'registrado', errores: [] });
+    } catch (e) {
+      if (!(e instanceof ErrorRegistro)) throw e;
+      reglas.push({ nit: r.nit, estado: 'rechazado', errores: [{ codigo: e.codigo, mensaje: e.message }] });
+    }
+  }
   const terceros = await registrarTerceros(repo, lote.empresa_id, lote.terceros);
   const productos: ResultadoTercero[] = [];
   for (const p of lote.productos) {
@@ -176,7 +188,7 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
     resultados.push(aResultado(c.id, c.clave_idempotencia, r));
   }
   await repo.marcarSincronizacion(lote.dispositivo);
-  return { version_protocolo: VERSION_PROTOCOLO, cuentas, terceros, productos, resultados };
+  return { version_protocolo: VERSION_PROTOCOLO, cuentas, reglas, terceros, productos, resultados };
 }
 
 /** Clave usada en `cambios.registro_id` para cada tabla. */
@@ -188,6 +200,8 @@ export function claveRegistro(tabla: TablaSync, fila: Record<string, unknown>): 
       return String(fila['codigo']);
     case 'uvt':
       return String(fila['anio']);
+    case 'reglas_proveedor':
+      return String(fila['nit']);
     case 'periodos':
       return `${fila['anio']}-${fila['mes']}`;
     default:

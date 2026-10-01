@@ -83,6 +83,11 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
       if (error) throw errorDeRegistro(error);
     },
 
+    async aprenderRegla(p) {
+      const { error } = await sb.rpc('aprender_regla_proveedor', { p });
+      if (error) throw errorDeRegistro(error);
+    },
+
     async registrarTercero(p) {
       const { data, error } = await sb.rpc('registrar_tercero', { p });
       if (error) throw errorDeRegistro(error);
@@ -131,6 +136,9 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
             consulta = sb.from('uvt_firma').select('anio,uvt::text').eq('firma_id', (e as { firma_id: string }).firma_id).in('anio', grupo.map(Number));
             break;
           }
+          case 'reglas_proveedor':
+            consulta = sb.from('reglas_proveedor').select('nit,cuenta,retenciones').eq('empresa_id', empresa).in('nit', grupo);
+            break;
           case 'conceptos_empresa':
             consulta = sb.from('conceptos_empresa').select('codigo,tipo,nombre,tarifa_ppm,base_minima_uvt::text,cuenta,aplica_en,activo')
               .eq('empresa_id', empresa).in('codigo', grupo);

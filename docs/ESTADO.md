@@ -60,7 +60,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Tarea | Estado |
 |---|---|
 | Importación de XML/ZIP de la DIAN con reglas por proveedor | ✅ duplicados por CUFE (también entre PC), tercero automático, cuenta y retenciones aprendidas por proveedor |
-| Retenciones e ICA | ✅ conceptos configurables por empresa (sin tarifas en el código), UVT por año; compartidos por el servidor entre todos los PC (D-024) · ⬜ compartir también las reglas aprendidas por proveedor (hoy son de cada PC) |
+| Retenciones e ICA | ✅ conceptos configurables por empresa (sin tarifas en el código), UVT por año; compartidos por el servidor entre todos los PC (D-024) · 🟡 reglas aprendidas por proveedor: servidor y protocolo listos y probados (`aprender_regla_proveedor`, viajan en el lote y bajan como cambios) · ⬜ falta el lado del PC: unificar `reglas_proveedor` y `retenciones_proveedor` (migración local 7), encolarlas al aprender y aplicarlas al recibir |
 | Cierres mensuales y anual | ✅ |
 | Saldos iniciales | ✅ desde CSV (Excel), con validación por fila |
 | Conciliación bancaria con importación de extractos | ✅ CSV de los bancos (valor con signo o débito/crédito), emparejamiento automático, manual, y registro de cargos desde el extracto · ⬜ formatos específicos por banco si alguno no se reconoce |
@@ -121,11 +121,11 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 
-## Pruebas automáticas (01/10/2026) — 201 en total
+## Pruebas automáticas (01/10/2026) — 202 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 50 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance)
 - `@contafi/dian-xml`: 11 ✓
-- `@contafi/sync`: 23 ✓
+- `@contafi/sync`: 24 ✓
 - `@contafi/local`: 44 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria compartida)
 - `supabase` (PGlite con privilegios de Supabase): 43 ✓
 - `@contafi/jarvis`: 15 ✓
