@@ -44,7 +44,7 @@ const INTENCIONES: [RegExp, Intencion][] = [
     herramienta: 'movimientos_cuenta',
     argumentos: (t, d) => ({ cuenta: /\b(\d{2,10})\b/.exec(t)?.[1] ?? (/banco/.test(normalizar(t)) ? '1110' : '11'), ...rangoDesdeTexto(t, d.hoy) }),
     redactar: (r) => {
-      const m = r['movimientos'] as { fecha: string; concepto: string; debito: string; credito: string }[];
+      const m = r['ultimos_movimientos'] as { fecha: string; concepto: string; debito: string; credito: string }[];
       return m.length ? `Últimos movimientos de ${v(r['nombre'])}: ${m.slice(-5).map((x) => `${x.fecha} ${x.concepto} (débito ${x.debito}, crédito ${x.credito})`).join('; ')}.` : `La cuenta ${v(r['nombre'])} no tiene movimientos en ese período.`;
     },
   }],

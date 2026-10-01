@@ -68,6 +68,27 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 
 **Criterio de salida:** el asesor valida los reportes con una empresa real de prueba (👤 ⬜).
 
+## Fase 5 — Jarvis v1 (semanas 28–31) · adelantada
+
+| Tarea | Estado |
+|---|---|
+| Proceso auxiliar llama.cpp, descarga del modelo y detección de hardware | ✅ en Rust (compila en Windows): descarga reanudable con SHA-256, RAM, 127.0.0.1 + puerto aleatorio + token, apagado al salir y tras 5 min sin uso · 👤 ⬜ probarlo en un PC con Windows |
+| Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 13 herramientas y alertas por reglas · ⬜ inventario bajo (no hay inventario aún) y calendario tributario (requiere los vencimientos del año como parámetros) |
+| Banco de preguntas y evaluación (12.5) | ✅ 42 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
+
+**Medición real** (Qwen3-4B Q4_K_M en un portátil i5-8265U, 4 núcleos, sin tarjeta gráfica; Linux):
+
+| Modo | Herramienta correcta | Cifras verificadas | Tiempo promedio | Máximo |
+|---|---|---|---|---|
+| Todo con IA, instrucciones v1 | 76,2 % | 95,2 % | 27,6 s | 98,6 s |
+| Todo con IA, instrucciones v2 | 100 % | 100 % | 30,9 s | 69,3 s |
+| **Híbrido (como la app)** | **100 %** | 97,6 % → 100 % tras dar los totales en la herramienta | **4,2 s** | 74,1 s |
+
+- Leer instrucciones y herramientas toma ~85 s la primera vez; queda en la caché (después, 4,5 s). La app lo hace al abrir Jarvis.
+- El servidor de IA usa ~4,6 GB de RAM con el modelo de 4B.
+- La verificación de cifras atrapó dos cifras inventadas por el modelo (sumas que no pidió nadie).
+- **Criterio de salida:** con el modo híbrido se cumplen las metas de precisión y el promedio < 10 s; las preguntas que sí requieren la IA tardan 30–80 s en este procesador. Siguiente paso (plan: "se usa un modelo más pequeño"): evaluar Qwen3 1,7B y medir en el PC Windows de 8 GB del piloto.
+
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
 2. Usaba la cuenta **135515** como "IVA descontable". En el PUC, 135515 es *Retención en la fuente*; el IVA descontable va en **240810**.
@@ -88,6 +109,8 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 9. En las ventanas modales, escribir en un campo que no fuera el primero hacía saltar el foco (en "Cargar extracto" solo quedaba el primer dígito del saldo). Corregido.
 10. 10 campos no tenían estilo porque el CSS del prototipo solo aplica a `input[type=text]`.
 11. El CI cancelaba la compilación de Windows con cada push nuevo. Corregido.
+12. La versión "latest" de llama.cpp en GitHub no trae binarios: el script de la Fase 0 habría fallado. Ahora usa una versión fija verificada.
+13. El modelo pequeño tendía a responder con otra pregunta en lugar de consultar los datos (8 de 10 fallos): instrucciones con ejemplos y reintento con herramienta obligatoria.
 
 ## Pruebas automáticas (30/09/2026) — 143 en total
 - `@contafi/shared`: 15 ✓

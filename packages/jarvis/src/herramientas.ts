@@ -84,7 +84,7 @@ export const HERRAMIENTAS: Herramienta[] = [
       cuenta: { type: 'string', description: 'Código PUC o nombre de la cuenta' },
       desde: { type: 'string', description: 'AAAA-MM-DD (por defecto 1 de enero)' },
       hasta: { type: 'string', description: 'AAAA-MM-DD (por defecto hoy)' },
-      limite: { type: 'integer', description: 'Cuántos movimientos (máximo 20)' },
+      limite: { type: 'integer', description: 'Cuántos movimientos mostrar (por defecto 5, máximo 20)' },
     },
     requeridos: ['cuenta'],
     ejecutar: (a, d) => {
@@ -92,12 +92,16 @@ export const HERRAMIENTAS: Herramienta[] = [
       if ('opciones' in c) return { error: `No encontré una cuenta llamada "${texto(a['cuenta'])}".` };
       const r = rangoAnio(d.hoy, fecha(a['desde']), fecha(a['hasta']));
       const aux = auxiliar(d.comprobantes, c.codigo, r);
+      // Los totales los da el motor: así el modelo no tiene que sumar (y no inventa cifras).
       return {
         cuenta: c.codigo, nombre: c.nombre, ...r,
-        movimientos: aux.filas.slice(-entero(a['limite'], 10, 20)).map((f) => ({
+        cantidad_de_movimientos: aux.filas.length,
+        suma_debitos_del_periodo: aux.filas.reduce((x, f) => x + f.debito, 0n),
+        suma_creditos_del_periodo: aux.filas.reduce((x, f) => x + f.credito, 0n),
+        saldo_inicial: aux.saldoInicial, saldo_final: aux.saldoFinal,
+        ultimos_movimientos: aux.filas.slice(-entero(a['limite'], 5, 20)).map((f) => ({
           fecha: f.fecha, comprobante: f.numero, concepto: f.concepto, debito: f.debito, credito: f.credito,
         })),
-        total_movimientos: aux.filas.length,
       };
     },
   },
