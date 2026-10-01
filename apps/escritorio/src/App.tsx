@@ -134,7 +134,7 @@ export function App() {
       alSalir={async () => { await nube.supabase.auth.signOut(); setBienvenida(false); }} />;
   }
   if (!sesion) {
-    return <Acceso supabase={nube?.supabase ?? null} alEntrar={async () => { await entrarNube(); }} alEntrarDemo={entrarDemo} />;
+    return <Acceso supabase={nube?.supabase ?? null} urlSitio={nube?.api ?? null} alEntrar={async () => { await entrarNube(); }} alEntrarDemo={entrarDemo} />;
   }
   return <ProveedorApp sesion={sesion}><Pantallas /></ProveedorApp>;
 }

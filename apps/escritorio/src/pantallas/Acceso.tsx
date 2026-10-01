@@ -9,8 +9,10 @@ type Paso = { tipo: 'credenciales' } | { tipo: 'registro' } | { tipo: 'mfa' };
  * Inicio de sesión. En la nube: correo y contraseña y, si el usuario administra una firma, MFA (TOTP)
  * obligatorio (la base de datos no le da permisos de administrador sin él). En demostración: un botón.
  */
-export function Acceso({ supabase, alEntrar, alEntrarDemo }: {
+export function Acceso({ supabase, urlSitio, alEntrar, alEntrarDemo }: {
   supabase: SupabaseClient | null;
+  /** Sitio web (apps/web): ahí se crea la nueva contraseña con el enlace del correo. */
+  urlSitio: string | null;
   alEntrar: () => Promise<void>;
   alEntrarDemo: () => Promise<void>;
 }) {
@@ -39,6 +41,14 @@ export function Acceso({ supabase, alEntrar, alEntrarDemo }: {
     setPaso({ tipo: 'mfa' });
   }); };
 
+  const recuperar = () => void trabajar(async () => {
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo.trim())) throw new Error('Escribe tu correo y vuelve a intentarlo.');
+    const { error: err } = await supabase!.auth.resetPasswordForEmail(correo.trim(), { redirectTo: `${urlSitio}/clave` });
+    if (err) throw new Error(/rate|seconds/i.test(err.message) ? 'Espera un minuto antes de pedir otro enlace.' : err.message);
+    // El mismo mensaje exista o no la cuenta: no revela qué correos están registrados.
+    setNota(`Si ${correo.trim()} tiene cuenta en Contafi, te llegará un enlace para crear una nueva contraseña.`);
+  });
+
   const registrar = (e: FormEvent) => { e.preventDefault(); void trabajar(async () => {
     if (clave.length < 10) throw new Error('La contraseña debe tener al menos 10 caracteres.');
     if (clave !== clave2) throw new Error('Las contraseñas no coinciden.');
@@ -62,7 +72,10 @@ export function Acceso({ supabase, alEntrar, alEntrarDemo }: {
             <div className="field"><label htmlFor="clave">Contraseña</label><input id="clave" type="password" autoComplete="current-password" required value={clave} onChange={(e) => setClave(e.target.value)} /></div>
             {error && <div className="notice danger" role="alert">{error}</div>}
             <button className="btn primary block" disabled={ocupado}>{ocupado ? 'Ingresando…' : 'Ingresar'}<Icono nombre="arrowRight" /></button>
-            <button type="button" className="btn ghost block" onClick={() => { setError(null); setNota(null); setPaso({ tipo: 'registro' }); }}>¿Primera vez? Crear una cuenta</button>
+            <div className="btn-row" style={{ justifyContent: 'space-between' }}>
+              <button type="button" className="btn ghost" disabled={ocupado} onClick={recuperar}>¿Olvidaste tu contraseña?</button>
+              <button type="button" className="btn ghost" onClick={() => { setError(null); setNota(null); setPaso({ tipo: 'registro' }); }}>Crear una cuenta</button>
+            </div>
           </form>
         ) : (
           <>

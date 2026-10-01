@@ -49,7 +49,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Sincronización con indicadores (en línea, sin conexión, pendientes, rechazados) | ✅ automática al abrir, cada minuto, al volver la red y al guardar |
 | Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros (con importación masiva desde CSV), sincronización, libros y estados financieros |
 | Inicio de sesión con MFA | ✅ pantalla lista, con registro de cuenta · ⬜ probar contra un Supabase real |
-| Alta en la nube desde la app | ✅ bienvenida (crear firma → verificación en dos pasos → primera empresa, o unirse con el código de la invitación), nueva empresa y equipo de la firma (invitar, roles por empresa, quitar; D-023) · ⬜ probar contra un Supabase real; recuperar contraseña |
+| Alta en la nube desde la app | ✅ bienvenida (crear firma → verificación en dos pasos → primera empresa, o unirse con el código de la invitación), nueva empresa y equipo de la firma (invitar, roles por empresa, quitar; D-023), recuperar contraseña (página `/clave` del sitio) · ⬜ probar contra un Supabase real · 👤 agregar `<URL_SITIO>/clave` a las Redirect URLs de Supabase |
 | Modo demostración para pilotos (sin servidor) | ✅ `?demo`, con servidor simulado que asigna números |
 | Instalador firmado, actualizaciones automáticas y Sentry | ✅ **el CI compila el instalador de Windows** (`.exe` de 4,9 MB y `.msi` de 6,1 MB, incluye SQLCipher) · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
 

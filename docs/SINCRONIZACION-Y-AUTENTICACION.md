@@ -23,7 +23,12 @@ Guía para implementar el cliente (app de escritorio, Fase 3). El servidor ya es
    `cambiar_rol_firma(p_firma, p_usuario, 'administrador' | 'miembro')`, `quitar_miembro(p_firma, p_usuario)`
    y `revocar_invitacion(p_id)`. Membresías y permisos ya no se escriben directamente (D-023).
 
-**En la app:** la pantalla de acceso tiene "Crear una cuenta". Un usuario sin empresas ve la bienvenida:
+7. **Recuperar la contraseña:** la app llama `supabase.auth.resetPasswordForEmail(correo, { redirectTo: '<URL_SITIO>/clave' })`.
+   El correo lleva a la página `/clave` de `apps/web`, que lee la sesión de recuperación del fragmento (`#…`,
+   no llega al servidor) y guarda la nueva contraseña con `auth.updateUser`. **En Supabase → Authentication →
+   URL Configuration** hay que agregar `<URL_SITIO>/clave` a las *Redirect URLs* (si no, el enlace no funciona).
+
+**En la app:** la pantalla de acceso tiene "Crear una cuenta" y "¿Olvidaste tu contraseña?". Un usuario sin empresas ve la bienvenida:
 pegar el código de una invitación o crear su firma; al crearla, activa la verificación en dos pasos y
 registra la primera empresa. Después, "Mis empresas → Nueva empresa" y "Equipo de la firma".
 

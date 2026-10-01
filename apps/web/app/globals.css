@@ -13,3 +13,6 @@ p { color: var(--suave); }
 .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 20px; margin-top: 24px; }
 code { font-family: "Geist Mono", ui-monospace, Consolas, monospace; font-size: 14px; word-break: break-all; }
 button { font: inherit; background: var(--acento); color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; }
+input { font: inherit; width: 100%; max-width: 360px; padding: 8px 10px; margin-top: 4px; border: 1px solid var(--borde); border-radius: 8px; background: var(--fondo); color: var(--texto); }
+label { color: var(--texto); }
+[role="alert"] { color: #c0392b; }
