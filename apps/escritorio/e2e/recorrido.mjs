@@ -32,6 +32,7 @@ await page.waitForSelector('.kpi-grid', { timeout: 20000 });
 await foto('02-panel');
 
 await page.click('.nav-item:nth-of-type(1)'); // noop
+const boton = async (texto) => { const b = await page.$$('button'); for (const x of b) { if ((await x.evaluate((n) => n.textContent.trim())) === texto) { await x.click(); return; } } throw new Error('No encontré botón ' + texto); };
 const ir = async (texto) => { const b = await page.$$('.nav-item'); for (const x of b) { if ((await x.evaluate((n) => n.textContent)).includes(texto)) { await x.click(); break; } } await new Promise((r) => setTimeout(r, 500)); };
 await ir('Mis empresas');
 await page.waitForSelector('tbody tr');
@@ -48,11 +49,36 @@ await page.waitForFunction(() => document.querySelectorAll('.msg.bot').length >=
 const respuestaJarvis = await page.$$eval('.msg.bot', (ms) => ms.at(-1).textContent);
 verificar('Jarvis responde con cifras del motor', /\$ [\d.]+/.test(respuestaJarvis) && respuestaJarvis.includes('Cifras del motor'), respuestaJarvis.slice(0, 90));
 await foto('02c-jarvis');
+// Ventas y compras: factura de venta manual, cartera y recaudo parcial
+await ir('Ventas y compras');
+await boton('Factura de venta');
+await page.waitForSelector('#fTer');
+const opcionesTercero = await page.$$eval('#fTer option', (os) => os.map((o) => [o.value, o.textContent]));
+await page.select('#fTer', opcionesTercero.find(([, t]) => t.includes('El Roble'))[0]);
+await page.type('#fNum', 'FE-2001');
+await page.type('input[aria-label="Descripción ítem 1"]', 'Instalación de red');
+await page.type('input[aria-label="Valor ítem 1"]', '1.000.000');
+await page.waitForSelector('.modal .total-bar', { timeout: 5000 });
+await foto('02d-factura-venta');
+await boton('Guardar');
+await page.waitForSelector('tbody tr', { timeout: 5000 });
+await new Promise((r) => setTimeout(r, 500));
+const filaRoble = (await page.$$('tbody tr'))[0];
+const saldoRoble = await filaRoble.$eval('td:nth-child(2)', (n) => n.textContent);
+verificar('Cartera con la factura nueva', saldoRoble === '$ 1.190.000', saldoRoble);
+await (await filaRoble.$('button')).click();
+await page.waitForSelector('#mValor');
+await page.$eval('#mValor', (n) => { n.value = ''; });
+await page.type('#mValor', '190.000');
+await boton('Registrar');
+await new Promise((r) => setTimeout(r, 700));
+const saldoTrasRecaudo = await page.$eval('tbody tr td:nth-child(2)', (n) => n.textContent);
+verificar('Recaudo parcial descuenta la cartera', saldoTrasRecaudo === '$ 1.000.000', saldoTrasRecaudo);
+await foto('02e-cartera');
 await ir('Comprobantes');
 await foto('03-comprobantes');
 
 // Nuevo comprobante
-const boton = async (texto) => { const b = await page.$$('button'); for (const x of b) { if ((await x.evaluate((n) => n.textContent.trim())) === texto) { await x.click(); return; } } throw new Error('No encontré botón ' + texto); };
 await boton('Nuevo comprobante');
 await page.waitForSelector('.modal');
 await page.type('#cConcepto', 'Papelería y útiles de oficina');
