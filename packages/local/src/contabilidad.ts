@@ -182,9 +182,10 @@ export async function crearComprobante(
        values (?, ?, ?, ?, ?, ?, 'pendiente_sync', ?, ?, ?, ?)`,
       id, empresa, datos.tipo, local, datos.fecha, datos.concepto.trim(), datos.origen ?? 'manual', opciones.clave ?? `pc:${id}`, datos.reversaDe ?? null, t),
     ...datos.lineas.map((l, i) => s(
-      `insert into lineas (comprobante_id, orden, cuenta, tercero_id, centro_costo_id, debito, credito, base_impuesto, nota)
-       values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      id, i + 1, l.cuenta, l.terceroId ?? null, l.centroCostoId ?? null, l.debito, l.credito, l.base ?? null, l.nota ?? null)),
+      `insert into lineas (comprobante_id, orden, cuenta, tercero_id, centro_costo_id, debito, credito, base_impuesto, nota, producto_id, cantidad)
+       values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      id, i + 1, l.cuenta, l.terceroId ?? null, l.centroCostoId ?? null, l.debito, l.credito, l.base ?? null, l.nota ?? null,
+      l.productoId ?? null, l.cantidad ?? null)),
     s(`insert into cola_salida (empresa_id, tipo, registro_id, creado_en) values (?, 'comprobante', ?, ?)`, empresa, id, t),
   ];
   if (opciones.claveBorrador) sentencias.push(s('delete from borradores where clave = ?', opciones.claveBorrador));
@@ -213,7 +214,7 @@ export async function leerComprobantes(base: BaseLocal, empresa: string, f: Filt
        from comprobantes where ${where} order by fecha, coalesce(numero, numero_local), creado_en limit ${limite}`, p);
   const lineas = await base.consultar<Record<string, string | number | null>>(
     `select comprobante_id, orden, cuenta, tercero_id, centro_costo_id, cast(debito as text) as debito, cast(credito as text) as credito,
-            cast(base_impuesto as text) as base_impuesto, nota
+            cast(base_impuesto as text) as base_impuesto, nota, producto_id, cast(cantidad as text) as cantidad
        from lineas where comprobante_id in (select id from comprobantes where ${where} order by fecha limit ${limite})
       order by comprobante_id, orden`, p);
   const porComprobante = new Map<string, Linea[]>();
@@ -224,6 +225,7 @@ export async function leerComprobantes(base: BaseLocal, empresa: string, f: Filt
       centroCostoId: (l['centro_costo_id'] as string | null) ?? null,
       debito: BigInt(String(l['debito'])), credito: BigInt(String(l['credito'])),
       base: l['base_impuesto'] == null ? null : BigInt(String(l['base_impuesto'])), nota: (l['nota'] as string | null) ?? null,
+      productoId: (l['producto_id'] as string | null) ?? null, cantidad: l['cantidad'] == null ? null : BigInt(String(l['cantidad'])),
     });
     porComprobante.set(String(l['comprobante_id']), lista);
   }

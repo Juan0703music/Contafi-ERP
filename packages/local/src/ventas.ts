@@ -1,11 +1,12 @@
 import type { Centavos, FechaISO } from '@contafi/shared';
 import {
-  antiguedadSaldos, asientoFacturaCompra, asientoFacturaVenta, asientoPago, asientoRecaudo, calcularTotales,
-  type AntiguedadTercero, type ItemDocumento, type TotalesDocumento,
+  antiguedadSaldos, aMilesimas, asientoFacturaCompra, asientoFacturaVenta, asientoPago, asientoRecaudo, calcularTotales, kardex, salida,
+  type AntiguedadTercero, type EstadoInventario, type ItemDocumento, type TotalesDocumento,
 } from '@contafi/motor';
 import type { BaseLocal } from './base.ts';
 import { ErrorLocal, comprobantesParaReportes, crearComprobante } from './contabilidad.ts';
 import { conceptosRetencion, parametrosDelAnio } from './retenciones.ts';
+import { productosLocales } from './inventario.ts';
 
 /**
  * Ventas y compras registradas a mano (sección 11.1): facturas no electrónicas o de proveedores sin
@@ -36,9 +37,37 @@ export async function calcularFactura(base: BaseLocal, empresa: string, d: Datos
   return calcularTotales(d.items, conceptos, parametros ?? { anio, uvt: 0n });
 }
 
-export async function crearFactura(base: BaseLocal, empresa: string, d: DatosFactura): Promise<{ id: string; numeroLocal: string; totales: TotalesDocumento }> {
+/**
+ * Ítems con producto de inventario: la cuenta de inventario del producto y, en ventas, el costo con el
+ * promedio del kárdex. Una venta sin conexión puede dejar la existencia negativa (sección 9.4): se
+ * permite y se avisa.
+ */
+async function prepararInventario(base: BaseLocal, empresa: string, d: DatosFactura): Promise<{ items: ItemDocumento[]; avisos: string[] }> {
+  const conProducto = d.items.filter((i) => i.productoId);
+  if (!conProducto.length) return { items: d.items, avisos: [] };
+  const productos = new Map((await productosLocales(base, empresa)).map((p) => [p.id, p]));
+  const cs = await comprobantesParaReportes(base, empresa, { incluirPendientes: true });
+  const estados = new Map<string, EstadoInventario>();
+  const avisos: string[] = [];
+  const items = d.items.map((it) => {
+    if (!it.productoId) return it;
+    const p = productos.get(it.productoId);
+    if (!p) throw new ErrorLocal('NO_EXISTE', `El producto del ítem "${it.descripcion}" no existe.`);
+    if (p.tipo === 'servicio') return { ...it, productoId: undefined }; // los servicios no llevan kárdex
+    if (d.sentido === 'compra') return { ...it, cuentaInventario: p.cuentaInventario };
+    const estado = estados.get(p.id) ?? kardex(cs, p.id).estado;
+    const r = salida(estado, aMilesimas(it.cantidad), { permitirNegativo: true });
+    estados.set(p.id, r.estado);
+    if (r.quedoNegativo) avisos.push(`La existencia de ${p.nombre} queda negativa (${Number(r.estado.cantidad) / 1000} ${p.unidad}).`);
+    return { ...it, cuentaInventario: p.cuentaInventario, costo: r.costo };
+  });
+  return { items, avisos };
+}
+
+export async function crearFactura(base: BaseLocal, empresa: string, d: DatosFactura): Promise<{ id: string; numeroLocal: string; totales: TotalesDocumento; avisos: string[] }> {
   if (!d.numero.trim()) throw new ErrorLocal('DATOS_INVALIDOS', 'Escriba el número de la factura.');
-  const totales = await calcularFactura(base, empresa, d);
+  const { items, avisos } = await prepararInventario(base, empresa, d);
+  const totales = await calcularFactura(base, empresa, { ...d, items });
   const lineas = d.sentido === 'venta'
     ? asientoFacturaVenta(totales, d.terceroId)
     : asientoFacturaCompra(totales, d.terceroId, { ivaDescontable: d.ivaDescontable ?? true });
@@ -47,7 +76,7 @@ export async function crearFactura(base: BaseLocal, empresa: string, d: DatosFac
     tipo: d.sentido === 'venta' ? 'FV' : 'FC', fecha: d.fecha, origen: d.sentido === 'venta' ? 'factura_venta' : 'factura_compra', lineas,
     concepto: `Factura de ${d.sentido} ${d.numero.trim()} — ${t?.nombre ?? 'tercero'}`,
   });
-  return { ...r, totales };
+  return { ...r, totales, avisos };
 }
 
 /** Recaudo de un cliente (o pago a un proveedor) contra la cuenta de caja o bancos elegida. */

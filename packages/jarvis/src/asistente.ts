@@ -111,6 +111,7 @@ export function instruccionesSistema(): string {
     '- "¿Ganamos o perdimos el mes pasado?" → estado_resultados con las fechas del mes pasado',
     '- "¿Cuánto nos retuvieron?", "reteICA", "retención en la fuente" → retenciones_periodo',
     '- "¿Cómo vamos?", "¿qué debo revisar?", "resumen" → alertas_empresa',
+    '- "¿Qué productos se están acabando?", "inventario", "existencias" → inventario_bajo',
   ].join('\n');
 }
 

@@ -1,6 +1,6 @@
 import { esFechaValida, type FechaISO } from '@contafi/shared';
 import {
-  antiguedadSaldos, auxiliar, balanceGeneral, estadoResultados, estadoResultadosDetallado, movimientosPorCuenta,
+  antiguedadSaldos, auxiliar, balanceGeneral, estadoResultados, estadoResultadosDetallado, kardex, movimientosPorCuenta,
 } from '@contafi/motor';
 import { bimestre, rangoAnio, type DatosEmpresa } from './datos.ts';
 import { calcularAlertas } from './alertas.ts';
@@ -269,6 +269,24 @@ export const HERRAMIENTAS: Herramienta[] = [
           numero: c.numero ?? '(pendiente de número)', fecha: c.fecha, concepto: c.concepto,
           valor: c.lineas.reduce((s, l) => s + l.debito, 0n), estado: c.estado,
         })),
+      };
+    },
+  },
+  {
+    nombre: 'inventario_bajo',
+    descripcion: 'Productos con pocas existencias (o negativas) en el inventario.',
+    parametros: { minimo: { type: 'integer', description: 'Cantidad mínima: se listan los que estén en o por debajo (por defecto 5)' } },
+    ejecutar: (a, d) => {
+      const minimo = BigInt(entero(a['minimo'], 5, 1_000_000)) * 1000n;
+      const lista = d.productos.filter((p) => p.tipo === 'producto' && p.activo)
+        .map((p) => ({ p, e: kardex(d.comprobantes, p.id).estado }))
+        .filter((x) => x.e.cantidad <= minimo)
+        .sort((x, y) => (x.e.cantidad < y.e.cantidad ? -1 : 1));
+      return {
+        productos: lista.slice(0, 15).map((x) => ({
+          codigo: x.p.codigo, nombre: x.p.nombre, existencia: `${Number(x.e.cantidad) / 1000} ${x.p.unidad}`, valor: x.e.valor,
+        })),
+        total_productos_con_inventario: d.productos.filter((p) => p.tipo === 'producto').length,
       };
     },
   },

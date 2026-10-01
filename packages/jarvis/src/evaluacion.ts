@@ -46,6 +46,8 @@ export const BANCO_PREGUNTAS: { pregunta: string; herramienta: string }[] = [
   { pregunta: 'Compara la utilidad de febrero contra la de marzo', herramienta: 'comparar_periodos' },
   { pregunta: '¿Cómo nos fue este mes comparado con el mes pasado?', herramienta: 'comparar_periodos' },
   { pregunta: 'Muéstrame los últimos movimientos de bancos', herramienta: 'movimientos_cuenta' },
+  { pregunta: '¿Qué productos se están acabando?', herramienta: 'inventario_bajo' },
+  { pregunta: '¿Cómo está el inventario?', herramienta: 'inventario_bajo' },
   { pregunta: '¿Qué movimientos tuvo la cuenta 5195 este año?', herramienta: 'movimientos_cuenta' },
 ];
 

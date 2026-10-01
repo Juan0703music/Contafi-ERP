@@ -28,7 +28,7 @@ function cg(fecha: string, lineas: [string, string, string][], extra: Partial<Co
   };
 }
 const lote = (comprobantes: ComprobanteSync[], terceros: LoteEnvio['terceros'] = []): LoteEnvio =>
-  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, terceros, comprobantes });
+  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, terceros, productos: [], comprobantes });
 
 const nuevoTercero = (numero: string, dv: number | null, nombre: string): LoteEnvio['terceros'][number] =>
   ({ id: randomUUID(), tipo_doc: '31', numero, dv, nombre, tipos: ['proveedor'], responsabilidades: [], activo: true });
@@ -159,6 +159,31 @@ describe('mismo documento enviado desde dos PC con distinto id', () => {
     const r2 = await procesarEnvio(repositorioPglite(db, ana), lote([pc2]));
     expect(r1.resultados[0]).toMatchObject({ id: pc1.id, id_servidor: pc1.id, repetido: false });
     expect(r2.resultados[0]).toMatchObject({ id: pc2.id, id_servidor: pc1.id, repetido: true, numero: r1.resultados[0]!.numero });
+  });
+});
+
+describe('productos creados sin conexión', () => {
+  it('el producto viaja antes que la factura; el mismo código desde otro PC se unifica', async () => {
+    const repo = repositorioPglite(db, ana);
+    const prod = (id: string) => ({ id, codigo: 'RT-9', nombre: 'Router', tipo: 'producto' as const, unidad: 'UND', cuenta_inventario: '143505', iva_tipo: 'gravado' as const, iva_tarifa_ppm: 190000, activo: true });
+    const p1 = prod(randomUUID());
+    const compra = { ...cg('2026-09-14', []), lineas: [
+      { cuenta: '143505', debito: '500000', credito: '0', producto_id: p1.id, cantidad: '5' },
+      { cuenta: '111005', debito: '0', credito: '500000' },
+    ] };
+    const r1 = await procesarEnvio(repo, { ...lote([compra]), productos: [p1] });
+    expect(r1.productos).toEqual([{ id: p1.id, id_servidor: p1.id, estado: 'registrado', errores: [] }]);
+    expect(r1.resultados[0]!.estado).toBe('contabilizado');
+    const p2 = prod(randomUUID());
+    const venta = { ...cg('2026-09-15', []), lineas: [
+      { cuenta: '613595', debito: '100000', credito: '0' },
+      { cuenta: '143505', debito: '0', credito: '100000', producto_id: p2.id, cantidad: '1' },
+    ] };
+    const r2 = await procesarEnvio(repo, { ...lote([venta]), productos: [p2] });
+    expect(r2.productos[0]).toMatchObject({ id: p2.id, id_servidor: p1.id });
+    expect(r2.resultados[0]!.estado).toBe('contabilizado');
+    const [l] = await como<{ p: string }>(db, ana, 'select producto_id::text as p from public.lineas where comprobante_id = $1 and producto_id is not null', [venta.id]);
+    expect(l!.p).toBe(p1.id);
   });
 });
 

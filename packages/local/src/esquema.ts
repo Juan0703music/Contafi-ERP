@@ -115,6 +115,29 @@ export const MIGRACIONES: readonly string[][] = [
        movimiento_libro text not null unique, conciliado_en text not null
      ) strict`,
   ],
+  // 5 · Inventario básico: productos, y producto + cantidad (milésimas) en las líneas contables
+  [
+    `create table productos (
+       id text primary key, empresa_id text not null, codigo text not null, nombre text not null,
+       tipo text not null check (tipo in ('producto', 'servicio')), unidad text not null,
+       cuenta_inventario text not null, iva_tipo text not null, iva_tarifa_ppm integer,
+       precio_venta integer, activo integer not null default 1, errores_sync text
+     ) strict`,
+    `create unique index productos_codigo on productos (empresa_id, codigo)`,
+    `alter table lineas add column producto_id text`,
+    `alter table lineas add column cantidad integer`,
+    `create index lineas_producto on lineas (producto_id)`,
+    // La cola de salida ahora también lleva productos (SQLite no permite cambiar un CHECK: se recrea).
+    `create table cola_salida_nueva (
+       seq integer primary key autoincrement, empresa_id text not null,
+       tipo text not null check (tipo in ('comprobante', 'tercero', 'producto')), registro_id text not null,
+       intentos integer not null default 0, ultimo_error text, creado_en text not null,
+       unique (tipo, registro_id)
+     ) strict`,
+    `insert into cola_salida_nueva select * from cola_salida`,
+    `drop table cola_salida`,
+    `alter table cola_salida_nueva rename to cola_salida`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

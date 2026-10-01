@@ -90,6 +90,13 @@ const INTENCIONES: [RegExp, Intencion][] = [
     herramienta: 'cuentas_por_pagar', argumentos: () => ({}),
     redactar: (r) => `A los proveedores se les debe ${v(r['total'])}. Con más de 30 días: ${v(r['de_31_a_60_dias'])} (31 a 60), ${v(r['de_61_a_90_dias'])} (61 a 90) y ${v(r['mas_de_90_dias'])} (más de 90).`,
   }],
+  [/(inventario|existencia|stock|poco producto|se estan? acabando|se acaba)/, {
+    herramienta: 'inventario_bajo', argumentos: () => ({}),
+    redactar: (r) => {
+      const p = r['productos'] as { nombre: string; existencia: string }[];
+      return p.length ? `Productos con pocas existencias: ${p.map((x) => `${x.nombre} (${x.existencia})`).join('; ')}.` : 'Ningún producto está por debajo del mínimo.';
+    },
+  }],
   [/(gasto|gastamos|gastando|en que se va)/, {
     herramienta: 'top_gastos', argumentos: (t, d) => rangoDesdeTexto(t, d.hoy),
     redactar: (r) => {

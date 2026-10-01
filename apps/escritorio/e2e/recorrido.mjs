@@ -75,6 +75,39 @@ await new Promise((r) => setTimeout(r, 700));
 const saldoTrasRecaudo = await page.$eval('tbody tr td:nth-child(2)', (n) => n.textContent);
 verificar('Recaudo parcial descuenta la cartera', saldoTrasRecaudo === '$ 1.000.000', saldoTrasRecaudo);
 await foto('02e-cartera');
+
+// Inventario: producto nuevo, compra de 10 a $ 180.000 y venta de 2 → quedan 8 por $ 1.440.000
+await ir('Inventario');
+await boton('Nuevo producto');
+await page.waitForSelector('#pCod');
+await page.type('#pCod', 'RT-100');
+await page.type('#pNom', 'Router empresarial');
+await page.type('#pPre', '295.000');
+await boton('Guardar');
+await new Promise((r) => setTimeout(r, 500));
+const facturarProducto = async (tipo, tercero, numero, cantidad, valor) => {
+  await ir('Ventas y compras');
+  await boton(tipo);
+  await page.waitForSelector('#fTer');
+  const ops = await page.$$eval('#fTer option', (os) => os.map((o) => [o.value, o.textContent]));
+  await page.select('#fTer', ops.find(([, t]) => t.includes(tercero))[0]);
+  await page.type('#fNum', numero);
+  const prods = await page.$$eval('select[aria-label="Producto ítem 1"] option', (os) => os.map((o) => [o.value, o.textContent]));
+  await page.select('select[aria-label="Producto ítem 1"]', prods.find(([, t]) => t.includes('RT-100'))[0]);
+  await page.$eval('input[aria-label="Cantidad ítem 1"]', (n) => { n.value = ''; });
+  await page.type('input[aria-label="Cantidad ítem 1"]', cantidad);
+  if (valor) { await page.$eval('input[aria-label="Valor ítem 1"]', (n) => { n.value = ''; }); await page.type('input[aria-label="Valor ítem 1"]', valor); }
+  await page.waitForSelector('.modal .total-bar', { timeout: 5000 });
+  await boton('Guardar');
+  await new Promise((r) => setTimeout(r, 700));
+};
+await facturarProducto('Factura de compra', 'Suministros del Norte', 'SN-777', '10', '180.000');
+await facturarProducto('Factura de venta', 'El Roble', 'FE-2002', '2', null);
+await ir('Inventario');
+await page.waitForSelector('tbody tr');
+const filaInv = await page.$$eval('tbody tr', (trs) => trs.find((t) => t.textContent.includes('RT-100'))?.textContent ?? '');
+verificar('Kárdex por costo promedio', filaInv.includes('8 UND') && filaInv.includes('$ 1.440.000') && filaInv.includes('$ 180.000'), filaInv.replace(/\s+/g, ' ').slice(0, 120));
+await foto('02f-inventario');
 await ir('Comprobantes');
 await foto('03-comprobantes');
 

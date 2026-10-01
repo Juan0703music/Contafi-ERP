@@ -1,7 +1,8 @@
 import { aCentavos, aDecimal, esFechaValida } from '@contafi/shared';
+import { aMilesimas } from '@contafi/motor';
 import {
   VERSION_PROTOCOLO,
-  type ComprobanteSync, type ConsultaCambios, type LoteEnvio, type RespuestaCambios, type RespuestaEnvio, type TerceroSync,
+  type ComprobanteSync, type ConsultaCambios, type LoteEnvio, type ProductoSync, type RespuestaCambios, type RespuestaEnvio, type TerceroSync,
 } from '@contafi/sync';
 import { s, type BaseLocal, type Sentencia } from './base.ts';
 
@@ -64,13 +65,28 @@ async function leerTercero(base: BaseLocal, id: string): Promise<TerceroSync | n
   };
 }
 
+async function leerProducto(base: BaseLocal, id: string): Promise<ProductoSync | null> {
+  const [p] = await base.consultar<Record<string, string | number | null>>(
+    'select *, cast(precio_venta as text) as precio from productos where id = ?', [id]);
+  if (!p) return null;
+  const precio = p['precio'] == null ? null : aDecimal(BigInt(String(p['precio'])));
+  return {
+    id, codigo: String(p['codigo']), nombre: String(p['nombre']), tipo: p['tipo'] as ProductoSync['tipo'], unidad: String(p['unidad']),
+    cuenta_inventario: String(p['cuenta_inventario']), iva_tipo: p['iva_tipo'] as ProductoSync['iva_tipo'],
+    iva_tarifa_ppm: p['iva_tarifa_ppm'] == null ? null : Number(p['iva_tarifa_ppm']), precio_venta: precio, activo: !!p['activo'],
+  };
+}
+
+/** Milésimas → "2.500" (texto decimal con 3 decimales, como numeric(18,3) en el servidor). */
+const cantidadTexto = (m: bigint) => `${m / 1000n}.${String(m % 1000n).padStart(3, '0')}`;
+
 async function leerComprobanteSync(base: BaseLocal, id: string): Promise<ComprobanteSync | null> {
   const [c] = await base.consultar<Record<string, string | null>>(
     'select id, tipo, fecha, concepto, origen, clave_idempotencia, reversa_de from comprobantes where id = ?', [id]);
   if (!c) return null;
   const lineas = await base.consultar<Record<string, string | null>>(
     `select cuenta, tercero_id, centro_costo_id, cast(debito as text) as debito, cast(credito as text) as credito,
-            cast(base_impuesto as text) as base_impuesto, nota
+            cast(base_impuesto as text) as base_impuesto, nota, producto_id, cast(cantidad as text) as cantidad
        from lineas where comprobante_id = ? order by orden`, [id]);
   return {
     id, tipo: c['tipo']!, fecha: c['fecha']!, concepto: c['concepto']!, origen: c['origen'] as ComprobanteSync['origen'],
@@ -79,13 +95,14 @@ async function leerComprobanteSync(base: BaseLocal, id: string): Promise<Comprob
       cuenta: l['cuenta']!, tercero_id: l['tercero_id'] ?? null, centro_costo_id: l['centro_costo_id'] ?? null,
       debito: aDecimal(BigInt(l['debito']!)), credito: aDecimal(BigInt(l['credito']!)),
       base_impuesto: l['base_impuesto'] == null ? null : aDecimal(BigInt(l['base_impuesto'])), nota: l['nota'] ?? null,
+      producto_id: l['producto_id'] ?? null, cantidad: l['cantidad'] == null ? null : cantidadTexto(BigInt(l['cantidad'])),
     })),
   };
 }
 
 /** Arma el siguiente lote respetando los límites. Terceros primero: los comprobantes pueden usarlos. */
 async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Dispositivo): Promise<LoteEnvio | null> {
-  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero'; registro_id: string }>(
+  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero' | 'producto'; registro_id: string }>(
     'select tipo, registro_id from cola_salida where empresa_id = ? order by seq', [empresa]);
   const terceros: TerceroSync[] = [];
   const comprobantes: ComprobanteSync[] = [];
@@ -98,9 +115,17 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     terceros.push(t);
     bytes += JSON.stringify(t).length;
   }
-  // Si quedaron terceros sin enviar, este lote lleva solo terceros.
-  const quedanTerceros = cola.filter((i) => i.tipo === 'tercero').length > terceros.length + huerfanos.length;
-  if (!quedanTerceros) {
+  const productos: ProductoSync[] = [];
+  for (const item of cola.filter((i) => i.tipo === 'producto')) {
+    if (productos.length >= LIMITES.tercerosPorLote) break;
+    const p = await leerProducto(base, item.registro_id);
+    if (!p) { huerfanos.push(s(`delete from cola_salida where tipo = 'producto' and registro_id = ?`, item.registro_id)); continue; }
+    productos.push(p);
+    bytes += JSON.stringify(p).length;
+  }
+  // Si quedaron terceros o productos sin enviar, este lote no lleva comprobantes (podrían depender de ellos).
+  const quedanMaestros = cola.filter((i) => i.tipo !== 'comprobante').length > terceros.length + productos.length + huerfanos.length;
+  if (!quedanMaestros) {
     for (const item of cola.filter((i) => i.tipo === 'comprobante')) {
       if (comprobantes.length >= LIMITES.comprobantesPorLote) break;
       const c = await leerComprobanteSync(base, item.registro_id);
@@ -112,8 +137,8 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     }
   }
   if (huerfanos.length) await base.lote(huerfanos);
-  if (terceros.length + comprobantes.length === 0) return null;
-  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, terceros, comprobantes };
+  if (terceros.length + productos.length + comprobantes.length === 0) return null;
+  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, terceros, productos, comprobantes };
 }
 
 function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSincronizacion): Sentencia[] {
@@ -136,6 +161,22 @@ function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSi
       resumen.tercerosRechazados++;
     }
     out.push(s(`delete from cola_salida where tipo = 'tercero' and registro_id = ?`, x.id));
+  }
+  for (const x of r.productos ?? []) {
+    if (x.estado === 'registrado' && x.id_servidor) {
+      if (x.id_servidor !== x.id) {
+        // Otro PC ya había creado ese código: se adopta el id del servidor.
+        out.push(
+          s('update lineas set producto_id = ? where producto_id = ?', x.id_servidor, x.id),
+          s('update productos set id = ? where id = ? and not exists (select 1 from productos where id = ?)', x.id_servidor, x.id, x.id_servidor),
+          s('delete from productos where id = ?', x.id),
+        );
+      }
+      out.push(s('update productos set errores_sync = null where id = ?', x.id_servidor));
+    } else {
+      out.push(s('update productos set errores_sync = ? where id = ?', JSON.stringify(x.errores), x.id));
+    }
+    out.push(s(`delete from cola_salida where tipo = 'producto' and registro_id = ?`, x.id));
   }
   for (const x of r.resultados) {
     resumen.enviados++;
@@ -175,7 +216,7 @@ async function enviarCola(base: BaseLocal, transporte: Transporte, empresa: stri
     } catch (e) {
       // Nada se pierde: todo sigue en la cola y se reintenta en la próxima sincronización.
       const mensaje = e instanceof Error ? e.message : String(e);
-      const ids = [...lote.terceros.map((t) => t.id), ...lote.comprobantes.map((c) => c.id)];
+      const ids = [...lote.terceros.map((t) => t.id), ...lote.productos.map((p) => p.id), ...lote.comprobantes.map((c) => c.id)];
       await base.lote(ids.map((id) => s('update cola_salida set intentos = intentos + 1, ultimo_error = ? where registro_id = ?', mensaje, id)));
       resumen.error = mensaje;
       return false;
@@ -242,6 +283,23 @@ function sentenciasRegistros(empresa: string, registros: RespuestaCambios['regis
         txt(t['correo']), bool(t['activo'])),
     );
   }
+  for (const p of registros.productos ?? []) {
+    const id = txt(p['id']);
+    const otros = `select id from productos where empresa_id = ? and codigo = ? and id <> ?
+                     and not exists (select 1 from cola_salida c where c.tipo = 'producto' and c.registro_id = productos.id)`;
+    out.push(
+      s(`update lineas set producto_id = ? where producto_id in (${otros})`, id, empresa, txt(p['codigo']), id),
+      s(`delete from productos where id in (${otros})`, empresa, txt(p['codigo']), id),
+      s(`insert into productos (id, empresa_id, codigo, nombre, tipo, unidad, cuenta_inventario, iva_tipo, iva_tarifa_ppm, precio_venta, activo)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         on conflict (id) do update set codigo = excluded.codigo, nombre = excluded.nombre, tipo = excluded.tipo, unidad = excluded.unidad,
+           cuenta_inventario = excluded.cuenta_inventario, iva_tipo = excluded.iva_tipo, iva_tarifa_ppm = excluded.iva_tarifa_ppm,
+           precio_venta = excluded.precio_venta, activo = excluded.activo, errores_sync = null
+         where not exists (select 1 from cola_salida c where c.tipo = 'producto' and c.registro_id = excluded.id)`,
+        id, empresa, txt(p['codigo']), txt(p['nombre']), txt(p['tipo']), txt(p['unidad']), txt(p['cuenta_inventario']), txt(p['iva_tipo']),
+        p['iva_tarifa_ppm'] == null ? null : Number(p['iva_tarifa_ppm']), centavos(p['precio_venta']), bool(p['activo'])),
+    );
+  }
   for (const c of registros.comprobantes ?? []) {
     const id = txt(c['id']);
     const estado = c['estado'] === 'borrador' ? 'por_aprobar' : txt(c['estado']);
@@ -255,10 +313,11 @@ function sentenciasRegistros(empresa: string, registros: RespuestaCambios['regis
         txt(c['clave_idempotencia']), txt(c['reversa_de']), txt(c['creado_en']) ?? ahora(), ahora()),
       s('delete from lineas where comprobante_id = ?', id),
       ...((c['lineas'] as Record<string, unknown>[] | undefined) ?? []).map((l) => s(
-        `insert into lineas (comprobante_id, orden, cuenta, tercero_id, centro_costo_id, debito, credito, base_impuesto, nota)
-         values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `insert into lineas (comprobante_id, orden, cuenta, tercero_id, centro_costo_id, debito, credito, base_impuesto, nota, producto_id, cantidad)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         id, Number(l['orden']), txt(l['cuenta']), txt(l['tercero_id']), txt(l['centro_costo_id']),
-        centavos(l['debito']) ?? 0n, centavos(l['credito']) ?? 0n, centavos(l['base_impuesto']), txt(l['nota']))),
+        centavos(l['debito']) ?? 0n, centavos(l['credito']) ?? 0n, centavos(l['base_impuesto']), txt(l['nota']),
+        txt(l['producto_id']), l['cantidad'] == null ? null : aMilesimas(String(l['cantidad'])))),
       // El servidor ya lo tiene: nada que reenviar.
       s(`delete from cola_salida where tipo = 'comprobante' and registro_id = ?`, id),
     );

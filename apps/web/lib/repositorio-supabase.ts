@@ -18,7 +18,7 @@ function trozos<T>(xs: T[], n: number): T[][] {
 /** Mismos códigos que en test/repositorio-pglite.ts de @contafi/sync. */
 const CODIGOS_DE_DATOS = new Set(['P0001', '22023', '22P02', '23505', '23503', '23514', '23502']);
 
-const COLUMNAS_LINEAS = 'orden,cuenta,tercero_id,centro_costo_id,debito::text,credito::text,base_impuesto::text,nota';
+const COLUMNAS_LINEAS = 'orden,cuenta,tercero_id,centro_costo_id,debito::text,credito::text,base_impuesto::text,nota,producto_id,cantidad::text';
 
 /**
  * Implementación de RepositorioSync sobre Supabase con la sesión del usuario.
@@ -79,6 +79,17 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
       return data as string;
     },
 
+    async registrarProducto(p) {
+      const { data, error } = await sb.rpc('registrar_producto', { p });
+      if (error) {
+        if (error.code && CODIGOS_DE_DATOS.has(error.code)) {
+          throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(error.message)?.[1] ?? (error.code === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), error.message);
+        }
+        throw traducirError(error);
+      }
+      return data as string;
+    },
+
     async marcarSincronizacion(d) {
       const { error } = await sb.rpc('marcar_sincronizacion', { p_id: d.id, p_nombre: d.nombre, p_version: d.version_app });
       if (error) throw traducirError(error);
@@ -108,6 +119,10 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
             consulta = sb.from('periodos').select('*').eq('empresa_id', empresa).or(filtro);
             break;
           }
+          case 'productos':
+            consulta = sb.from('productos').select('id,empresa_id,codigo,nombre,tipo,unidad,cuenta_inventario,iva_tipo,iva_tarifa_ppm,precio_venta::text,activo')
+              .eq('empresa_id', empresa).in('id', grupo);
+            break;
           case 'comprobantes':
             consulta = sb.from('comprobantes').select(`*,lineas(${COLUMNAS_LINEAS})`)
               .eq('empresa_id', empresa).in('id', grupo).order('orden', { referencedTable: 'lineas' });

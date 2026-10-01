@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { formatoTarifa, leerMontoUsuario } from '@contafi/shared';
 import { ErrorMotor, type ItemDocumento, type TotalesDocumento } from '@contafi/motor';
 import {
-  antiguedadLocal, calcularFactura, conceptosRetencion, crearFactura, cuentasLocales, hoyContable, registrarMovimientoTercero,
+  antiguedadLocal, calcularFactura, conceptosRetencion, crearFactura, cuentasLocales, hoyContable, productosLocales, registrarMovimientoTercero,
   tercerosLocales, ErrorLocal, type FilaAntiguedad,
 } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
@@ -69,7 +69,7 @@ export function Ventas() {
   );
 }
 
-interface FilaItem { descripcion: string; cuenta: string; cantidad: string; valor: string; iva: string }
+interface FilaItem { descripcion: string; cuenta: string; cantidad: string; valor: string; iva: string; producto?: string }
 const IVAS: [string, string][] = [['190000', 'IVA 19 %'], ['50000', 'IVA 5 %'], ['exento', 'Exento'], ['excluido', 'Excluido']];
 
 function aItems(filas: FilaItem[]): ItemDocumento[] | null {
@@ -79,7 +79,7 @@ function aItems(filas: FilaItem[]): ItemDocumento[] | null {
     const valor = leerMontoUsuario(f.valor);
     if (valor === null || !/^\d+([.,]\d{1,3})?$/.test(f.cantidad.trim())) return null;
     items.push({
-      descripcion: f.descripcion || 'Ítem', cantidad: f.cantidad.trim(), valorUnitario: valor, cuenta: f.cuenta,
+      descripcion: f.descripcion || 'Ítem', cantidad: f.cantidad.trim(), valorUnitario: valor, cuenta: f.cuenta, productoId: f.producto || undefined,
       iva: f.iva === 'exento' || f.iva === 'excluido' ? { tipo: f.iva } : { tipo: 'gravado', tarifa: BigInt(f.iva) },
     });
   }
@@ -102,7 +102,18 @@ function NuevaFactura({ sentido, alCerrar }: { sentido: 'venta' | 'compra'; alCe
     terceros: (await tercerosLocales(base, empresa.id)).filter((t) => t.activo),
     cuentas: (await cuentasLocales(base, empresa.id)).filter((c) => c.aceptaMovimiento && c.activa && /^[14567]/.test(c.codigo)),
     conceptos: (await conceptosRetencion(base, empresa.id, true)).filter((c) => c.aplicaEn === (sentido === 'venta' ? 'ventas' : 'compras')),
+    productos: (await productosLocales(base, empresa.id)).filter((p) => p.activo),
   }), [base, empresa.id]);
+
+  /** Elegir un producto llena descripción, IVA y (en ventas) el precio. */
+  function elegirProducto(i: number, id: string) {
+    const p = datos?.productos.find((x) => x.id === id);
+    setFilas((xs) => xs.map((x, j) => (j !== i ? x : !p ? { ...x, producto: undefined } : {
+      ...x, producto: p.id, descripcion: p.nombre,
+      iva: p.iva.tipo === 'gravado' ? String(p.iva.tarifa ?? 190_000n) : p.iva.tipo,
+      valor: sentido === 'venta' && p.precioVenta !== null ? dinero(p.precioVenta).replace('$ ', '') : x.valor,
+    })));
+  }
 
   const items = aItems(filas);
   const clave = JSON.stringify([filas, retenciones, fecha]);
@@ -124,6 +135,7 @@ function NuevaFactura({ sentido, alCerrar }: { sentido: 'venta' | 'compra'; alCe
     try {
       const r = await crearFactura(base, empresa.id, { sentido, terceroId: tercero, fecha, numero, items, retenciones, ivaDescontable });
       avisar(`Factura ${numero} guardada como ${r.numeroLocal}.`, 'ok');
+      for (const a of r.avisos) avisar(a, 'danger');
       refrescar();
       void sincronizarAhora();
       alCerrar();
@@ -145,11 +157,15 @@ function NuevaFactura({ sentido, alCerrar }: { sentido: 'venta' | 'compra'; alCe
         <div className="field"><label htmlFor="fFecha">Fecha</label><input id="fFecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} /></div>
       </div>
       <div className="table-wrap entry-lines-table"><table>
-        <thead><tr><th>Descripción</th><th>Cuenta</th><th>Cantidad</th><th>Valor unitario</th><th>IVA</th><th></th></tr></thead>
+        <thead><tr><th>Producto</th><th>Descripción</th><th>Cuenta</th><th>Cantidad</th><th>Valor unitario</th><th>IVA</th><th></th></tr></thead>
         <tbody>{filas.map((f, i) => (
           <tr key={i}>
-            <td><input type="text" aria-label={`Descripción ítem ${i + 1}`} style={{ width: 200 }} value={f.descripcion} onChange={(e) => cambiar(i, 'descripcion', e.target.value)} /></td>
-            <td><select aria-label={`Cuenta ítem ${i + 1}`} style={{ width: 220 }} value={f.cuenta} onChange={(e) => cambiar(i, 'cuenta', e.target.value)}>
+            <td><select aria-label={`Producto ítem ${i + 1}`} style={{ width: 150 }} value={f.producto ?? ''} onChange={(e) => elegirProducto(i, e.target.value)}>
+              <option value="">— (sin producto)</option>
+              {datos?.productos.map((p) => <option key={p.id} value={p.id}>{p.codigo} {p.nombre}</option>)}
+            </select></td>
+            <td><input type="text" aria-label={`Descripción ítem ${i + 1}`} style={{ width: 170 }} value={f.descripcion} onChange={(e) => cambiar(i, 'descripcion', e.target.value)} /></td>
+            <td><select aria-label={`Cuenta ítem ${i + 1}`} style={{ width: 200 }} disabled={!!f.producto && sentido === 'compra'} title={f.producto && sentido === 'compra' ? 'Va a la cuenta de inventario del producto' : ''} value={f.cuenta} onChange={(e) => cambiar(i, 'cuenta', e.target.value)}>
               {datos?.cuentas.map((c) => <option key={c.codigo} value={c.codigo}>{c.codigo} — {c.nombre}</option>)}
             </select></td>
             <td><input type="text" aria-label={`Cantidad ítem ${i + 1}`} className="mono" style={{ width: 80, textAlign: 'right' }} value={f.cantidad} onChange={(e) => cambiar(i, 'cantidad', e.target.value)} /></td>

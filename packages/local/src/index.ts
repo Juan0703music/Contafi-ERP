@@ -8,3 +8,4 @@ export * from './retenciones.ts';
 export * from './bancos.ts';
 export * from './resumen.ts';
 export * from './ventas.ts';
+export * from './inventario.ts';

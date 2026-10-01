@@ -17,6 +17,9 @@ export const lineaSync = z.object({
   credito: monto,
   base_impuesto: monto.nullish(),
   nota: z.string().max(500).nullish(),
+  /** Inventario: producto y cantidad (texto decimal, hasta 3 decimales). */
+  producto_id: uuid.nullish(),
+  cantidad: z.string().regex(/^\d{1,15}(\.\d{1,3})?$/).nullish(),
 });
 
 export const ORIGENES = [
@@ -55,15 +58,30 @@ export const terceroSync = z.object({
   activo: z.boolean().default(true),
 });
 
+export const productoSync = z.object({
+  id: uuid,
+  codigo: z.string().trim().min(1).max(40),
+  nombre: z.string().trim().min(1).max(200),
+  tipo: z.enum(['producto', 'servicio']).default('producto'),
+  unidad: z.string().trim().min(1).max(10).default('UND'),
+  cuenta_inventario: z.string().regex(/^[1-9][0-9]*$/).default('143505'),
+  iva_tipo: z.enum(['gravado', 'exento', 'excluido']).default('gravado'),
+  iva_tarifa_ppm: z.number().int().min(0).max(1_000_000).nullish(),
+  precio_venta: monto.nullish(),
+  activo: z.boolean().default(true),
+});
+
 export const loteEnvio = z.object({
   version_protocolo: z.literal(VERSION_PROTOCOLO),
   empresa_id: uuid,
   dispositivo: z.object({ id: uuid, nombre: z.string().trim().min(1).max(100), version_app: z.string().max(50) }),
   /** Terceros nuevos o editados: se registran ANTES que los comprobantes que los usan. */
   terceros: z.array(terceroSync).max(500).default([]),
+  /** Productos nuevos o editados: también antes que los comprobantes. */
+  productos: z.array(productoSync).max(500).default([]),
   /** En el orden en que se crearon en el PC. */
   comprobantes: z.array(comprobanteSync).max(200).default([]),
-}).refine((l) => l.terceros.length + l.comprobantes.length > 0, 'El lote está vacío.');
+}).refine((l) => l.terceros.length + l.productos.length + l.comprobantes.length > 0, 'El lote está vacío.');
 
 export const consultaCambios = z.object({
   empresa_id: uuid,
@@ -73,6 +91,7 @@ export const consultaCambios = z.object({
 });
 
 export type TerceroSync = z.infer<typeof terceroSync>;
+export type ProductoSync = z.infer<typeof productoSync>;
 export type LineaSync = z.infer<typeof lineaSync>;
 export type ComprobanteSync = z.infer<typeof comprobanteSync>;
 export type LoteEnvio = z.infer<typeof loteEnvio>;
@@ -114,10 +133,12 @@ export interface ResultadoTercero {
 export interface RespuestaEnvio {
   version_protocolo: typeof VERSION_PROTOCOLO;
   terceros: ResultadoTercero[];
+  /** Mismo formato que los terceros: id_servidor distinto si otro PC ya creó ese código. */
+  productos: ResultadoTercero[];
   resultados: ResultadoItem[];
 }
 
-export const TABLAS_SYNC = ['cuentas', 'terceros', 'centros_costo', 'periodos', 'tipos_comprobante', 'comprobantes'] as const;
+export const TABLAS_SYNC = ['cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'comprobantes'] as const;
 export type TablaSync = (typeof TABLAS_SYNC)[number];
 
 export interface Cambio {

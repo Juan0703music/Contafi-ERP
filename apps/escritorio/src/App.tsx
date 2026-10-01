@@ -17,6 +17,7 @@ import { Bancos } from './pantallas/Bancos.tsx';
 import { Empresas } from './pantallas/Empresas.tsx';
 import { Jarvis } from './pantallas/Jarvis.tsx';
 import { Ventas } from './pantallas/Ventas.tsx';
+import { Inventario } from './pantallas/Inventario.tsx';
 import { SaldosIniciales } from './pantallas/SaldosIniciales.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
@@ -48,6 +49,7 @@ function Pantallas() {
       {ruta === 'panel' && <Panel nuevoComprobante={abrirNuevo} />}
       {ruta === 'jarvis' && <Jarvis />}
       {ruta === 'ventas' && <Ventas />}
+      {ruta === 'inventario' && <Inventario />}
       {ruta === 'comprobantes' && <Comprobantes nuevoComprobante={abrirNuevo} />}
       {ruta === 'importar' && <ImportarDian />}
       {ruta === 'bancos' && <Bancos />}

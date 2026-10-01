@@ -21,6 +21,7 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
   tipos_comprobante: 'select * from public.tipos_comprobante where empresa_id = $1 and codigo = any($2::text[])',
   periodos: `select * from public.periodos where empresa_id = $1 and (anio || '-' || mes) = any($2::text[])`,
   terceros: 'select * from public.terceros where empresa_id = $1 and id = any($2::uuid[])',
+  productos: 'select id, empresa_id, codigo, nombre, tipo, unidad, cuenta_inventario, iva_tipo, iva_tarifa_ppm::int as iva_tarifa_ppm, precio_venta::text as precio_venta, activo from public.productos where empresa_id = $1 and id = any($2::uuid[])',
   centros_costo: 'select * from public.centros_costo where empresa_id = $1 and id = any($2::uuid[])',
   // Columnas explícitas y fechas como texto, igual que las entrega PostgREST.
   comprobantes: `
@@ -28,7 +29,8 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
            c.clave_idempotencia, c.reversa_de, c.creado_en, c.contabilizado_en, c.anulado_en, c.motivo_anulacion, coalesce((
       select json_agg(json_build_object(
         'orden', l.orden, 'cuenta', l.cuenta, 'tercero_id', l.tercero_id, 'centro_costo_id', l.centro_costo_id,
-        'debito', l.debito::text, 'credito', l.credito::text, 'base_impuesto', l.base_impuesto::text, 'nota', l.nota
+        'debito', l.debito::text, 'credito', l.credito::text, 'base_impuesto', l.base_impuesto::text, 'nota', l.nota,
+        'producto_id', l.producto_id, 'cantidad', l.cantidad::text
       ) order by l.orden) from public.lineas l where l.comprobante_id = c.id), '[]') as lineas
       from public.comprobantes c where c.empresa_id = $1 and c.id = any($2::uuid[])`,
 };
@@ -64,6 +66,13 @@ export function repositorioPglite(db: PGlite, sesion: Sesion): RepositorioSync {
     async registrarTercero(p) {
       try {
         return (await q<{ id: string }>('select public.registrar_tercero($1::jsonb) as id', [JSON.stringify(p)]))[0]!.id;
+      } catch (e) {
+        return comoErrorRegistro(e);
+      }
+    },
+    async registrarProducto(p) {
+      try {
+        return (await q<{ id: string }>('select public.registrar_producto($1::jsonb) as id', [JSON.stringify(p)]))[0]!.id;
       } catch (e) {
         return comoErrorRegistro(e);
       }

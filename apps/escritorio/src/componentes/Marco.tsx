@@ -13,6 +13,7 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
   ] },
   { grupo: 'Contabilidad', items: [
     { ruta: 'ventas', etiqueta: 'Ventas y compras', icono: 'cart' },
+    { ruta: 'inventario', etiqueta: 'Inventario', icono: 'package' },
     { ruta: 'comprobantes', etiqueta: 'Comprobantes', icono: 'file' },
     { ruta: 'importar', etiqueta: 'Importar DIAN', icono: 'receipt' },
     { ruta: 'bancos', etiqueta: 'Conciliación bancaria', icono: 'bank' },

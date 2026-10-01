@@ -1,5 +1,5 @@
 import { aCentavos, sumarDias, type Centavos } from '@contafi/shared';
-import { antiguedadSaldos, movimientosPorCuenta, balanceGeneral } from '@contafi/motor';
+import { antiguedadSaldos, kardex, movimientosPorCuenta, balanceGeneral } from '@contafi/motor';
 import { bimestre, dinero, type DatosEmpresa } from './datos.ts';
 
 export interface Alerta {
@@ -8,7 +8,7 @@ export interface Alerta {
   titulo: string;
   detalle: string;
   /** Pantalla de la app donde se atiende. */
-  ruta: 'panel' | 'comprobantes' | 'cierres' | 'sincronizacion' | 'libros' | 'estados' | 'terceros';
+  ruta: 'panel' | 'comprobantes' | 'cierres' | 'sincronizacion' | 'libros' | 'estados' | 'terceros' | 'inventario';
 }
 
 const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
@@ -72,6 +72,12 @@ export function calcularAlertas(d: DatosEmpresa): Alerta[] {
   if (ivaGen !== 0n || ivaDesc !== 0n) {
     const saldo = ivaGen - ivaDesc;
     alertas.push({ id: 'iva', nivel: 'info', titulo: `IVA estimado del bimestre: ${dinero(saldo < 0n ? -saldo : saldo)} ${saldo < 0n ? 'a favor' : 'por pagar'}`, detalle: `Generado ${dinero(ivaGen)} − descontable ${dinero(ivaDesc)} (${b.desde} a ${b.hasta}).`, ruta: 'estados' });
+  }
+
+  // Existencias negativas (ventas sin conexión de unidades que no había, sección 9.4)
+  const negativos = d.productos.filter((p) => p.tipo === 'producto' && kardex(d.comprobantes, p.id).estado.cantidad < 0n);
+  if (negativos.length) {
+    alertas.push({ id: 'inventario-negativo', nivel: 'alta', titulo: `${negativos.length} producto(s) con existencia negativa`, detalle: negativos.slice(0, 5).map((p) => p.nombre).join(', '), ruta: 'inventario' });
   }
 
   // Meses ya terminados con movimiento y sin cerrar

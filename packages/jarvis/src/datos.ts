@@ -1,8 +1,8 @@
 import { formatoCOP, hoyBogota, type Centavos, type FechaISO } from '@contafi/shared';
 import type { Comprobante, Cuenta } from '@contafi/motor';
 import {
-  comprobantesParaReportes, cuentasLocales, estadoSincronizacion, tercerosLocales,
-  type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type TerceroLocal,
+  comprobantesParaReportes, cuentasLocales, estadoSincronizacion, productosLocales, tercerosLocales,
+  type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ProductoLocal, type TerceroLocal,
 } from '@contafi/local';
 
 export interface ContextoJarvis {
@@ -22,20 +22,22 @@ export interface DatosEmpresa {
   sync: EstadoSincronizacion;
   /** "AAAA-MM" de los períodos cerrados. */
   periodosCerrados: Set<string>;
+  productos: ProductoLocal[];
 }
 
 /** Carga una sola vez los datos locales de la empresa para responder una pregunta. */
 export async function cargarDatos(ctx: ContextoJarvis): Promise<DatosEmpresa> {
-  const [cuentas, comprobantes, terceros, sync, cerrados] = await Promise.all([
+  const [cuentas, comprobantes, terceros, sync, cerrados, productos] = await Promise.all([
     cuentasLocales(ctx.base, ctx.empresa.id),
     // Incluye lo pendiente de sincronizar: Jarvis lo advierte como provisional.
     comprobantesParaReportes(ctx.base, ctx.empresa.id, { incluirPendientes: true }),
     tercerosLocales(ctx.base, ctx.empresa.id),
     estadoSincronizacion(ctx.base, ctx.empresa.id),
     ctx.base.consultar<{ p: string }>(`select printf('%04d-%02d', anio, mes) as p from periodos where empresa_id = ? and estado = 'cerrado'`, [ctx.empresa.id]),
+    productosLocales(ctx.base, ctx.empresa.id),
   ]);
   return {
-    hoy: ctx.hoy ?? hoyBogota(), cuentas, comprobantes, terceros, sync, periodosCerrados: new Set(cerrados.map((x) => x.p)),
+    hoy: ctx.hoy ?? hoyBogota(), cuentas, comprobantes, terceros, sync, periodosCerrados: new Set(cerrados.map((x) => x.p)), productos,
     nombresCuenta: new Map(cuentas.map((c) => [c.codigo, c.nombre])),
     nombresTercero: new Map(terceros.map((t) => [t.id, t.nombre])),
   };

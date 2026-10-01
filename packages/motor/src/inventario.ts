@@ -1,5 +1,6 @@
 import { dividirRedondeado, type Centavos } from '@contafi/shared';
 import { ErrorMotor } from './errores.ts';
+import { EN_LIBROS, type Comprobante } from './tipos.ts';
 
 /**
  * Kardex por costo promedio ponderado.
@@ -53,4 +54,49 @@ export function salida(
   }
   const estado = { cantidad: e.cantidad - cantidad, valor: e.valor - costo, costoUnitario: e.costoUnitario };
   return { estado, costo, quedoNegativo: estado.cantidad < 0n };
+}
+
+// ------------------------------------------------------------------ kárdex derivado de los comprobantes
+
+
+export interface MovimientoKardex {
+  comprobanteId: string;
+  numero: string | null;
+  fecha: string;
+  concepto: string;
+  tipo: 'entrada' | 'salida';
+  cantidad: bigint;
+  valor: Centavos;
+  saldoCantidad: bigint;
+  saldoValor: Centavos;
+  costoPromedio: Centavos;
+}
+
+/**
+ * Kárdex de un producto calculado a partir de las líneas contables que lo mencionan: débito = entrada,
+ * crédito = salida. Como sale de los comprobantes, todos los PC llegan al mismo kárdex al sincronizar.
+ */
+export function kardex(comprobantes: readonly Comprobante[], productoId: string): { movimientos: MovimientoKardex[]; estado: EstadoInventario } {
+  const filas: { c: Comprobante; cantidad: bigint; debito: bigint; credito: bigint }[] = [];
+  for (const c of comprobantes) {
+    if (!EN_LIBROS.has(c.estado)) continue;
+    for (const l of c.lineas) {
+      if (l.productoId === productoId && l.cantidad) filas.push({ c, cantidad: l.cantidad, debito: l.debito, credito: l.credito });
+    }
+  }
+  filas.sort((a, b) => a.c.fecha.localeCompare(b.c.fecha) || (a.c.numero ?? '').localeCompare(b.c.numero ?? ''));
+  let estado: EstadoInventario = INVENTARIO_VACIO;
+  const movimientos = filas.map((f) => {
+    const entrada = f.debito > 0n;
+    // El valor de cada movimiento es el que quedó contabilizado (no se recalcula): libros y kárdex coinciden.
+    estado = entrada
+      ? { cantidad: estado.cantidad + f.cantidad, valor: estado.valor + f.debito, costoUnitario: estado.costoUnitario }
+      : { cantidad: estado.cantidad - f.cantidad, valor: estado.valor - f.credito, costoUnitario: estado.costoUnitario };
+    if (estado.cantidad > 0n) estado.costoUnitario = dividirRedondeado(estado.valor * 1000n, estado.cantidad);
+    return {
+      comprobanteId: f.c.id, numero: f.c.numero, fecha: f.c.fecha, concepto: f.c.concepto, tipo: entrada ? 'entrada' as const : 'salida' as const,
+      cantidad: f.cantidad, valor: entrada ? f.debito : f.credito, saldoCantidad: estado.cantidad, saldoValor: estado.valor, costoPromedio: estado.costoUnitario,
+    };
+  });
+  return { movimientos, estado };
 }

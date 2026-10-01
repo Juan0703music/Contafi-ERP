@@ -19,6 +19,9 @@ export interface Linea {
   /** Base gravable, para auxiliares de impuestos y retenciones. */
   base?: Centavos | null;
   nota?: string | null;
+  /** Inventario: producto y cantidad (en milésimas) de la línea sobre la cuenta de inventario. */
+  productoId?: string | null;
+  cantidad?: bigint | null;
 }
 
 /**

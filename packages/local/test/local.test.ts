@@ -55,9 +55,9 @@ beforeAll(async () => {
 describe('base local', () => {
   it('aplica las migraciones una sola vez y rechaza una base de una versión más nueva', async () => {
     const b = baseNode();
-    expect(await migrar(b)).toBe(4);
+    expect(await migrar(b)).toBe(5);
     expect(await migrar(b)).toBe(0);
-    expect(await versionEsquema(b)).toBe(4);
+    expect(await versionEsquema(b)).toBe(5);
     b.db.exec('pragma user_version = 99');
     await expect(migrar(b)).rejects.toThrow(/versión más nueva/);
   });
@@ -263,12 +263,12 @@ describe('flujos con el servidor', () => {
 });
 
 describe('transporte HTTP', () => {
-  const lote = { version_protocolo: 1 as const, empresa_id: randomUUID(), dispositivo: { id: randomUUID(), nombre: 'x', version_app: '1' }, terceros: [], comprobantes: [] };
+  const lote = { version_protocolo: 1 as const, empresa_id: randomUUID(), dispositivo: { id: randomUUID(), nombre: 'x', version_app: '1' }, terceros: [], productos: [], comprobantes: [] };
   it('renueva el token una vez si el servidor responde 401', async () => {
     const tokens: string[] = [];
     const f = (async (_u: string, init: RequestInit) => {
       tokens.push((init.headers as Record<string, string>)['Authorization']!);
-      return tokens.length === 1 ? new Response('{}', { status: 401 }) : Response.json({ version_protocolo: 1, terceros: [], resultados: [] });
+      return tokens.length === 1 ? new Response('{}', { status: 401 }) : Response.json({ version_protocolo: 1, terceros: [], productos: [], resultados: [] });
     }) as typeof fetch;
     const t = transporteHttp({ urlBase: 'https://x', token: async () => 'viejo', renovarToken: async () => 'nuevo', fetch: f });
     await t.enviar(lote);

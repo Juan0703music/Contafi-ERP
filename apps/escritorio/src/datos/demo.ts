@@ -131,6 +131,7 @@ export function transporteDemo(base: BaseLocal): Transporte {
       return {
         version_protocolo: VERSION_PROTOCOLO,
         terceros: lote.terceros.map((t) => ({ id: t.id, id_servidor: t.id, estado: 'registrado' as const, errores: [] })),
+        productos: lote.productos.map((p) => ({ id: p.id, id_servidor: p.id, estado: 'registrado' as const, errores: [] })),
         resultados,
       };
     },

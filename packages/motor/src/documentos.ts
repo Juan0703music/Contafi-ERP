@@ -26,6 +26,8 @@ export interface ItemDocumento {
   productoId?: string;
   /** Solo ventas de inventario: costo calculado por el kardex (costo promedio). */
   costo?: Centavos;
+  /** Cuenta de inventario del producto (por defecto, la de la empresa). */
+  cuentaInventario?: string;
 }
 
 export interface ItemCalculado extends ItemDocumento {
@@ -101,12 +103,13 @@ const deb = (cuenta: string, valor: Centavos, terceroId: string, nota: string, b
 const cred = (cuenta: string, valor: Centavos, terceroId: string, nota: string, base?: Centavos): Linea =>
   ({ cuenta, terceroId, debito: 0n, credito: valor, nota, base: base ?? null });
 
-/** Agrupa líneas iguales (misma cuenta, tercero, lado y nota) y quita las de valor cero. */
+/** Agrupa líneas iguales (misma cuenta, tercero, lado, nota y producto) y quita las de valor cero. */
 function compactar(lineas: Linea[]): Linea[] {
   const salida: Linea[] = [];
   for (const l of lineas) {
     if (l.debito === 0n && l.credito === 0n) continue;
-    const igual = salida.find((x) => x.cuenta === l.cuenta && x.terceroId === l.terceroId && x.nota === l.nota
+    // Las líneas de inventario de productos distintos nunca se juntan (alimentan el kárdex de cada uno).
+    const igual = !l.productoId && salida.find((x) => !x.productoId && x.cuenta === l.cuenta && x.terceroId === l.terceroId && x.nota === l.nota
       && (x.debito > 0n) === (l.debito > 0n));
     if (igual) {
       igual.debito += l.debito;
@@ -133,7 +136,12 @@ export function asientoFacturaVenta(
   for (const it of t.items) lineas.push(cred(it.cuenta ?? cuentas.ingresoVentas, it.subtotal, terceroId, 'Ingreso'));
   for (const g of t.iva) if (g.valor > 0n) lineas.push(cred(cuentas.ivaGenerado, g.valor, terceroId, `IVA generado ${Number(g.tarifa) / 10_000} %`, g.base));
   for (const it of t.items) {
-    if (it.costo && it.costo > 0n) {
+    if (it.productoId && it.costo !== undefined) {
+      lineas.push(deb(cuentas.costoVentas, it.costo, terceroId, 'Costo de ventas'));
+      // La salida de inventario lleva producto y cantidad aunque el costo sea cero (alimenta el kárdex).
+      lineas.push({ ...cred(it.cuentaInventario ?? cuentas.inventario, it.costo, terceroId, `Salida de inventario: ${it.descripcion}`),
+        productoId: it.productoId, cantidad: aMilesimas(it.cantidad) });
+    } else if (it.costo && it.costo > 0n) {
       lineas.push(deb(cuentas.costoVentas, it.costo, terceroId, 'Costo de ventas'));
       lineas.push(cred(cuentas.inventario, it.costo, terceroId, 'Salida de inventario'));
     }
@@ -152,15 +160,19 @@ export function asientoFacturaCompra(
 ): Linea[] {
   const ivaDescontable = opciones.ivaDescontable ?? true;
   const lineas: Linea[] = [];
+  // Compra de un producto de inventario: la línea va a su cuenta de inventario con producto y cantidad.
+  const lineaCompra = (it: ItemCalculado, valor: Centavos, nota: string): Linea => (it.productoId
+    ? { ...deb(it.cuentaInventario ?? cuentas.inventario, valor, terceroId, `Entrada de inventario: ${it.descripcion}`), productoId: it.productoId, cantidad: aMilesimas(it.cantidad) }
+    : deb(it.cuenta ?? opciones.cuentaPorDefecto ?? cuentas.gastoCompras, valor, terceroId, nota));
   if (ivaDescontable) {
-    for (const it of t.items) lineas.push(deb(it.cuenta ?? opciones.cuentaPorDefecto ?? cuentas.gastoCompras, it.subtotal, terceroId, 'Compra'));
+    for (const it of t.items) lineas.push(lineaCompra(it, it.subtotal, 'Compra'));
     for (const g of t.iva) if (g.valor > 0n) lineas.push(deb(cuentas.ivaDescontable, g.valor, terceroId, `IVA descontable ${Number(g.tarifa) / 10_000} %`, g.base));
   } else {
     // IVA como mayor valor del costo o gasto: se prorratea sobre los ítems gravados.
     for (const it of t.items) {
       const g = t.iva.find((x) => x.tipo === it.iva.tipo && x.tarifa === (it.iva.tarifa ?? 0n));
       const ivaItem = g && g.base > 0n ? dividirRedondeado(g.valor * it.subtotal, g.base) : 0n;
-      lineas.push(deb(it.cuenta ?? opciones.cuentaPorDefecto ?? cuentas.gastoCompras, it.subtotal + ivaItem, terceroId, 'Compra (IVA mayor valor)'));
+      lineas.push(lineaCompra(it, it.subtotal + ivaItem, 'Compra (IVA mayor valor)'));
     }
     // Ajuste de centavos del prorrateo contra la primera línea.
     const diferencia = t.total - lineas.reduce((s, l) => s + l.debito, 0n);
