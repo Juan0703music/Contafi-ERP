@@ -2,13 +2,17 @@ import { useState } from 'react';
 import { resumenEmpresa, sincronizar } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, dinero, haceCuanto } from '../componentes/comunes.tsx';
+import { esAdministrador } from '../datos/firma.ts';
+import { NuevaEmpresa } from './NuevaEmpresa.tsx';
 
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 /** Panel del contador: todas sus empresas en una sola vista (sección 11.1). */
 export function Empresas() {
-  const { base, empresas, version, transporte, dispositivo, cambiarEmpresa, ir, refrescar, avisar } = useApp();
+  const { base, empresas, empresa, firmas, version, transporte, dispositivo, cambiarEmpresa, ir, refrescar, avisar } = useApp();
   const [sincronizando, setSincronizando] = useState<string | null>(null);
+  const [nueva, setNueva] = useState(false);
+  const admin = esAdministrador(firmas.find((f) => f.id === empresa.firma_id));
   const { datos } = useDatos(() => Promise.all(empresas.map((e) => resumenEmpresa(base, e.id))), [base, empresas, version]);
 
   async function sincronizarTodas() {
@@ -29,8 +33,10 @@ export function Empresas() {
     <>
       <div className="page-head split">
         <div><h1>Mis empresas</h1><p>{empresas.length} empresa(s){conAlertas ? ` · ${conAlertas} requieren atención` : ' · todo al día'}.</p></div>
-        <div className="btn-row"><button className="btn primary" disabled={sincronizando !== null} onClick={() => void sincronizarTodas()}>
-          <Icono nombre="arrowUpRight" />{sincronizando ? 'Sincronizando…' : 'Sincronizar todas'}</button></div>
+        <div className="btn-row">
+          {admin && <button className="btn" onClick={() => setNueva(true)}><Icono nombre="plus" />Nueva empresa</button>}
+          <button className="btn primary" disabled={sincronizando !== null} onClick={() => void sincronizarTodas()}>
+            <Icono nombre="arrowUpRight" />{sincronizando ? 'Sincronizando…' : 'Sincronizar todas'}</button></div>
       </div>
       <div className="panel">
         <div className="table-wrap"><table>
@@ -49,6 +55,7 @@ export function Empresas() {
               </tr>);
           })}</tbody></table></div>
       </div>
+      {nueva && <NuevaEmpresa alCerrar={() => setNueva(false)} />}
     </>
   );
 }

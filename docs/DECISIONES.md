@@ -125,3 +125,11 @@ título); para inactivar, la cuenta no debe tener saldo ni subcuentas activas. C
 puede hacer sin conexión: la cuenta viaja en el lote antes que los comprobantes. Si el servidor la
 rechaza, devuelve la cuenta como la tiene él y el PC deshace su cambio (o la marca para descartarla si
 solo existe en el PC). Un rechazo por permisos rechaza ese registro, no el lote, para no atascar la cola.
+
+## D-023 · Membresías y permisos solo por funciones del servidor (2026-10-01)
+Antes, un administrador podía escribir `membresias` y `empresa_permisos` directamente (RLS "for all"):
+podía, por ejemplo, quitarle la firma al propietario. Ahora esas tablas solo se leen; los cambios pasan
+por `asignar_rol_empresa`, `cambiar_rol_firma` y `quitar_miembro`, que exigen administrador con MFA,
+protegen al propietario (no se le cambia el rol ni se le quita, y nadie se vuelve propietario desde la
+app), impiden quitarse a sí mismo y dejan auditoría. El alta de usuarios sigue siendo por invitación.
+

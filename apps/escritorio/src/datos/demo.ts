@@ -41,6 +41,16 @@ export async function sembrarDemo(base: BaseLocal): Promise<void> {
   await sembrarEspiga(base);
 }
 
+/** Empresa nueva en la demostración: PUC de la plantilla y tipos de comprobante, sin movimientos. */
+export async function crearEmpresaDemo(base: BaseLocal, empresa: EmpresaLocal): Promise<EmpresaLocal> {
+  const [existe] = await base.consultar<{ razon_social: string }>('select razon_social from empresas where firma_id = ? and nit = ?', [empresa.firma_id, empresa.nit]);
+  if (existe) throw new Error(`La firma ya tiene una empresa con el NIT ${empresa.nit}: ${existe.razon_social}.`);
+  await guardarEmpresas(base, [empresa]);
+  await sembrarCatalogos(base, empresa.id);
+  await base.lote([s(`insert into estado_sync (empresa_id, ultima_seq, ultima_recepcion) values (?, 0, ?)`, empresa.id, new Date().toISOString())]);
+  return empresa;
+}
+
 async function sembrarCatalogos(base: BaseLocal, e: string): Promise<void> {
   await base.lote([
     ...PUC_SEMILLA.map((c) => s(

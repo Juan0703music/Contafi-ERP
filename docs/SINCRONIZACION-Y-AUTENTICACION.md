@@ -18,6 +18,14 @@ Guía para implementar el cliente (app de escritorio, Fase 3). El servidor ya es
 5. **Invitar:** `POST /api/invitaciones` con `{ firma_id, correo, rol_firma, empresas: [{ empresa_id, rol }] }`.
    Llega un correo con un enlace a `/invitacion#token=…`; la persona pega el código en la app, que llama
    `supabase.rpc('aceptar_invitacion', { p_token })` con la sesión del invitado (el correo debe coincidir).
+6. **Equipo** (solo administradores con MFA): `mis_firmas()`, `equipo_firma(p_firma)` (miembros con su rol
+   en cada empresa e invitaciones pendientes), `asignar_rol_empresa(p_empresa, p_usuario, p_rol | null)`,
+   `cambiar_rol_firma(p_firma, p_usuario, 'administrador' | 'miembro')`, `quitar_miembro(p_firma, p_usuario)`
+   y `revocar_invitacion(p_id)`. Membresías y permisos ya no se escriben directamente (D-023).
+
+**En la app:** la pantalla de acceso tiene "Crear una cuenta". Un usuario sin empresas ve la bienvenida:
+pegar el código de una invitación o crear su firma; al crearla, activa la verificación en dos pasos y
+registra la primera empresa. Después, "Mis empresas → Nueva empresa" y "Equipo de la firma".
 
 La API y la base de datos **nunca usan la llave `service_role`**: todo se hace con el token del usuario y RLS decide.
 

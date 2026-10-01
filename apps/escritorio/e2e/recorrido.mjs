@@ -279,6 +279,39 @@ verificar('Cuenta auxiliar creada', filasPuc.length === 2 && filasPuc[0].include
 await ir('Sincronización');
 await foto('11-sincronizacion');
 
+// Equipo de la firma (simulado en la demostración): invitar con rol por empresa y cambiar accesos
+await ir('Equipo de la firma');
+await page.waitForSelector('tbody tr');
+await boton('Invitar');
+await page.waitForSelector('#iCorreo');
+await page.type('#iCorreo', 'sofia.rios@ejemplo.co');
+const selRoles = await page.$$('.modal select[aria-label^="Rol en"]');
+await selRoles[0].select('Contador');
+await boton('Enviar invitación');
+await page.waitForFunction(() => [...document.querySelectorAll('h2')].some((h) => h.textContent === 'Invitaciones pendientes'), { timeout: 5000 });
+await page.click('button[aria-label="Accesos de Jorge Peña"]');
+await page.waitForSelector('#aRol');
+const selJorge = await page.$$('.modal select[aria-label^="Rol en"]');
+await selJorge[1].select('Tesorero');
+await boton('Guardar');
+await new Promise((r) => setTimeout(r, 600));
+const equipoTexto = await page.$eval('.main', (n) => n.textContent);
+verificar('Equipo de la firma', equipoTexto.includes('sofia.rios@ejemplo.co') && /Panadería La Espiga S\.A\.S\.: Tesorero/.test(equipoTexto), 'invitación pendiente y Jorge como tesorero en La Espiga');
+await foto('11b-equipo');
+
+// Alta de una empresa nueva desde "Mis empresas"
+await ir('Mis empresas');
+await boton('Nueva empresa');
+await page.waitForSelector('#eNit');
+await page.type('#eNit', '900.555.777');
+await page.type('#eRazon', 'Ferretería El Tornillo S.A.S.');
+await foto('11c-nueva-empresa');
+await boton('Crear empresa');
+await page.waitForFunction(() => document.querySelector('.page-head h1')?.textContent === 'Saldos iniciales', { timeout: 5000 });
+const empresaActiva = await page.$eval('select[aria-label="Empresa"]', (s) => s.selectedOptions[0].textContent);
+const nitNuevo = await page.$eval('.company-chip .sub', (n) => n.textContent);
+verificar('Empresa nueva', empresaActiva === 'Ferretería El Tornillo S.A.S.' && nitNuevo === 'NIT 900555777-0', `${empresaActiva} · ${nitNuevo}`);
+
 // Tema oscuro y sin transparencia
 await page.evaluate(() => { document.documentElement.setAttribute('data-theme', 'dark'); });
 await ir('Panel');

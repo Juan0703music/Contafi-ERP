@@ -35,7 +35,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Casos contables de referencia del asesor | 👤 ⬜ los prepara el asesor; se agregan como pruebas |
 | RPC de sincronización: idempotencia, consecutivos, rechazo con motivo, cambios incrementales | ✅ |
 | API en Vercel (`apps/web`): envío y recepción, revalidando con el motor | ✅ probada contra Postgres (PGlite) y con HTTP real · ⬜ probar contra un Supabase real |
-| Autenticación: registro, MFA obligatorio para administradores, alta de firmas y empresas, invitaciones por correo | ✅ servidor · ⬜ pantallas (Fase 3) |
+| Autenticación: registro, MFA obligatorio para administradores, alta de firmas y empresas, invitaciones por correo | ✅ servidor y pantallas |
 | Límite de peticiones a la API | ⬜ configurar Vercel Firewall al desplegar |
 
 **Criterio de salida:** 100 % de los casos del asesor correctos, pruebas por propiedades sin fallas (✅) y RLS probado en todas las tablas (🟡 probado en las contables, en invitaciones y en dispositivos).
@@ -48,7 +48,8 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Capa local: SQLite cifrado, migraciones, cola de salida, autoguardado, respaldo diario, integridad | ✅ lógica en `@contafi/local` (probada) · 🟡 Rust con SQLCipher + llave en Windows + respaldos: escrito, **falta compilarlo en Windows (CI)** |
 | Sincronización con indicadores (en línea, sin conexión, pendientes, rechazados) | ✅ automática al abrir, cada minuto, al volver la red y al guardar |
 | Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros (con importación masiva desde CSV), sincronización, libros y estados financieros |
-| Inicio de sesión con MFA | ✅ pantalla lista · ⬜ probar contra un Supabase real |
+| Inicio de sesión con MFA | ✅ pantalla lista, con registro de cuenta · ⬜ probar contra un Supabase real |
+| Alta en la nube desde la app | ✅ bienvenida (crear firma → verificación en dos pasos → primera empresa, o unirse con el código de la invitación), nueva empresa y equipo de la firma (invitar, roles por empresa, quitar; D-023) · ⬜ probar contra un Supabase real; recuperar contraseña |
 | Modo demostración para pilotos (sin servidor) | ✅ `?demo`, con servidor simulado que asigna números |
 | Instalador firmado, actualizaciones automáticas y Sentry | ✅ **el CI compila el instalador de Windows** (`.exe` de 4,9 MB y `.msi` de 6,1 MB, incluye SQLCipher) · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
 
@@ -117,15 +118,16 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 13. El modelo pequeño tendía a responder con otra pregunta en lugar de consultar los datos (8 de 10 fallos): instrucciones con ejemplos y reintento con herramienta obligatoria.
 14. Un producto creado sin conexión por un contador (que en inventario solo tiene lectura) hacía fallar el lote entero con "sin permiso", y la cola se habría atascado para siempre. Ahora se rechaza solo ese registro (también para cuentas y terceros).
 15. La tabla del plan de cuentas usaba un estilo del prototipo pensado para filas sueltas (`display:flex` en `<tr>`) y las columnas no quedaban alineadas.
+16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 
-## Pruebas automáticas (01/10/2026) — 187 en total
+## Pruebas automáticas (01/10/2026) — 192 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 46 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 23 ✓
 - `@contafi/local`: 42 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas)
-- `supabase` (PGlite con privilegios de Supabase): 35 ✓
+- `supabase` (PGlite con privilegios de Supabase): 40 ✓
 - `@contafi/jarvis`: 15 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 14 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 16 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

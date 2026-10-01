@@ -4,6 +4,7 @@ import { Icono, haceCuanto } from './comunes.tsx';
 import { alternarTema, alternarVidrio } from '../apariencia.ts';
 import { balanceGeneral } from '@contafi/motor';
 import { comprobantesParaReportes, hoyContable } from '@contafi/local';
+import { esAdministrador } from '../datos/firma.ts';
 
 const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string }[] }[] = [
   { grupo: 'General', items: [
@@ -30,7 +31,10 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
     { ruta: 'terceros', etiqueta: 'Terceros', icono: 'users' },
     { ruta: 'impuestos', etiqueta: 'Impuestos y retenciones', icono: 'sliders' },
   ] },
-  { grupo: 'Sistema', items: [{ ruta: 'sincronizacion', etiqueta: 'Sincronización', icono: 'shield' }] },
+  { grupo: 'Sistema', items: [
+    { ruta: 'equipo', etiqueta: 'Equipo de la firma', icono: 'userPlus' },
+    { ruta: 'sincronizacion', etiqueta: 'Sincronización', icono: 'shield' },
+  ] },
 ];
 
 function ChipSincronizacion() {
@@ -51,7 +55,8 @@ function ChipSincronizacion() {
 }
 
 export function Marco({ children }: { children: ReactNode }) {
-  const { ruta, ir, empresa, empresas, cambiarEmpresa, usuario, cerrarSesion, base, version, sync, modo } = useApp();
+  const { ruta, ir, empresa, empresas, cambiarEmpresa, usuario, cerrarSesion, base, version, sync, modo, firmas } = useApp();
+  const admin = esAdministrador(firmas.find((f) => f.id === empresa.firma_id));
   const [menuAbierto, setMenuAbierto] = useState(false);
   const { datos: cuadra } = useDatos(async () => {
     const cs = await comprobantesParaReportes(base, empresa.id, { incluirPendientes: true });
@@ -70,7 +75,7 @@ export function Marco({ children }: { children: ReactNode }) {
           {NAV.map((g) => (
             <div className="nav-group" key={g.grupo}>
               {g.grupo !== 'General' && <div className="nav-group-label">{g.grupo}</div>}
-              {g.items.map((it) => (
+              {g.items.filter((it) => it.ruta !== 'equipo' || admin).map((it) => (
                 <button key={it.ruta} type="button" className={`nav-item${ruta === it.ruta ? ' active' : ''}`}
                   aria-current={ruta === it.ruta ? 'page' : undefined} onClick={() => { ir(it.ruta); setMenuAbierto(false); }}>
                   <Icono nombre={it.icono} /><span className="lbl">{it.etiqueta}</span>

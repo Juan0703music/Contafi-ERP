@@ -4,8 +4,9 @@ import {
   estadoSincronizacion, sincronizar,
   type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ResumenSincronizacion, type Transporte,
 } from '@contafi/local';
+import type { FirmaUsuario, ServicioFirma } from './datos/firma.ts';
 
-export type Ruta = 'panel' | 'jarvis' | 'ventas' | 'inventario' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'impuestos' | 'bancos' | 'empresas' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion';
+export type Ruta = 'panel' | 'jarvis' | 'ventas' | 'inventario' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'impuestos' | 'bancos' | 'empresas' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion' | 'equipo';
 
 export interface Sesion {
   base: BaseLocal;
@@ -19,6 +20,12 @@ export interface Sesion {
   cambiarPeriodo: (empresa: string, anio: number, mes: number, estado: 'abierto' | 'cerrado') => Promise<void>;
   /** Mensaje de la apertura de la base (p. ej. "se restauró el respaldo"). */
   avisoInicial: string | null;
+  /** Alta de empresas y equipo de la firma (en la nube exige conexión; en la demostración es simulado). */
+  firma: ServicioFirma;
+  /** Firmas del usuario con su rol. */
+  firmas: FirmaUsuario[];
+  /** Vuelve a leer las empresas a las que tiene acceso (tras crear una). */
+  recargarEmpresas: () => Promise<void>;
 }
 
 interface Aviso { id: number; texto: string; tipo: 'ok' | 'danger' | '' }

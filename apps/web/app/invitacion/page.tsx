@@ -7,8 +7,8 @@ export default function Invitacion() {
   return (
     <main>
       <h1>Te invitaron a Contafi</h1>
-      <p>Abre Contafi en tu computador, inicia sesión con el correo al que llegó la invitación y elige
-        <strong> «Aceptar invitación»</strong>. Pega este código:</p>
+      <p>Abre Contafi en tu computador e ingresa (o crea tu cuenta) con el correo al que llegó la invitación.
+        En la bienvenida, pega este código y elige <strong>«Unirme a la firma»</strong>:</p>
       <CodigoInvitacion />
       <p>El código vence en 7 días y solo sirve una vez.</p>
     </main>
