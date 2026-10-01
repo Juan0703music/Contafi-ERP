@@ -17,19 +17,19 @@ export interface RespuestaLLM {
 }
 
 export interface ClienteLLM {
-  completar(mensajes: MensajeLLM[], herramientas: ReturnType<typeof definicionesOpenAI>): Promise<RespuestaLLM>;
+  completar(mensajes: MensajeLLM[], herramientas: ReturnType<typeof definicionesOpenAI>, opciones?: { obligarHerramienta?: boolean }): Promise<RespuestaLLM>;
 }
 
 /** Cliente para llama-server (API compatible con OpenAI) en 127.0.0.1 con token de sesión (sección 10). */
 export function clienteLlamaServer(o: { url: string; token?: string; fetch?: typeof fetch; tiempoMaximoMs?: number }): ClienteLLM {
   const f = o.fetch ?? globalThis.fetch;
   return {
-    async completar(mensajes, herramientas) {
+    async completar(mensajes, herramientas, opciones = {}) {
       const res = await f(`${o.url}/v1/chat/completions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(o.token ? { Authorization: `Bearer ${o.token}` } : {}) },
         body: JSON.stringify({
-          messages: mensajes, tools: herramientas, tool_choice: 'auto', temperature: 0.1, max_tokens: 160,
+          messages: mensajes, tools: herramientas, tool_choice: opciones.obligarHerramienta ? 'required' : 'auto', temperature: 0.1, max_tokens: 160,
           cache_prompt: true,
           // Modelos Qwen3: sin "modo pensamiento", para responder rápido en PC modestos.
           chat_template_kwargs: { enable_thinking: false },
@@ -69,6 +69,14 @@ export function verificarCifras(texto: string, cifras: ReadonlySet<bigint>): str
   return sospechosas;
 }
 
+/** Las cifras que una herramienta devuelve ya escritas en texto (p. ej. "Cartera … $ 20.000.000") también son del motor. */
+export function registrarCifrasDeTexto(texto: string, cifras: Set<bigint>): void {
+  for (const m of texto.matchAll(PATRON_MONTO)) {
+    const v = leerMontoUsuario(m[0].replace(/[$\s-]/g, ''));
+    if (v !== null) cifras.add(v);
+  }
+}
+
 // ------------------------------------------------------------------ respuesta
 
 export interface RespuestaJarvis {
@@ -92,10 +100,17 @@ export function instruccionesSistema(): string {
     'Eres Jarvis, el asistente contable de Contafi para empresas colombianas. Cada pregunta trae entre corchetes la empresa y la fecha de hoy.',
     'Reglas obligatorias:',
     '1. NUNCA calcules, sumes ni inventes cifras. Toda cifra debe salir de una herramienta; cópiala EXACTAMENTE como la devuelve (con el signo $ y los puntos de miles).',
-    '2. Si la pregunta necesita datos de la empresa, llama la herramienta adecuada antes de responder.',
+    '2. Si la pregunta es sobre datos de la empresa, llama de inmediato la herramienta adecuada. NO respondas con otra pregunta y NO pidas aclaraciones: si falta el período, la herramienta usa el predeterminado.',
     '3. Las fechas van en formato AAAA-MM-DD. "Este mes" es desde el día 1 del mes actual hasta hoy; "este año", desde el 1 de enero.',
     '4. Responde en español de Colombia, en una o dos frases cortas, sin tablas ni markdown.',
     '5. Si ninguna herramienta sirve, di con qué sí puedes ayudar. Das orientación; no reemplazas el criterio del contador.',
+    'Ejemplos de qué herramienta usar:',
+    '- "¿Cuánto nos deben?", "¿cuánto tenemos por cobrar?", "cartera" → cartera_por_edades',
+    '- "¿Cuánto les debemos a los proveedores?", "¿qué tenemos por pagar?" → cuentas_por_pagar',
+    '- "¿Cuánta plata hay?", "liquidez", "bancos y caja" → saldo_cuenta con cuenta "11"',
+    '- "¿Ganamos o perdimos el mes pasado?" → estado_resultados con las fechas del mes pasado',
+    '- "¿Cuánto nos retuvieron?", "reteICA", "retención en la fuente" → retenciones_periodo',
+    '- "¿Cómo vamos?", "¿qué debo revisar?", "resumen" → alertas_empresa',
   ].join('\n');
 }
 
@@ -117,7 +132,12 @@ export async function preguntarConIA(
   const definiciones = definicionesOpenAI();
   let texto = '';
   for (let ronda = 0; ronda < maxRondas; ronda++) {
-    const r = await cliente.completar(mensajes, definiciones);
+    let r = await cliente.completar(mensajes, definiciones);
+    // Modelos pequeños a veces "preguntan de vuelta" en lugar de consultar los datos: se reintenta
+    // una vez obligándolo a usar una herramienta.
+    if (ronda === 0 && !r.llamadas.length && (r.contenido ?? '').includes('?')) {
+      r = await cliente.completar(mensajes, definiciones, { obligarHerramienta: true });
+    }
     if (!r.llamadas.length) {
       texto = quitarPensamiento(r.contenido ?? '');
       break;
@@ -125,6 +145,7 @@ export async function preguntarConIA(
     mensajes.push({ role: 'assistant', content: r.contenido, tool_calls: r.llamadas.map((l) => ({ id: l.id, type: 'function', function: { name: l.nombre, arguments: l.argumentos } })) });
     for (const l of r.llamadas) {
       const resultado = ejecutarHerramienta(l.nombre, l.argumentos, d, cifras);
+      registrarCifrasDeTexto(JSON.stringify(resultado.salida), cifras);
       usadas.push({ nombre: l.nombre, argumentos: resultado.argumentos, resultado: resultado.salida });
       mensajes.push({ role: 'tool', tool_call_id: l.id, content: JSON.stringify(resultado.salida) });
     }

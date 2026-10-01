@@ -139,6 +139,27 @@ describe('asistente con IA (con un modelo simulado)', () => {
     expect(r.texto).toBe('No pude: No existe la herramienta borrar_todo.');
   });
 
+  it('si el modelo pregunta de vuelta en lugar de consultar, se reintenta obligándolo a usar una herramienta', async () => {
+    const pedidos: (boolean | undefined)[] = [];
+    const m: ClienteLLM = {
+      async completar(mensajes, _h, o) {
+        pedidos.push(o?.obligarHerramienta);
+        if (mensajes.at(-1)!.role === 'tool') return { contenido: `Les deben ${JSON.parse(mensajes.at(-1)!.content!).total}.`, llamadas: [] };
+        return o?.obligarHerramienta
+          ? { contenido: null, llamadas: [{ id: 'x', nombre: 'cartera_por_edades', argumentos: '{}' }] }
+          : { contenido: '¿Cuánto se les debe a los proveedores?', llamadas: [] };
+      },
+    };
+    const r = await preguntarConIA('¿Cuánto nos deben los clientes?', await ctx(), m);
+    expect(pedidos).toEqual([undefined, true, undefined]);
+    expect(r).toMatchObject({ texto: 'Les deben $ 31.900.000.', cifrasNoVerificadas: [] });
+  });
+
+  it('las cifras que vienen escritas en los resultados (alertas) cuentan como verificadas', async () => {
+    const m = modelo({ nombre: 'alertas_empresa', argumentos: {} }, () => 'Hay cartera vencida por $20.000.000 y deudas con proveedores por $20.970.000.');
+    expect((await preguntarConIA('¿Qué alertas hay?', await ctx(), m)).cifrasNoVerificadas).toEqual([]);
+  });
+
   it('quita el bloque de "pensamiento" de los modelos Qwen3', async () => {
     const m = modelo(null, () => '<think>debo saludar</think>Hola, ¿en qué te ayudo?');
     expect((await preguntarConIA('hola', await ctx(), m)).texto).toBe('Hola, ¿en qué te ayudo?');
