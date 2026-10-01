@@ -113,3 +113,15 @@ minuto; después el modelo genera unas 4–5 palabras por segundo. Por eso: (1) 
 llevan empresa ni fecha (van en la pregunta), así quedan en la caché del modelo para siempre;
 (2) al abrir Jarvis se "calienta" el modelo; (3) las preguntas cortas con una intención clara las
 responden las reglas al instante; la IA atiende lo demás (redacciones nuevas, seguimientos).
+
+## D-022 · El plan de cuentas lo administra el contador, también sin conexión (2026-10-01)
+Crear, editar e inactivar cuentas exige contabilidad FULL (Contador y SuperAdmin), no "configuración":
+en Colombia el contador define las auxiliares. Las cuentas solo se escriben con `registrar_cuenta`
+(se revocaron los permisos directos sobre la tabla), que deriva naturaleza, nivel y "acepta
+movimiento" del código y del padre, igual que la plantilla. Reglas: se crean cuentas de 4, 6, 8, 10 o
+12 dígitos (clases y grupos los fija el PUC); el padre debe existir y estar activo; si el padre era
+auxiliar deja de serlo, y si ya tenía movimientos se rechaza (sus saldos quedarían en una cuenta de
+título); para inactivar, la cuenta no debe tener saldo ni subcuentas activas. Como las demás piezas, se
+puede hacer sin conexión: la cuenta viaja en el lote antes que los comprobantes. Si el servidor la
+rechaza, devuelve la cuenta como la tiene él y el PC deshace su cambio (o la marca para descartarla si
+solo existe en el PC). Un rechazo por permisos rechaza ese registro, no el lote, para no atascar la cola.

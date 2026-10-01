@@ -94,7 +94,7 @@ function sentenciasTercero(empresa: string, t: TerceroSync, crear: boolean): Sen
       : s(`update terceros set tipo_doc = ?, numero = ?, dv = ?, nombre = ?, tipos = ?, responsabilidades = ?,
              direccion = ?, municipio = ?, correo = ?, activo = ?, errores_sync = null where id = ?`, ...valores, t.id),
     s(`insert into cola_salida (empresa_id, tipo, registro_id, creado_en) values (?, 'tercero', ?, ?)
-       on conflict (tipo, registro_id) do nothing`, empresa, t.id, ahora()),
+       on conflict (empresa_id, tipo, registro_id) do nothing`, empresa, t.id, ahora()),
   ];
 }
 

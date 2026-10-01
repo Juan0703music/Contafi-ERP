@@ -264,6 +264,18 @@ const importado = await page.$eval('tbody tr', (n) => n.textContent);
 verificar('Importación de terceros', importado.includes('860034313-7') && omitidos.includes('El Roble'), importado);
 await ir('Plan de cuentas');
 await foto('10-cuentas');
+// PUC personalizable: auxiliar bajo 112005; el padre deja de ser auxiliar
+await page.click('button[aria-label="Subcuenta de 112005"]');
+await page.waitForSelector('#cCodigo');
+await page.type('#cCodigo', '01');
+await page.type('#cNombre', 'Davivienda ahorros 9981');
+await foto('10b-nueva-cuenta');
+await boton('Guardar');
+await new Promise((r) => setTimeout(r, 1500));
+await page.type('input[aria-label="Buscar cuenta"]', '112005');
+await new Promise((r) => setTimeout(r, 500));
+const filasPuc = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.textContent));
+verificar('Cuenta auxiliar creada', filasPuc.length === 2 && filasPuc[0].includes('Mayor') && filasPuc[1].includes('11200501') && filasPuc[1].includes('Auxiliar'), filasPuc.join(' | '));
 await ir('Sincronización');
 await foto('11-sincronizacion');
 

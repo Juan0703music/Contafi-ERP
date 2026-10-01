@@ -24,3 +24,9 @@
 .zona-archivos.activa{border-color:var(--accent); background:var(--accent-soft); color:var(--ink);}
 .zona-archivos .ic{width:28px; height:28px;}
 .advertencias{margin:4px 0 0; padding-left:18px; font-size:12px; color:var(--warn); white-space:normal;}
+/* Plan de cuentas: jerarquía por nivel (clase, grupo, cuenta) dentro de una tabla normal. */
+.fila-puc.n1 td{font-weight:700; background:var(--well);}
+.fila-puc.n2 td{font-weight:600;}
+.fila-puc.inactiva td{opacity:.55;}
+.acciones-fila{text-align:right; white-space:nowrap;}
+.acciones-fila .btn + .btn{margin-left:6px;}

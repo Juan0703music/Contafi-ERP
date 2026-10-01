@@ -14,9 +14,19 @@ function trozos<T>(xs: T[], n: number): T[][] {
   return r;
 }
 
-/** Montos como texto: numeric(18,2) no cabe con exactitud en un number de JavaScript. */
 /** Mismos códigos que en test/repositorio-pglite.ts de @contafi/sync. */
 const CODIGOS_DE_DATOS = new Set(['P0001', '22023', '22P02', '23505', '23503', '23514', '23502']);
+
+/**
+ * Error de un registro puntual (cuenta, tercero, producto): se rechaza ese registro y el lote sigue.
+ * SIN_PERMISO también, para que un registro que el usuario no puede crear no atasque la cola.
+ */
+function errorDeRegistro(error: { code?: string; message: string }): Error {
+  if (error.code && (CODIGOS_DE_DATOS.has(error.code) || (error.code === '42501' && error.message.startsWith('SIN_PERMISO')))) {
+    return new ErrorRegistro(/^([A-Z_]{4,}):/.exec(error.message)?.[1] ?? (error.code === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), error.message);
+  }
+  return traducirError(error as Parameters<typeof traducirError>[0]);
+}
 
 const COLUMNAS_LINEAS = 'orden,cuenta,tercero_id,centro_costo_id,debito::text,credito::text,base_impuesto::text,nota,producto_id,cantidad::text';
 
@@ -68,25 +78,20 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
       return data as ResultadoRegistro;
     },
 
+    async registrarCuenta(p) {
+      const { error } = await sb.rpc('registrar_cuenta', { p });
+      if (error) throw errorDeRegistro(error);
+    },
+
     async registrarTercero(p) {
       const { data, error } = await sb.rpc('registrar_tercero', { p });
-      if (error) {
-        if (error.code && CODIGOS_DE_DATOS.has(error.code)) {
-          throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(error.message)?.[1] ?? (error.code === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), error.message);
-        }
-        throw traducirError(error);
-      }
+      if (error) throw errorDeRegistro(error);
       return data as string;
     },
 
     async registrarProducto(p) {
       const { data, error } = await sb.rpc('registrar_producto', { p });
-      if (error) {
-        if (error.code && CODIGOS_DE_DATOS.has(error.code)) {
-          throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(error.message)?.[1] ?? (error.code === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), error.message);
-        }
-        throw traducirError(error);
-      }
+      if (error) throw errorDeRegistro(error);
       return data as string;
     },
 

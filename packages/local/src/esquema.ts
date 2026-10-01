@@ -138,6 +138,22 @@ export const MIGRACIONES: readonly string[][] = [
     `drop table cola_salida`,
     `alter table cola_salida_nueva rename to cola_salida`,
   ],
+  // 6 · PUC personalizable: las cuentas creadas o editadas en el PC también viajan en la cola. Como el
+  // registro de una cuenta es su código (no un id global), la cola se identifica por empresa.
+  [
+    `alter table cuentas add column errores_sync text`,
+    // 0 = creada en este PC y el servidor aún no la acepta (si la rechaza, se puede descartar).
+    `alter table cuentas add column en_servidor integer not null default 1`,
+    `create table cola_salida_nueva (
+       seq integer primary key autoincrement, empresa_id text not null,
+       tipo text not null check (tipo in ('comprobante', 'tercero', 'producto', 'cuenta')), registro_id text not null,
+       intentos integer not null default 0, ultimo_error text, creado_en text not null,
+       unique (empresa_id, tipo, registro_id)
+     ) strict`,
+    `insert into cola_salida_nueva select * from cola_salida`,
+    `drop table cola_salida`,
+    `alter table cola_salida_nueva rename to cola_salida`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

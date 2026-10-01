@@ -3,7 +3,7 @@ import { contextoDesdeCuentas, validarComprobante, type Cuenta, type Linea } fro
 import {
   TABLAS_SYNC, VERSION_PROTOCOLO,
   type Cambio, type ComprobanteSync, type ConsultaCambios, type ErrorItem, type LoteEnvio, type RespuestaCambios,
-  type ProductoSync, type RespuestaEnvio, type ResultadoItem, type ResultadoTercero, type TablaSync, type TerceroSync,
+  type CuentaSync, type ProductoSync, type RespuestaEnvio, type ResultadoCuenta, type ResultadoItem, type ResultadoTercero, type TablaSync, type TerceroSync,
 } from './protocolo.ts';
 
 export interface ResultadoRegistro {
@@ -24,6 +24,8 @@ export interface RepositorioSync {
   contexto(empresaId: string): Promise<{ cuentas: Cuenta[]; periodosCerrados: string[] }>;
   buscarPorClave(empresaId: string, clave: string): Promise<ResultadoRegistro | null>;
   registrar(p: ComprobanteSync & { empresa_id: string; dispositivo_id: string }): Promise<ResultadoRegistro>;
+  /** Crea o edita una cuenta del PUC. Lanza ErrorRegistro si viola las reglas del plan de cuentas. */
+  registrarCuenta(p: CuentaSync & { empresa_id: string }): Promise<void>;
   /** Devuelve el id definitivo. Lanza ErrorRegistro si los datos no son válidos. */
   registrarTercero(p: TerceroSync & { empresa_id: string }): Promise<string>;
   /** Devuelve el id definitivo. Lanza ErrorRegistro si los datos no son válidos. */
@@ -112,7 +114,18 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
   if (!(await repo.puedeRegistrar(lote.empresa_id))) {
     throw new ErrorAcceso('No tiene permiso para registrar comprobantes en esta empresa.');
   }
-  // 1. Terceros y productos primero: los comprobantes del lote pueden usarlos.
+  // 1. Cuentas, terceros y productos primero: los comprobantes del lote pueden usarlos.
+  const cuentas: ResultadoCuenta[] = [];
+  for (const c of lote.cuentas) {
+    try {
+      await repo.registrarCuenta({ ...c, empresa_id: lote.empresa_id });
+      cuentas.push({ codigo: c.codigo, estado: 'registrado', errores: [] });
+    } catch (e) {
+      if (!(e instanceof ErrorRegistro)) throw e;
+      const [actual] = await repo.registros(lote.empresa_id, 'cuentas', [c.codigo]);
+      cuentas.push({ codigo: c.codigo, estado: 'rechazado', errores: [{ codigo: e.codigo, mensaje: e.message }], actual: actual ?? null });
+    }
+  }
   const terceros = await registrarTerceros(repo, lote.empresa_id, lote.terceros);
   const productos: ResultadoTercero[] = [];
   for (const p of lote.productos) {
@@ -128,8 +141,8 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
   const productoServidor = new Map(productos.filter((p) => p.id_servidor).map((p) => [p.id, p.id_servidor!]));
   const productosRechazados = new Set(productos.filter((p) => p.estado === 'rechazado').map((p) => p.id));
 
-  const { cuentas, periodosCerrados } = await repo.contexto(lote.empresa_id);
-  const ctx = contextoDesdeCuentas(cuentas, periodosCerrados);
+  const contexto = await repo.contexto(lote.empresa_id);
+  const ctx = contextoDesdeCuentas(contexto.cuentas, contexto.periodosCerrados);
 
   // 2. Comprobantes, con las referencias a terceros reescritas al id definitivo.
   const resultados: ResultadoItem[] = [];
@@ -163,7 +176,7 @@ export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Pro
     resultados.push(aResultado(c.id, c.clave_idempotencia, r));
   }
   await repo.marcarSincronizacion(lote.dispositivo);
-  return { version_protocolo: VERSION_PROTOCOLO, terceros, productos, resultados };
+  return { version_protocolo: VERSION_PROTOCOLO, cuentas, terceros, productos, resultados };
 }
 
 /** Clave usada en `cambios.registro_id` para cada tabla. */

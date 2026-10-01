@@ -29,7 +29,7 @@ export async function empresaDePrueba(): Promise<BaseLocal> {
   await guardarEmpresas(base, [EMPRESA]);
   const e = EMPRESA.id;
   await base.lote([
-    ...PUC_SEMILLA.map((c) => s(`insert into cuentas values (?, ?, ?, ?, ?, ?, ?, 0, 1)`, e, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo), c.exigeTercero)),
+    ...PUC_SEMILLA.map((c) => s(`insert into cuentas (empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento, exige_tercero, exige_centro_costo, activa) values (?, ?, ?, ?, ?, ?, ?, 0, 1)`, e, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo), c.exigeTercero)),
     ...['SI', 'FV', 'FC', 'RC', 'CE', 'CG'].map((t) => s('insert into tipos_comprobante values (?, ?, ?, ?)', e, t, t, t)),
   ]);
   const roble = await crearTercero(base, e, { tipo_doc: '31', numero: '830945221', dv: 8, nombre: 'Distribuciones El Roble S.A.S.', tipos: ['cliente'] });

@@ -71,17 +71,31 @@ export const productoSync = z.object({
   activo: z.boolean().default(true),
 });
 
+/**
+ * Cuenta nueva o editada del plan de cuentas. Naturaleza, nivel y "acepta movimiento" no viajan:
+ * el servidor los deriva del código y de la cuenta padre.
+ */
+export const cuentaSync = z.object({
+  codigo: z.string().regex(/^[1-9][0-9]*$/).max(12),
+  nombre: z.string().trim().min(1).max(200),
+  exige_tercero: z.boolean().default(false),
+  exige_centro_costo: z.boolean().default(false),
+  activa: z.boolean().default(true),
+});
+
 export const loteEnvio = z.object({
   version_protocolo: z.literal(VERSION_PROTOCOLO),
   empresa_id: uuid,
   dispositivo: z.object({ id: uuid, nombre: z.string().trim().min(1).max(100), version_app: z.string().max(50) }),
+  /** Cuentas nuevas o editadas: van primero (productos y comprobantes pueden usarlas). */
+  cuentas: z.array(cuentaSync).max(500).default([]),
   /** Terceros nuevos o editados: se registran ANTES que los comprobantes que los usan. */
   terceros: z.array(terceroSync).max(500).default([]),
   /** Productos nuevos o editados: también antes que los comprobantes. */
   productos: z.array(productoSync).max(500).default([]),
   /** En el orden en que se crearon en el PC. */
   comprobantes: z.array(comprobanteSync).max(200).default([]),
-}).refine((l) => l.terceros.length + l.productos.length + l.comprobantes.length > 0, 'El lote está vacío.');
+}).refine((l) => l.cuentas.length + l.terceros.length + l.productos.length + l.comprobantes.length > 0, 'El lote está vacío.');
 
 export const consultaCambios = z.object({
   empresa_id: uuid,
@@ -90,6 +104,7 @@ export const consultaCambios = z.object({
   limite: z.coerce.number().int().min(1).max(1000).default(500),
 });
 
+export type CuentaSync = z.infer<typeof cuentaSync>;
 export type TerceroSync = z.infer<typeof terceroSync>;
 export type ProductoSync = z.infer<typeof productoSync>;
 export type LineaSync = z.infer<typeof lineaSync>;
@@ -130,8 +145,21 @@ export interface ResultadoTercero {
   errores: ErrorItem[];
 }
 
+export interface ResultadoCuenta {
+  codigo: string;
+  estado: 'registrado' | 'rechazado';
+  errores: ErrorItem[];
+  /**
+   * Si se rechazó: la cuenta como está en el servidor (null = no existe allá). Con esto el PC deshace
+   * su cambio local, porque un rechazo no genera cambios que bajar.
+   */
+  actual?: Record<string, unknown> | null;
+}
+
 export interface RespuestaEnvio {
   version_protocolo: typeof VERSION_PROTOCOLO;
+  /** Ausente en servidores anteriores al PUC personalizable. */
+  cuentas?: ResultadoCuenta[];
   terceros: ResultadoTercero[];
   /** Mismo formato que los terceros: id_servidor distinto si otro PC ya creó ese código. */
   productos: ResultadoTercero[];

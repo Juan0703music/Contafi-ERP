@@ -54,7 +54,7 @@ function sentenciasProducto(empresa: string, p: ProductoSync, crear: boolean, pr
       : s(`update productos set codigo = ?, nombre = ?, tipo = ?, unidad = ?, cuenta_inventario = ?, iva_tipo = ?, iva_tarifa_ppm = ?,
              precio_venta = ?, activo = ?, errores_sync = null where id = ?`, ...valores, p.id),
     s(`insert into cola_salida (empresa_id, tipo, registro_id, creado_en) values (?, 'producto', ?, ?)
-       on conflict (tipo, registro_id) do nothing`, empresa, p.id, new Date().toISOString()),
+       on conflict (empresa_id, tipo, registro_id) do nothing`, empresa, p.id, new Date().toISOString()),
   ];
 }
 

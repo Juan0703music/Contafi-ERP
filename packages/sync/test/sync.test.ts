@@ -28,7 +28,7 @@ function cg(fecha: string, lineas: [string, string, string][], extra: Partial<Co
   };
 }
 const lote = (comprobantes: ComprobanteSync[], terceros: LoteEnvio['terceros'] = []): LoteEnvio =>
-  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, terceros, productos: [], comprobantes });
+  ({ version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo: PC, cuentas: [], terceros, productos: [], comprobantes });
 
 const nuevoTercero = (numero: string, dv: number | null, nombre: string): LoteEnvio['terceros'][number] =>
   ({ id: randomUUID(), tipo_doc: '31', numero, dv, nombre, tipos: ['proveedor'], responsabilidades: [], activo: true });
@@ -187,6 +187,33 @@ describe('productos creados sin conexión', () => {
   });
 });
 
+describe('cuentas creadas sin conexión', () => {
+  const cuenta = (codigo: string, nombre: string) => ({ codigo, nombre, exige_tercero: false, exige_centro_costo: false, activa: true });
+
+  it('la cuenta viaja antes que el comprobante que la usa', async () => {
+    const r = await procesarEnvio(repositorioPglite(db, ana), {
+      ...lote([cg('2026-09-16', [['11200501', '700000', '0'], ['310505', '0', '700000']])]),
+      cuentas: [cuenta('11200501', 'Davivienda ahorros 9981')],
+    });
+    expect(r.cuentas).toEqual([{ codigo: '11200501', estado: 'registrado', errores: [] }]);
+    expect(r.resultados[0]!.estado).toBe('contabilizado');
+  });
+
+  it('una cuenta rechazada (o sin permiso) no detiene el lote; sus comprobantes se rechazan con motivo', async () => {
+    const r = await procesarEnvio(repositorioPglite(db, ana), {
+      ...lote([cg('2026-09-16', [['13809901', '1', '0'], ['310505', '0', '1']]), cg('2026-09-16', [['519595', '1', '0'], ['111005', '0', '1']])]),
+      cuentas: [cuenta('13809901', 'Sin padre')],
+    });
+    expect(r.cuentas![0]).toMatchObject({ estado: 'rechazado', errores: [{ codigo: 'SIN_CUENTA_PADRE' }], actual: null });
+    expect(r.resultados.map((x) => x.estado)).toEqual(['rechazado', 'contabilizado']);
+    const aux = await procesarEnvio(repositorioPglite(db, carla), { ...lote([]), cuentas: [cuenta('11200502', 'Del auxiliar')] });
+    expect(aux.cuentas![0]).toMatchObject({ estado: 'rechazado', errores: [{ codigo: 'SIN_PERMISO' }] });
+    // Una edición rechazada devuelve la cuenta como está en el servidor, para deshacerla en el PC.
+    const editar = await procesarEnvio(repositorioPglite(db, carla), { ...lote([]), cuentas: [cuenta('11200501', 'Renombrada por el auxiliar')] });
+    expect(editar.cuentas![0]).toMatchObject({ estado: 'rechazado', actual: { codigo: '11200501', nombre: 'Davivienda ahorros 9981' } });
+  });
+});
+
 describe('protocolo', () => {
   const base = () => lote([cg('2026-09-01', [['111005', '1', '0'], ['310505', '0', '1']])]);
   it('acepta un lote válido', () => {
@@ -223,7 +250,7 @@ describe('recepción incremental (sección 9.3)', () => {
     }
     expect(paginas).toBeGreaterThan(2);
     const cuentas = new Set(todo.flatMap((p) => (p.cuentas ?? []).map((c) => c['codigo'])));
-    expect(cuentas.size).toBe(124); // toda la plantilla del PUC
+    expect(cuentas.size).toBe(125); // toda la plantilla del PUC y la auxiliar creada sin conexión
     expect(todo.flatMap((p) => p.tipos_comprobante ?? [])).toHaveLength(9);
   });
 

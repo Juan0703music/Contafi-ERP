@@ -28,6 +28,18 @@ export function nivelPuc(codigo: string): 1 | 2 | 3 | 4 | 5 {
   }
 }
 
+/**
+ * Por qué no se puede crear una cuenta con ese código, o null si se puede. Clases y grupos los fija el
+ * PUC (Decreto 2650 de 1993); las empresas crean cuentas (4 dígitos), subcuentas (6) y auxiliares (8, 10 o 12).
+ * El servidor aplica la misma regla en registrar_cuenta.
+ */
+export function errorCodigoCuentaNueva(codigo: string): string | null {
+  if (!/^[1-9][0-9]*$/.test(codigo) || ![4, 6, 8, 10, 12].includes(codigo.length)) {
+    return 'El código debe tener 4, 6, 8, 10 o 12 dígitos (las clases y los grupos los fija el PUC).';
+  }
+  return null;
+}
+
 /** Código del padre inmediato ("110505" -> "1105"). */
 export function codigoPadre(codigo: string): string | null {
   switch (codigo.length) {

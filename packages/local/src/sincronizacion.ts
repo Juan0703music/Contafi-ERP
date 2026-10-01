@@ -2,7 +2,8 @@ import { aCentavos, aDecimal, esFechaValida } from '@contafi/shared';
 import { aMilesimas } from '@contafi/motor';
 import {
   VERSION_PROTOCOLO,
-  type ComprobanteSync, type ConsultaCambios, type LoteEnvio, type ProductoSync, type RespuestaCambios, type RespuestaEnvio, type TerceroSync,
+  type ComprobanteSync, type ConsultaCambios, type CuentaSync, type LoteEnvio, type ProductoSync, type RespuestaCambios, type RespuestaEnvio,
+  type TerceroSync,
 } from '@contafi/sync';
 import { s, type BaseLocal, type Sentencia } from './base.ts';
 
@@ -37,6 +38,7 @@ export interface ResumenSincronizacion {
   rechazados: number;
   tercerosRegistrados: number;
   tercerosRechazados: number;
+  cuentasRechazadas: number;
   recibidos: number;
   /** null = todo bien. Si hay error, lo pendiente sigue en la cola y se reintenta en la próxima. */
   error: string | null;
@@ -62,6 +64,14 @@ async function leerTercero(base: BaseLocal, id: string): Promise<TerceroSync | n
     nombre: String(t['nombre']), tipos: JSON.parse(String(t['tipos'])), responsabilidades: JSON.parse(String(t['responsabilidades'])),
     direccion: (t['direccion'] as string | null) ?? null, municipio: (t['municipio'] as string | null) ?? null,
     correo: (t['correo'] as string | null) ?? null, activo: !!t['activo'],
+  };
+}
+
+async function leerCuenta(base: BaseLocal, empresa: string, codigo: string): Promise<CuentaSync | null> {
+  const [c] = await base.consultar<Record<string, string | number>>('select * from cuentas where empresa_id = ? and codigo = ?', [empresa, codigo]);
+  if (!c) return null;
+  return {
+    codigo, nombre: String(c['nombre']), exige_tercero: !!c['exige_tercero'], exige_centro_costo: !!c['exige_centro_costo'], activa: !!c['activa'],
   };
 }
 
@@ -100,14 +110,22 @@ async function leerComprobanteSync(base: BaseLocal, id: string): Promise<Comprob
   };
 }
 
-/** Arma el siguiente lote respetando los límites. Terceros primero: los comprobantes pueden usarlos. */
+/** Arma el siguiente lote respetando los límites. Cuentas, terceros y productos primero: los comprobantes pueden usarlos. */
 async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Dispositivo): Promise<LoteEnvio | null> {
-  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero' | 'producto'; registro_id: string }>(
+  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero' | 'producto' | 'cuenta'; registro_id: string }>(
     'select tipo, registro_id from cola_salida where empresa_id = ? order by seq', [empresa]);
+  const cuentas: CuentaSync[] = [];
   const terceros: TerceroSync[] = [];
   const comprobantes: ComprobanteSync[] = [];
   let bytes = 0;
   const huerfanos: Sentencia[] = [];
+  // En el orden de la cola: una cuenta nueva llega después de la cuenta padre que se creó antes.
+  for (const item of cola.filter((i) => i.tipo === 'cuenta')) {
+    if (cuentas.length >= LIMITES.tercerosPorLote) break;
+    const c = await leerCuenta(base, empresa, item.registro_id);
+    if (!c) { huerfanos.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'cuenta' and registro_id = ?`, empresa, item.registro_id)); continue; }
+    cuentas.push(c);
+  }
   for (const item of cola.filter((i) => i.tipo === 'tercero')) {
     if (terceros.length >= LIMITES.tercerosPorLote) break;
     const t = await leerTercero(base, item.registro_id);
@@ -123,8 +141,8 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     productos.push(p);
     bytes += JSON.stringify(p).length;
   }
-  // Si quedaron terceros o productos sin enviar, este lote no lleva comprobantes (podrían depender de ellos).
-  const quedanMaestros = cola.filter((i) => i.tipo !== 'comprobante').length > terceros.length + productos.length + huerfanos.length;
+  // Si quedaron cuentas, terceros o productos sin enviar, este lote no lleva comprobantes (podrían depender de ellos).
+  const quedanMaestros = cola.filter((i) => i.tipo !== 'comprobante').length > cuentas.length + terceros.length + productos.length + huerfanos.length;
   if (!quedanMaestros) {
     for (const item of cola.filter((i) => i.tipo === 'comprobante')) {
       if (comprobantes.length >= LIMITES.comprobantesPorLote) break;
@@ -137,13 +155,25 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     }
   }
   if (huerfanos.length) await base.lote(huerfanos);
-  if (terceros.length + productos.length + comprobantes.length === 0) return null;
-  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, terceros, productos, comprobantes };
+  if (cuentas.length + terceros.length + productos.length + comprobantes.length === 0) return null;
+  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, cuentas, terceros, productos, comprobantes };
 }
 
 function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSincronizacion): Sentencia[] {
   const t = ahora();
   const out: Sentencia[] = [];
+  for (const x of r.cuentas ?? []) {
+    if (x.estado === 'registrado') {
+      out.push(s('update cuentas set errores_sync = null, en_servidor = 1 where empresa_id = ? and codigo = ?', empresa, x.codigo));
+    } else {
+      resumen.cuentasRechazadas++;
+      // Un rechazo no genera cambios que bajar: se deshace aquí. Si la cuenta existe en el servidor, se
+      // toman sus datos; si no, queda solo en este PC, marcada, hasta que se corrija o se descarte.
+      if (x.actual) out.push(...sentenciasCuenta(empresa, x.actual, true));
+      out.push(s('update cuentas set errores_sync = ? where empresa_id = ? and codigo = ?', JSON.stringify(x.errores), empresa, x.codigo));
+    }
+    out.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'cuenta' and registro_id = ?`, empresa, x.codigo));
+  }
   for (const x of r.terceros) {
     if (x.estado === 'registrado' && x.id_servidor) {
       if (x.id_servidor !== x.id) {
@@ -216,8 +246,8 @@ async function enviarCola(base: BaseLocal, transporte: Transporte, empresa: stri
     } catch (e) {
       // Nada se pierde: todo sigue en la cola y se reintenta en la próxima sincronización.
       const mensaje = e instanceof Error ? e.message : String(e);
-      const ids = [...lote.terceros.map((t) => t.id), ...lote.productos.map((p) => p.id), ...lote.comprobantes.map((c) => c.id)];
-      await base.lote(ids.map((id) => s('update cola_salida set intentos = intentos + 1, ultimo_error = ? where registro_id = ?', mensaje, id)));
+      const ids = [...lote.cuentas.map((c) => c.codigo), ...lote.terceros.map((t) => t.id), ...lote.productos.map((p) => p.id), ...lote.comprobantes.map((c) => c.id)];
+      await base.lote(ids.map((id) => s('update cola_salida set intentos = intentos + 1, ultimo_error = ? where empresa_id = ? and registro_id = ?', mensaje, empresa, id)));
       resumen.error = mensaje;
       return false;
     }
@@ -236,17 +266,24 @@ const fecha = (v: unknown) => {
 };
 const centavos = (v: unknown) => (v == null ? null : aCentavos(String(v)));
 
+/**
+ * Una cuenta tal como está en el servidor. Una edición local todavía en la cola no se pisa (se enviará
+ * y el servidor decidirá), salvo `forzar` (tras un rechazo, para deshacerla).
+ */
+function sentenciasCuenta(empresa: string, c: Record<string, unknown>, forzar = false): Sentencia[] {
+  return [s(`insert into cuentas (empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento, exige_tercero, exige_centro_costo, activa, en_servidor)
+              values (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+              on conflict (empresa_id, codigo) do update set nombre = excluded.nombre, naturaleza = excluded.naturaleza, nivel = excluded.nivel,
+                acepta_movimiento = excluded.acepta_movimiento, exige_tercero = excluded.exige_tercero,
+                exige_centro_costo = excluded.exige_centro_costo, activa = excluded.activa, en_servidor = 1, errores_sync = null
+              where ? or not exists (select 1 from cola_salida q where q.empresa_id = excluded.empresa_id and q.tipo = 'cuenta' and q.registro_id = excluded.codigo)`,
+    empresa, txt(c['codigo']), txt(c['nombre']), txt(c['naturaleza']), Number(c['nivel']), bool(c['acepta_movimiento']),
+    bool(c['exige_tercero']), bool(c['exige_centro_costo']), bool(c['activa']), forzar ? 1 : 0)];
+}
+
 function sentenciasRegistros(empresa: string, registros: RespuestaCambios['registros']): Sentencia[] {
   const out: Sentencia[] = [];
-  for (const c of registros.cuentas ?? []) {
-    out.push(s(`insert into cuentas (empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento, exige_tercero, exige_centro_costo, activa)
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                on conflict (empresa_id, codigo) do update set nombre = excluded.nombre, naturaleza = excluded.naturaleza, nivel = excluded.nivel,
-                  acepta_movimiento = excluded.acepta_movimiento, exige_tercero = excluded.exige_tercero,
-                  exige_centro_costo = excluded.exige_centro_costo, activa = excluded.activa`,
-      empresa, txt(c['codigo']), txt(c['nombre']), txt(c['naturaleza']), Number(c['nivel']), bool(c['acepta_movimiento']),
-      bool(c['exige_tercero']), bool(c['exige_centro_costo']), bool(c['activa'])));
-  }
+  for (const c of registros.cuentas ?? []) out.push(...sentenciasCuenta(empresa, c));
   for (const t of registros.tipos_comprobante ?? []) {
     out.push(s(`insert into tipos_comprobante (empresa_id, codigo, nombre, prefijo) values (?, ?, ?, ?)
                 on conflict (empresa_id, codigo) do update set nombre = excluded.nombre, prefijo = excluded.prefijo`,
@@ -355,7 +392,8 @@ export async function sincronizar(
   base: BaseLocal, transporte: Transporte, opciones: { empresa: string; dispositivo: Dispositivo },
 ): Promise<ResumenSincronizacion> {
   const resumen: ResumenSincronizacion = {
-    enviados: 0, contabilizados: 0, porAprobar: 0, rechazados: 0, tercerosRegistrados: 0, tercerosRechazados: 0, recibidos: 0, error: null,
+    enviados: 0, contabilizados: 0, porAprobar: 0, rechazados: 0, tercerosRegistrados: 0, tercerosRechazados: 0, cuentasRechazadas: 0,
+    recibidos: 0, error: null,
   };
   if (await enviarCola(base, transporte, opciones.empresa, opciones.dispositivo, resumen)) {
     await recibirCambios(base, transporte, opciones.empresa, resumen);

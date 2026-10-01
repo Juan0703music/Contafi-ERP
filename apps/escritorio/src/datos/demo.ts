@@ -130,6 +130,8 @@ export function transporteDemo(base: BaseLocal): Transporte {
       await new Promise((r) => setTimeout(r, 600)); // que se note el estado "sincronizando"
       return {
         version_protocolo: VERSION_PROTOCOLO,
+        // El servidor simulado acepta las cuentas: en la demostración el usuario es el administrador.
+        cuentas: lote.cuentas.map((c) => ({ codigo: c.codigo, estado: 'registrado' as const, errores: [] })),
         terceros: lote.terceros.map((t) => ({ id: t.id, id_servidor: t.id, estado: 'registrado' as const, errores: [] })),
         productos: lote.productos.map((p) => ({ id: p.id, id_servidor: p.id, estado: 'registrado' as const, errores: [] })),
         resultados,

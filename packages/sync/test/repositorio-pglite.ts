@@ -10,7 +10,9 @@ export const CODIGOS_DE_DATOS = new Set(['P0001', '22023', '22P02', '23505', '23
 export function comoErrorRegistro(e: unknown): never {
   const codigo = (e as { code?: string }).code;
   const mensaje = (e as Error).message ?? String(e);
-  if (codigo && CODIGOS_DE_DATOS.has(codigo)) {
+  // SIN_PERMISO sobre un registro puntual (p. ej. un auxiliar que creó una cuenta sin conexión) rechaza ese
+  // registro, no el lote entero: si no, la cola quedaría atascada para siempre.
+  if (codigo && (CODIGOS_DE_DATOS.has(codigo) || (codigo === '42501' && mensaje.startsWith('SIN_PERMISO')))) {
     throw new ErrorRegistro(/^([A-Z_]{4,}):/.exec(mensaje)?.[1] ?? (codigo === '23505' ? 'DUPLICADO' : 'DATOS_INVALIDOS'), mensaje);
   }
   throw e;
@@ -68,6 +70,13 @@ export function repositorioPglite(db: PGlite, sesion: Sesion): RepositorioSync {
         return (await q<{ id: string }>('select public.registrar_tercero($1::jsonb) as id', [JSON.stringify(p)]))[0]!.id;
       } catch (e) {
         return comoErrorRegistro(e);
+      }
+    },
+    async registrarCuenta(p) {
+      try {
+        await q('select public.registrar_cuenta($1::jsonb)', [JSON.stringify(p)]);
+      } catch (e) {
+        comoErrorRegistro(e);
       }
     },
     async registrarProducto(p) {

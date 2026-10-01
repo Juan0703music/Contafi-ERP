@@ -38,6 +38,12 @@ Encabezado `Authorization: Bearer <access_token de la sesión>`. Cuerpo (`@conta
 }
 ```
 
+- Antes de los comprobantes, el lote puede traer los maestros creados sin conexión, que el servidor
+  registra primero: `cuentas` (`codigo`, `nombre`, `exige_tercero`, `exige_centro_costo`, `activa`),
+  `terceros` y `productos`. La respuesta trae un resultado por cada uno. Si una cuenta se rechaza
+  (código inválido, padre con movimientos, saldo al inactivar, o el usuario no es contador ni
+  administrador), viene con `actual`: la cuenta como está en el servidor (o `null`), para que el PC
+  deshaga su cambio. Un rechazo de un maestro no detiene el lote.
 - Máximo 200 comprobantes y 4 MB por envío: la app parte la cola.
 - **Montos como texto** con máximo 2 decimales. Nunca `number`.
 - Respuesta: un resultado por comprobante, en el mismo orden:
@@ -55,5 +61,5 @@ Encabezado `Authorization: Bearer <access_token de la sesión>`. Cuerpo (`@conta
 - Primera instalación: `desde=0`, repetir mientras `hay_mas` sea `true` (barra de progreso).
 - Guardar `ultima_seq` solo después de aplicar la página en SQLite, dentro de una transacción.
 - `registros` trae el estado **actual** de cada registro que cambió, por tabla (`cuentas`, `terceros`,
-  `centros_costo`, `periodos`, `tipos_comprobante`, `comprobantes` con sus `lineas`).
+  `productos`, `centros_costo`, `periodos`, `tipos_comprobante`, `comprobantes` con sus `lineas`).
   La app hace upsert por clave: `codigo` (cuentas, tipos), `anio`+`mes` (períodos), `id` (el resto).

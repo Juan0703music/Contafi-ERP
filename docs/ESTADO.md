@@ -68,6 +68,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Ventas y compras manuales (sin facturación electrónica propia) | ✅ factura de venta y de compra con IVA por tarifa y retenciones, cartera por edades (FIFO), recaudos y pagos parciales |
 | Inventario básico | ✅ productos, kárdex por costo promedio derivado de los asientos (débito = entrada, crédito = salida), costo de ventas automático al facturar, aviso de existencias negativas; sincroniza entre PC |
 | Importación masiva de terceros | ✅ desde CSV (Excel), calcula el DV, valida por fila con los mismos límites del servidor y omite los que ya existen |
+| PUC personalizable | ✅ crear cuentas, subcuentas y auxiliares (heredan la naturaleza), editar e inactivar; también sin conexión; reglas en el servidor (D-022) |
 
 **Criterio de salida:** el asesor valida los reportes con una empresa real de prueba (👤 ⬜).
 
@@ -114,15 +115,17 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 11. El CI cancelaba la compilación de Windows con cada push nuevo. Corregido.
 12. La versión "latest" de llama.cpp en GitHub no trae binarios: el script de la Fase 0 habría fallado. Ahora usa una versión fija verificada.
 13. El modelo pequeño tendía a responder con otra pregunta en lugar de consultar los datos (8 de 10 fallos): instrucciones con ejemplos y reintento con herramienta obligatoria.
+14. Un producto creado sin conexión por un contador (que en inventario solo tiene lectura) hacía fallar el lote entero con "sin permiso", y la cola se habría atascado para siempre. Ahora se rechaza solo ese registro (también para cuentas y terceros).
+15. La tabla del plan de cuentas usaba un estilo del prototipo pensado para filas sueltas (`display:flex` en `<tr>`) y las columnas no quedaban alineadas.
 
-## Pruebas automáticas (01/10/2026) — 178 en total
+## Pruebas automáticas (01/10/2026) — 187 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 46 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
 - `@contafi/dian-xml`: 11 ✓
-- `@contafi/sync`: 21 ✓
-- `@contafi/local`: 39 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros)
-- `supabase` (PGlite con privilegios de Supabase): 31 ✓
+- `@contafi/sync`: 23 ✓
+- `@contafi/local`: 42 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas)
+- `supabase` (PGlite con privilegios de Supabase): 35 ✓
 - `@contafi/jarvis`: 15 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 13 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 14 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

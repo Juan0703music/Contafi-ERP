@@ -13,7 +13,7 @@ async function empresa() {
   await migrar(base);
   await guardarEmpresas(base, [{ id: E, firma_id: 'f', nit: '900123456', dv: 8, razon_social: 'Andina' }]);
   await base.lote([
-    ...PUC_SEMILLA.map((c) => s(`insert into cuentas values (?, ?, ?, ?, ?, ?, ?, 0, 1)`, E, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo), c.exigeTercero)),
+    ...PUC_SEMILLA.map((c) => s(`insert into cuentas (empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento, exige_tercero, exige_centro_costo, activa) values (?, ?, ?, ?, ?, ?, ?, 0, 1)`, E, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo), c.exigeTercero)),
     ...['FV', 'FC', 'RC', 'CE'].map((t) => s('insert into tipos_comprobante values (?, ?, ?, ?)', E, t, t, t)),
   ]);
   const cliente = await crearTercero(base, E, { tipo_doc: '31', numero: '830945221', dv: 8, nombre: 'El Roble', tipos: ['cliente'] });
