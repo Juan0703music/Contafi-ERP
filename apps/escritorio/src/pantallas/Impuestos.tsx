@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { formatoTarifa } from '@contafi/shared';
-import {
-  conceptosRetencion, cuentasLocales, desactivarConcepto, guardarConcepto, guardarUvt, uvtsConfiguradas, ErrorLocal, type DatosConcepto,
-} from '@contafi/local';
+import { conceptosRetencion, cuentasLocales, uvtsConfiguradas, ErrorLocal, type DatosConcepto } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, Modal, Vacio, dinero } from '../componentes/comunes.tsx';
 
@@ -13,7 +11,7 @@ const TIPOS = { RETEFUENTE: 'Retención en la fuente', RETEIVA: 'ReteIVA', RETEI
  * El contador los define con la norma vigente (UVT del año, tarifas, bases y cuentas).
  */
 export function Impuestos() {
-  const { base, empresa, version, refrescar, avisar } = useApp();
+  const { base, empresa, version, refrescar, avisar, impuestos, sincronizarAhora } = useApp();
   const [editando, setEditando] = useState<DatosConcepto | null>(null);
   const [anioUvt, setAnioUvt] = useState(String(new Date().getFullYear()));
   const [valorUvt, setValorUvt] = useState('');
@@ -25,8 +23,9 @@ export function Impuestos() {
 
   async function guardarLaUvt() {
     try {
-      await guardarUvt(base, Number(anioUvt), valorUvt);
-      avisar(`UVT de ${anioUvt} guardada.`, 'ok');
+      await impuestos.guardarUvt(empresa.id, Number(anioUvt), valorUvt);
+      if (impuestos.compartida) await sincronizarAhora();
+      avisar(`UVT de ${anioUvt} guardada${impuestos.compartida ? ' para todas las empresas de la firma' : ''}.`, 'ok');
       setValorUvt('');
       refrescar();
     } catch (e) { avisar((e as Error).message, 'danger'); }
@@ -35,7 +34,8 @@ export function Impuestos() {
   return (
     <>
       <div className="page-head"><h1>Impuestos y retenciones</h1>
-        <p>Contafi no trae tarifas escritas: configúralas con la norma vigente. Se usan al importar facturas de la DIAN.</p></div>
+        <p>Contafi no trae tarifas escritas: configúralas con la norma vigente. Se usan al importar facturas de la DIAN y al facturar.
+          {impuestos.compartida && ' Se guardan en la nube (requiere conexión) y las usan todos los equipos de la firma.'}</p></div>
       <div className="panel">
         <div className="panel-head"><h2>Valor de la UVT por año</h2><span className="hint">Resolución anual de la DIAN</span></div>
         <div className="panel-body">
@@ -62,7 +62,8 @@ export function Impuestos() {
                 <td>{c.aplicaEn === 'compras' ? 'Compras (la practicamos)' : 'Ventas (nos la practican)'}</td>
                 <td className="btn-row">
                   <button className="btn ghost sm" onClick={() => setEditando({ codigo: c.codigo, tipo: c.tipo, nombre: c.nombre, tarifa: formatoTarifa(c.tarifa).replace(' %', ''), baseMinimaUvt: c.baseMinimaUvt, cuenta: c.cuenta, aplicaEn: c.aplicaEn })}>Editar</button>
-                  {c.activo && <button className="btn ghost sm" onClick={() => void desactivarConcepto(base, empresa.id, c.codigo).then(refrescar)}>Desactivar</button>}
+                  {c.activo && <button className="btn ghost sm" onClick={() => void impuestos.desactivarConcepto(empresa.id, c.codigo)
+                    .then(async () => { if (impuestos.compartida) await sincronizarAhora(); refrescar(); }, (e: Error) => avisar(e.message, 'danger'))}>Desactivar</button>}
                 </td>
               </tr>))}
             </tbody></table></div>
@@ -74,7 +75,7 @@ export function Impuestos() {
 }
 
 function EditarConcepto({ inicial, cuentas, alCerrar }: { inicial: DatosConcepto; cuentas: { codigo: string; nombre: string }[]; alCerrar: () => void }) {
-  const { base, empresa, refrescar, avisar } = useApp();
+  const { empresa, refrescar, avisar, impuestos, sincronizarAhora } = useApp();
   const [d, setD] = useState(inicial);
   const [error, setError] = useState<string | null>(null);
   const campo = <K extends keyof DatosConcepto>(k: K, v: DatosConcepto[K]) => setD((x) => ({ ...x, [k]: v }));
@@ -82,7 +83,8 @@ function EditarConcepto({ inicial, cuentas, alCerrar }: { inicial: DatosConcepto
 
   async function guardar() {
     try {
-      await guardarConcepto(base, empresa.id, d);
+      await impuestos.guardarConcepto(empresa.id, d);
+      if (impuestos.compartida) await sincronizarAhora();
       avisar('Concepto guardado.', 'ok');
       refrescar();
       alCerrar();

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import {
   asientoFacturaCompra, asientoFacturaVenta, asientoNotaCreditoVenta, asientoPago, asientoRecaudo,
-  calcularTotales, validarComprobante, entrada, salida, costoPromedio, aMilesimas, INVENTARIO_VACIO,
+  calcularTotales, validarComprobante, entrada, salida, costoPromedio, aMilesimas, uvtACentavos, INVENTARIO_VACIO,
   type ConceptoRetencion, type ParametrosAnuales, type ItemDocumento,
 } from '../src/index.ts';
 import { ctx, $ } from './ayudas.ts';
@@ -45,6 +45,14 @@ describe('factura de compra con retenciones', () => {
     // 10 UVT × 52.374 = 523.740 > 500.000
     expect(pequeña.retenciones).toEqual([]);
     expect(pequeña.neto).toBe($('595000'));
+  });
+
+  it('la base en UVT admite 3 decimales sin redondear (0,125 UVT no es 0,13)', () => {
+    const P = { anio: 2026, uvt: $('40000') };
+    expect(uvtACentavos('0,125', P)).toBe($('5000'));
+    expect(uvtACentavos('10.000', P)).toBe($('400000'));
+    expect(uvtACentavos('27.5', P)).toBe($('1100000'));
+    expect(() => uvtACentavos('1e3', P)).toThrow(RangeError);
   });
 
   it('IVA como mayor valor del gasto (no responsable de IVA)', () => {

@@ -6,6 +6,7 @@ import {
   type TerceroSync,
 } from '@contafi/sync';
 import { s, type BaseLocal, type Sentencia } from './base.ts';
+import { sentenciaConcepto } from './retenciones.ts';
 
 /** Cómo llega la app al servidor. En la app: HTTP (`transporteHttp`); en pruebas: directo a PGlite. */
 export interface Transporte {
@@ -284,6 +285,17 @@ function sentenciasCuenta(empresa: string, c: Record<string, unknown>, forzar = 
 function sentenciasRegistros(empresa: string, registros: RespuestaCambios['registros']): Sentencia[] {
   const out: Sentencia[] = [];
   for (const c of registros.cuentas ?? []) out.push(...sentenciasCuenta(empresa, c));
+  // Configuración tributaria (D-024): la UVT de la firma y los conceptos de la empresa los decide el servidor.
+  for (const u of registros.uvt ?? []) {
+    out.push(s('insert into parametros_anuales (anio, uvt) values (?, ?) on conflict (anio) do update set uvt = excluded.uvt',
+      Number(u['anio']), centavos(u['uvt'])));
+  }
+  for (const c of registros.conceptos_empresa ?? []) {
+    out.push(sentenciaConcepto(empresa, {
+      codigo: String(c['codigo']), tipo: c['tipo'] as 'RETEFUENTE', nombre: String(c['nombre']), tarifa_ppm: Number(c['tarifa_ppm']),
+      base_minima_uvt: String(c['base_minima_uvt']), cuenta: String(c['cuenta']), aplica_en: c['aplica_en'] as 'compras' | 'ventas',
+    }, !!c['activo']));
+  }
   for (const t of registros.tipos_comprobante ?? []) {
     out.push(s(`insert into tipos_comprobante (empresa_id, codigo, nombre, prefijo) values (?, ?, ?, ?)
                 on conflict (empresa_id, codigo) do update set nombre = excluded.nombre, prefijo = excluded.prefijo`,

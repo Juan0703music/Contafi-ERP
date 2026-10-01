@@ -166,7 +166,11 @@ export interface RespuestaEnvio {
   resultados: ResultadoItem[];
 }
 
-export const TABLAS_SYNC = ['cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'comprobantes'] as const;
+/**
+ * Tablas que bajan a los PC. `uvt` es la UVT de la firma por año (clave: el año) y `conceptos_empresa`
+ * los conceptos de retención de la empresa (clave: el código).
+ */
+export const TABLAS_SYNC = ['cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'uvt', 'conceptos_empresa', 'comprobantes'] as const;
 export type TablaSync = (typeof TABLAS_SYNC)[number];
 
 export interface Cambio {

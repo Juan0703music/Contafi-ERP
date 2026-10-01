@@ -27,6 +27,7 @@ import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts'
 import { EMPRESA_DEMO, sembrarDemo, transporteDemo } from './datos/demo.ts';
 import { configuracionNube, dispositivoLocal, empresasDelUsuario, transporteNube } from './datos/nube.ts';
 import { servicioFirmaDemo, servicioFirmaNube, type FirmaUsuario } from './datos/firma.ts';
+import { impuestosLocales, impuestosNube } from './datos/impuestos.ts';
 
 const VERSION_APP = '0.3.0';
 
@@ -88,7 +89,7 @@ export function App() {
       transporte: transporteDemo(base), dispositivo: dispositivoLocal(VERSION_APP), avisoInicial: a,
       cerrarSesion: async () => { await cerrarBaseTauri(); setSesion(null); },
       cambiarPeriodo: (empresa, anio, mes, estado) => cambiarPeriodoLocal(base, empresa, anio, mes, estado),
-      firma: servicioFirmaDemo(base, firma, empresas), firmas: [firma],
+      firma: servicioFirmaDemo(base, firma, empresas), firmas: [firma], impuestos: impuestosLocales(base),
       recargarEmpresas: async () => { const e = await empresasLocales(base); setSesion((s) => s && { ...s, empresas: e }); },
     });
   }, []);
@@ -108,7 +109,7 @@ export function App() {
       base, modo: 'nube', empresas, transporte: transporteNube(supabase, api), dispositivo: dispositivoLocal(VERSION_APP), avisoInicial: a,
       usuario: { nombre: (data.user?.user_metadata?.['nombre'] as string | undefined) ?? data.user?.email ?? 'Usuario', correo: data.user?.email ?? '' },
       cerrarSesion: async () => { await supabase.auth.signOut(); await cerrarBaseTauri(); setSesion(null); },
-      firma: servicioNube!, firmas,
+      firma: servicioNube!, firmas, impuestos: impuestosNube(supabase, base),
       recargarEmpresas: async () => {
         const e = await empresasDelUsuario(supabase);
         await guardarEmpresas(base, e);

@@ -5,6 +5,7 @@ import {
   type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ResumenSincronizacion, type Transporte,
 } from '@contafi/local';
 import type { FirmaUsuario, ServicioFirma } from './datos/firma.ts';
+import type { ConfiguracionImpuestos } from './datos/impuestos.ts';
 
 export type Ruta = 'panel' | 'jarvis' | 'ventas' | 'inventario' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'impuestos' | 'bancos' | 'empresas' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion' | 'equipo';
 
@@ -26,6 +27,8 @@ export interface Sesion {
   firmas: FirmaUsuario[];
   /** Vuelve a leer las empresas a las que tiene acceso (tras crear una). */
   recargarEmpresas: () => Promise<void>;
+  /** UVT y conceptos de retención: compartidos por el servidor en la nube (D-024). */
+  impuestos: ConfiguracionImpuestos;
 }
 
 interface Aviso { id: number; texto: string; tipo: 'ok' | 'danger' | '' }

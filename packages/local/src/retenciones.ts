@@ -12,9 +12,16 @@ export interface ConceptoConfigurado extends ConceptoRetencion {
   activo: boolean;
 }
 
+/** UVT escrita por el usuario ("52.374" o "52374,50") en centavos. */
+export function leerUvt(valorPesos: string): Centavos {
+  let uvt: Centavos;
+  try { uvt = aCentavos(valorPesos.trim().replace(/\./g, '').replace(',', '.')); } catch { uvt = 0n; }
+  if (uvt <= 0n) throw new ErrorLocal('DATOS_INVALIDOS', 'La UVT debe ser un valor en pesos mayor que cero, p. ej. 49.799.');
+  return uvt;
+}
+
 export async function guardarUvt(base: BaseLocal, anio: number, valorPesos: string): Promise<void> {
-  const uvt = aCentavos(valorPesos.replace(/\./g, '').replace(',', '.'));
-  if (uvt <= 0n) throw new ErrorLocal('DATOS_INVALIDOS', 'La UVT debe ser mayor que cero.');
+  const uvt = leerUvt(valorPesos);
   await base.lote([s('insert into parametros_anuales (anio, uvt) values (?, ?) on conflict (anio) do update set uvt = excluded.uvt', anio, uvt)]);
 }
 
@@ -50,8 +57,19 @@ export interface DatosConcepto {
   aplicaEn: 'compras' | 'ventas';
 }
 
-/** Crea o actualiza un concepto. Valida la tarifa, la base en UVT y que la cuenta sea auxiliar y coherente. */
-export async function guardarConcepto(base: BaseLocal, empresa: string, d: DatosConcepto): Promise<void> {
+/** Concepto validado, como lo guardan la base local y el servidor (guardar_concepto_retencion). */
+export interface ConceptoValidado {
+  codigo: string;
+  tipo: ConceptoRetencion['tipo'];
+  nombre: string;
+  tarifa_ppm: number;
+  base_minima_uvt: string;
+  cuenta: string;
+  aplica_en: 'compras' | 'ventas';
+}
+
+/** Valida la tarifa, la base en UVT y que la cuenta sea auxiliar y coherente (las mismas reglas del servidor). */
+export async function validarConcepto(base: BaseLocal, empresa: string, d: DatosConcepto): Promise<ConceptoValidado> {
   const codigo = d.codigo.trim().toUpperCase();
   if (!/^[A-Z0-9-]{2,20}$/.test(codigo)) throw new ErrorLocal('DATOS_INVALIDOS', 'El código debe tener de 2 a 20 letras, números o guiones.');
   if (!d.nombre.trim()) throw new ErrorLocal('DATOS_INVALIDOS', 'Escriba un nombre para el concepto.');
@@ -64,12 +82,24 @@ export async function guardarConcepto(base: BaseLocal, empresa: string, d: Datos
   // Practicadas en compras: pasivo por pagar (2365/2367/2368). Recibidas en ventas: anticipo de impuestos (1355).
   if (d.aplicaEn === 'compras' && !cuenta.codigo.startsWith('23')) throw new ErrorLocal('DATOS_INVALIDOS', 'Las retenciones que se practican en compras van en una cuenta por pagar del grupo 23 (2365, 2367, 2368).');
   if (d.aplicaEn === 'ventas' && !cuenta.codigo.startsWith('13')) throw new ErrorLocal('DATOS_INVALIDOS', 'Las retenciones que le practican a la empresa en ventas van en el grupo 13 (1355).');
-  await base.lote([s(
+  return { codigo, tipo: d.tipo, nombre: d.nombre.trim(), tarifa_ppm: Number(tarifa), base_minima_uvt: base_, cuenta: d.cuenta, aplica_en: d.aplicaEn };
+}
+
+/** Crea o actualiza un concepto en este PC (modo demostración; en la nube lo guarda el servidor). */
+export async function guardarConcepto(base: BaseLocal, empresa: string, d: DatosConcepto): Promise<void> {
+  await base.lote([sentenciaConcepto(empresa, await validarConcepto(base, empresa, d), true)]);
+}
+
+/** Base mínima en UVT sin ceros de sobra ("10.000" del servidor → "10"; "27.500" → "27.5"). */
+export const normalizarBaseUvt = (v: string) => (v.includes('.') ? v.replace(/0+$/, '').replace(/\.$/, '') : v);
+
+export function sentenciaConcepto(empresa: string, c: ConceptoValidado, activo: boolean) {
+  return s(
     `insert into conceptos_retencion (empresa_id, codigo, tipo, nombre, tarifa_ppm, base_minima_uvt, cuenta, aplica_en, activo)
-     values (?, ?, ?, ?, ?, ?, ?, ?, 1)
+     values (?, ?, ?, ?, ?, ?, ?, ?, ?)
      on conflict (empresa_id, codigo) do update set tipo = excluded.tipo, nombre = excluded.nombre, tarifa_ppm = excluded.tarifa_ppm,
-       base_minima_uvt = excluded.base_minima_uvt, cuenta = excluded.cuenta, aplica_en = excluded.aplica_en, activo = 1`,
-    empresa, codigo, d.tipo, d.nombre.trim(), tarifa, base_, d.cuenta, d.aplicaEn)]);
+       base_minima_uvt = excluded.base_minima_uvt, cuenta = excluded.cuenta, aplica_en = excluded.aplica_en, activo = excluded.activo`,
+    empresa, c.codigo, c.tipo, c.nombre, c.tarifa_ppm, normalizarBaseUvt(c.base_minima_uvt), c.cuenta, c.aplica_en, activo ? 1 : 0);
 }
 
 export async function desactivarConcepto(base: BaseLocal, empresa: string, codigo: string): Promise<void> {

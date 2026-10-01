@@ -25,6 +25,10 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
   terceros: 'select * from public.terceros where empresa_id = $1 and id = any($2::uuid[])',
   productos: 'select id, empresa_id, codigo, nombre, tipo, unidad, cuenta_inventario, iva_tipo, iva_tarifa_ppm::int as iva_tarifa_ppm, precio_venta::text as precio_venta, activo from public.productos where empresa_id = $1 and id = any($2::uuid[])',
   centros_costo: 'select * from public.centros_costo where empresa_id = $1 and id = any($2::uuid[])',
+  uvt: `select u.anio, u.uvt::text as uvt from public.uvt_firma u join public.empresas e on e.firma_id = u.firma_id
+         where e.id = $1 and u.anio::text = any($2::text[])`,
+  conceptos_empresa: `select codigo, tipo, nombre, tarifa_ppm::int as tarifa_ppm, base_minima_uvt::text as base_minima_uvt, cuenta, aplica_en, activo
+                        from public.conceptos_empresa where empresa_id = $1 and codigo = any($2::text[])`,
   // Columnas explícitas y fechas como texto, igual que las entrega PostgREST.
   comprobantes: `
     select c.id, c.empresa_id, c.tipo, c.numero, c.fecha::text as fecha, c.concepto, c.estado, c.origen,

@@ -124,6 +124,17 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
             consulta = sb.from('periodos').select('*').eq('empresa_id', empresa).or(filtro);
             break;
           }
+          case 'uvt': {
+            // La UVT es de la firma de la empresa (RLS: miembros de la firma).
+            const { data: e, error: errEmpresa } = await sb.from('empresas').select('firma_id').eq('id', empresa).single();
+            if (errEmpresa) throw traducirError(errEmpresa);
+            consulta = sb.from('uvt_firma').select('anio,uvt::text').eq('firma_id', (e as { firma_id: string }).firma_id).in('anio', grupo.map(Number));
+            break;
+          }
+          case 'conceptos_empresa':
+            consulta = sb.from('conceptos_empresa').select('codigo,tipo,nombre,tarifa_ppm,base_minima_uvt::text,cuenta,aplica_en,activo')
+              .eq('empresa_id', empresa).in('codigo', grupo);
+            break;
           case 'productos':
             consulta = sb.from('productos').select('id,empresa_id,codigo,nombre,tipo,unidad,cuenta_inventario,iva_tipo,iva_tarifa_ppm,precio_venta::text,activo')
               .eq('empresa_id', empresa).in('id', grupo);

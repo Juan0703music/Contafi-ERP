@@ -1,4 +1,4 @@
-import { aCentavos, aplicarTarifa, dividirRedondeado, type Centavos, type TarifaPpm } from '@contafi/shared';
+import { aplicarTarifa, dividirRedondeado, type Centavos, type TarifaPpm } from '@contafi/shared';
 
 /**
  * REGLA DE ORO (sección 5.5): tarifas, bases mínimas en UVT y valor de la UVT vienen de tablas de
@@ -44,8 +44,11 @@ export interface ResultadoRetencion {
 }
 
 export function uvtACentavos(uvts: string, p: ParametrosAnuales): Centavos {
-  // aCentavos("10") = 1000 (centésimas de UVT) → × valor UVT / 100
-  return dividirRedondeado(aCentavos(uvts) * p.uvt, 100n);
+  // En milésimas de UVT (la base admite 3 decimales: 0,125 UVT no se redondea a 0,13) → × valor UVT / 1000
+  const m = /^(\d+)(?:[.,](\d{1,3}))?$/.exec(uvts.trim());
+  if (!m) throw new RangeError(`Cantidad de UVT inválida: "${uvts}"`);
+  const milesimas = BigInt(m[1]!) * 1000n + BigInt((m[2] ?? '').padEnd(3, '0'));
+  return dividirRedondeado(milesimas * p.uvt, 1000n);
 }
 
 /**

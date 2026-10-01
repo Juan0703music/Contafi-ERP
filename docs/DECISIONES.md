@@ -133,3 +133,12 @@ por `asignar_rol_empresa`, `cambiar_rol_firma` y `quitar_miembro`, que exigen ad
 protegen al propietario (no se le cambia el rol ni se le quita, y nadie se vuelve propietario desde la
 app), impiden quitarse a sí mismo y dejan auditoría. El alta de usuarios sigue siendo por invitación.
 
+## D-024 · La configuración tributaria vive en el servidor y se edita en línea (2026-10-01)
+La UVT de cada año (por firma: es la misma para todas sus empresas) y los conceptos de retención de cada
+empresa se guardan en el servidor (`guardar_uvt`, `guardar_concepto_retencion`, con contabilidad FULL y
+las mismas validaciones de la app) y bajan a todos los PC con la descarga de cambios. Antes eran de cada
+equipo: dos PC podían liquidar la misma compra con tarifas distintas. Se editan solo en línea, como el
+cierre de períodos: son cambios poco frecuentes y deben ser iguales en todos los equipos; sin conexión se
+siguen usando los últimos valores recibidos. En la demostración se guardan en el equipo. Las reglas que
+la importación aprende por proveedor (cuenta y retenciones) siguen siendo de cada PC.
+

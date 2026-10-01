@@ -184,7 +184,10 @@ export function claveRegistro(tabla: TablaSync, fila: Record<string, unknown>): 
   switch (tabla) {
     case 'cuentas':
     case 'tipos_comprobante':
+    case 'conceptos_empresa':
       return String(fila['codigo']);
+    case 'uvt':
+      return String(fila['anio']);
     case 'periodos':
       return `${fila['anio']}-${fila['mes']}`;
     default:
