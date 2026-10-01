@@ -1,27 +1,31 @@
 import { useState } from 'react';
 import { calcularDV } from '@contafi/shared';
-import { crearTercero, tercerosLocales, ErrorLocal } from '@contafi/local';
+import { crearTercero, tercerosLocales, ErrorLocal, PLANTILLA_TERCEROS, leerTercerosCsv, importarTerceros, type LecturaTerceros } from '@contafi/local';
 import { TIPOS_TERCERO } from '@contafi/sync';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, Modal, Vacio } from '../componentes/comunes.tsx';
 
-const TIPOS_DOC: Record<string, string> = { '31': 'NIT', '13': 'Cédula', '22': 'Cédula de extranjería', '41': 'Pasaporte' };
+const TIPOS_DOC: Record<string, string> = { '31': 'NIT', '13': 'Cédula', '22': 'Cédula de extranjería', '41': 'Pasaporte', '12': 'Tarjeta de identidad' };
 
 export function Terceros() {
   const { base, empresa, version } = useApp();
   const [buscar, setBuscar] = useState('');
   const [nuevo, setNuevo] = useState(false);
+  const [importar, setImportar] = useState(false);
   const { datos } = useDatos(() => tercerosLocales(base, empresa.id, buscar.trim()), [base, empresa.id, version, buscar]);
 
   return (
     <>
-      <div className="page-head"><h1>Terceros</h1><p>Clientes, proveedores y empleados. Se pueden crear sin conexión.</p></div>
+      <div className="page-head split">
+        <div><h1>Terceros</h1><p>Clientes, proveedores y empleados. Se pueden crear sin conexión.</p></div>
+        <div className="btn-row">
+          <button className="btn" onClick={() => setImportar(true)}><Icono nombre="file" />Importar CSV</button>
+          <button className="btn primary" onClick={() => setNuevo(true)}><Icono nombre="plus" />Nuevo tercero</button>
+        </div>
+      </div>
       <div className="panel">
         <div className="panel-head"><h2>Directorio</h2>
-          <div className="btn-row">
-            <input type="search" placeholder="Buscar por nombre o documento…" aria-label="Buscar tercero" value={buscar} onChange={(e) => setBuscar(e.target.value)} style={{ maxWidth: 260 }} />
-            <button className="btn primary sm" onClick={() => setNuevo(true)}><Icono nombre="plus" />Nuevo tercero</button>
-          </div></div>
+          <input type="search" placeholder="Buscar por nombre o documento…" aria-label="Buscar tercero" value={buscar} onChange={(e) => setBuscar(e.target.value)} style={{ maxWidth: 260 }} /></div>
         {datos?.length ? (
           <div className="table-wrap"><table>
             <thead><tr><th>Documento</th><th className="wrap">Nombre / razón social</th><th>Tipo</th><th>Correo</th><th>Estado</th></tr></thead>
@@ -38,6 +42,7 @@ export function Terceros() {
         ) : <Vacio icono="users">{datos ? 'No hay terceros que coincidan.' : 'Cargando…'}</Vacio>}
       </div>
       {nuevo && <NuevoTercero alCerrar={() => setNuevo(false)} />}
+      {importar && <ImportarTerceros alCerrar={() => setImportar(false)} />}
     </>
   );
 }
@@ -87,6 +92,56 @@ function NuevoTercero({ alCerrar }: { alCerrar: () => void }) {
           <label key={t} className="chip" style={{ cursor: 'pointer' }}>
             <input type="checkbox" checked={tipos.includes(t)} onChange={(e) => setTipos((x) => (e.target.checked ? [...x, t] : x.filter((y) => y !== t)))} /> {t}
           </label>))}</div></div>
+      {error && <div className="notice danger" role="alert">{error}</div>}
+    </Modal>
+  );
+}
+
+function ImportarTerceros({ alCerrar }: { alCerrar: () => void }) {
+  const { base, empresa, avisar, refrescar, sincronizarAhora } = useApp();
+  const [lectura, setLectura] = useState<LecturaTerceros | null>(null);
+  const [omitidos, setOmitidos] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  function descargarPlantilla() {
+    // Con BOM para que Excel reconozca las tildes.
+    const url = URL.createObjectURL(new Blob(['\uFEFF' + PLANTILLA_TERCEROS], { type: 'text/csv;charset=utf-8' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'plantilla-terceros.csv' });
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importar() {
+    setError(null);
+    try {
+      const r = await importarTerceros(base, empresa.id, lectura!.terceros);
+      avisar(`${r.creados} tercero(s) importado(s)${r.omitidos.length ? `, ${r.omitidos.length} ya existían` : ''}.`, 'ok');
+      refrescar();
+      void sincronizarAhora();
+      if (r.omitidos.length) { setOmitidos(r.omitidos); setLectura(null); } else alCerrar();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  const listos = lectura && lectura.errores.length === 0 && lectura.terceros.length > 0;
+  return (
+    <Modal titulo="Importar terceros" ancho="xl" alCerrar={alCerrar} pie={<>
+      <button className="btn" onClick={descargarPlantilla}><Icono nombre="file" />Descargar plantilla</button>
+      <button className="btn" onClick={alCerrar}>Cerrar</button>
+      <button className="btn primary" disabled={!listos} onClick={() => void importar()}>Importar {lectura?.terceros.length ? `${lectura.terceros.length} tercero(s)` : ''}</button></>}>
+      <p className="hint" style={{ marginTop: 0 }}>Una fila por tercero: tipo de documento (NIT, CC, CE, PASAPORTE o TI), número, DV (si se deja vacío se calcula), nombre, tipos separados por coma (cliente, proveedor, empleado, otro), correo, municipio y dirección. Guarda el archivo de Excel como <b>CSV</b>.</p>
+      <div className="field"><label htmlFor="iArchivo">Archivo CSV</label>
+        <input id="iArchivo" type="file" accept=".csv,text/csv" onChange={(e) => { const f = e.target.files?.[0]; if (f) void f.text().then((t) => { setOmitidos([]); setLectura(leerTercerosCsv(t)); }); }} /></div>
+      {lectura && lectura.errores.length > 0 && <div className="notice danger"><b>Corrija el archivo:</b><ul>{lectura.errores.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
+      {omitidos.length > 0 && <div className="notice"><b>No se importaron porque ya existían:</b><ul>{omitidos.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
+      {lectura && lectura.terceros.length > 0 && (
+        <div className="table-wrap"><table>
+          <thead><tr><th>Documento</th><th className="wrap">Nombre</th><th>Tipo</th><th>Correo</th></tr></thead>
+          <tbody>{lectura.terceros.map((t, i) => (
+            <tr key={i}><td className="mono">{TIPOS_DOC[t.tipo_doc] ?? t.tipo_doc} {t.numero}{t.dv != null ? `-${t.dv}` : ''}</td>
+              <td className="wrap">{t.nombre}</td><td>{(t.tipos ?? []).join(', ')}</td><td>{t.correo ?? ''}</td></tr>))}
+          </tbody></table></div>)}
       {error && <div className="notice danger" role="alert">{error}</div>}
     </Modal>
   );

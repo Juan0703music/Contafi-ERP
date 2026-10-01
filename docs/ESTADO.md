@@ -1,6 +1,6 @@
 # Estado del proyecto
 
-Última actualización: 30 de septiembre de 2026 (noche).
+Última actualización: 1 de octubre de 2026.
 
 Leyenda: ✅ hecho · 🟡 avanzado, falta una parte · ⬜ pendiente · 👤 lo tienes que hacer tú (o con el asesor o el abogado)
 
@@ -28,7 +28,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 |---|---|
 | Monorepo (pnpm) y CI (GitHub Actions) | ✅ (falta subirlo a GitHub) |
 | Entornos de Supabase (desarrollo, pruebas, producción) | 👤 ⬜ crear los proyectos |
-| Esquema de la sección 7 con migraciones, RLS y triggers de respaldo | ✅ núcleo contable, terceros, parámetros, documentos DIAN, auditoría, cambios · ⬜ facturas, inventario, tesorería |
+| Esquema de la sección 7 con migraciones, RLS y triggers de respaldo | ✅ núcleo contable, terceros, parámetros, documentos DIAN, auditoría, cambios, productos e inventario · ⬜ tesorería en el servidor (hoy los extractos son locales) |
 | Motor: reglas de la sección 8, IVA, retenciones, documentos, kardex, reportes, cierre anual | ✅ |
 | Corregir el error de fechas UTC del prototipo | ✅ `hoyBogota()` |
 | Pruebas: unitarias y por propiedades (fast-check) | ✅ |
@@ -47,7 +47,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Proyecto Tauri + React; diseño Liquid Glass en componentes | ✅ `apps/escritorio`, mismo CSS del prototipo, fuentes locales, tema claro/oscuro y "reducir transparencia" |
 | Capa local: SQLite cifrado, migraciones, cola de salida, autoguardado, respaldo diario, integridad | ✅ lógica en `@contafi/local` (probada) · 🟡 Rust con SQLCipher + llave en Windows + respaldos: escrito, **falta compilarlo en Windows (CI)** |
 | Sincronización con indicadores (en línea, sin conexión, pendientes, rechazados) | ✅ automática al abrir, cada minuto, al volver la red y al guardar |
-| Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros, sincronización · ⬜ libros diario y mayor, estados financieros |
+| Pantallas base: empresas, PUC, terceros, comprobantes, balances | ✅ panel, comprobantes (con autoguardado), plan de cuentas, balance de prueba, terceros (con importación masiva desde CSV), sincronización, libros y estados financieros |
 | Inicio de sesión con MFA | ✅ pantalla lista · ⬜ probar contra un Supabase real |
 | Modo demostración para pilotos (sin servidor) | ✅ `?demo`, con servidor simulado que asigna números |
 | Instalador firmado, actualizaciones automáticas y Sentry | ✅ **el CI compila el instalador de Windows** (`.exe` de 4,9 MB y `.msi` de 6,1 MB, incluye SQLCipher) · ⬜ firma (certificado), actualizador (llaves) y Sentry (DSN) |
@@ -65,6 +65,9 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Conciliación bancaria con importación de extractos | ✅ CSV de los bancos (valor con signo o débito/crédito), emparejamiento automático, manual, y registro de cargos desde el extracto · ⬜ formatos específicos por banco si alguno no se reconoce |
 | Reportes NIIF y libros en PDF y Excel | ✅ libro diario, mayor y balances, auxiliares, situación financiera y resultados · ⬜ flujo de efectivo y cambios en el patrimonio (versión 1.x) |
 | Panel multi-empresa del contador | ✅ |
+| Ventas y compras manuales (sin facturación electrónica propia) | ✅ factura de venta y de compra con IVA por tarifa y retenciones, cartera por edades (FIFO), recaudos y pagos parciales |
+| Inventario básico | ✅ productos, kárdex por costo promedio derivado de los asientos (débito = entrada, crédito = salida), costo de ventas automático al facturar, aviso de existencias negativas; sincroniza entre PC |
+| Importación masiva de terceros | ✅ desde CSV (Excel), calcula el DV, valida por fila con los mismos límites del servidor y omite los que ya existen |
 
 **Criterio de salida:** el asesor valida los reportes con una empresa real de prueba (👤 ⬜).
 
@@ -73,8 +76,8 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Tarea | Estado |
 |---|---|
 | Proceso auxiliar llama.cpp, descarga del modelo y detección de hardware | ✅ en Rust (compila en Windows): descarga reanudable con SHA-256, RAM, 127.0.0.1 + puerto aleatorio + token, apagado al salir y tras 5 min sin uso · 👤 ⬜ probarlo en un PC con Windows |
-| Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 13 herramientas y alertas por reglas · ⬜ inventario bajo (no hay inventario aún) y calendario tributario (requiere los vencimientos del año como parámetros) |
-| Banco de preguntas y evaluación (12.5) | ✅ 42 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
+| Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 14 herramientas (incluye inventario bajo) y alertas por reglas (incluye existencias negativas) · ⬜ calendario tributario (requiere los vencimientos del año como parámetros) |
+| Banco de preguntas y evaluación (12.5) | ✅ 44 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
 
 **Medición real** (Qwen3-4B Q4_K_M en un portátil i5-8265U, 4 núcleos, sin tarjeta gráfica; Linux):
 
@@ -112,13 +115,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 12. La versión "latest" de llama.cpp en GitHub no trae binarios: el script de la Fase 0 habría fallado. Ahora usa una versión fija verificada.
 13. El modelo pequeño tendía a responder con otra pregunta en lugar de consultar los datos (8 de 10 fallos): instrucciones con ejemplos y reintento con herramienta obligatoria.
 
-## Pruebas automáticas (30/09/2026) — 143 en total
+## Pruebas automáticas (01/10/2026) — 178 en total
 - `@contafi/shared`: 15 ✓
-- `@contafi/motor`: 38 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
+- `@contafi/motor`: 46 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
 - `@contafi/dian-xml`: 11 ✓
-- `@contafi/sync`: 20 ✓
-- `@contafi/local`: 31 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa)
-- `supabase` (PGlite con privilegios de Supabase): 28 ✓
+- `@contafi/sync`: 21 ✓
+- `@contafi/local`: 39 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros)
+- `supabase` (PGlite con privilegios de Supabase): 31 ✓
+- `@contafi/jarvis`: 15 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 8 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 13 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

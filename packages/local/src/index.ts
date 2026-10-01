@@ -9,3 +9,4 @@ export * from './bancos.ts';
 export * from './resumen.ts';
 export * from './ventas.ts';
 export * from './inventario.ts';
+export * from './importar-terceros.ts';
