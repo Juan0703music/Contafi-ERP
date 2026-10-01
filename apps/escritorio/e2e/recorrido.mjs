@@ -262,6 +262,16 @@ await page.type('input[aria-label="Buscar tercero"]', 'Davivienda');
 await new Promise((r) => setTimeout(r, 600));
 const importado = await page.$eval('tbody tr', (n) => n.textContent);
 verificar('Importación de terceros', importado.includes('860034313-7') && omitidos.includes('El Roble'), importado);
+// Editar: responsabilidades fiscales del RUT
+await page.click('button[aria-label="Editar Banco Davivienda S.A."]');
+await page.waitForSelector('#tMunicipio');
+await page.click('input[aria-label^="O-13"]');
+await page.click('input[aria-label^="O-23"]');
+await foto('09d-editar-tercero');
+await boton('Guardar');
+await new Promise((r) => setTimeout(r, 800));
+const editado = await page.$eval('tbody tr', (n) => n.textContent);
+verificar('Responsabilidades fiscales', editado.includes('O-13 O-23'), editado);
 await ir('Plan de cuentas');
 await foto('10-cuentas');
 // PUC personalizable: auxiliar bajo 112005; el padre deja de ser auxiliar

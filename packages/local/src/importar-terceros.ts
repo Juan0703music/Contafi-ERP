@@ -1,12 +1,12 @@
-import { calcularDV, limpiarNit } from '@contafi/shared';
+import { RESPONSABILIDADES_FISCALES, calcularDV, esResponsabilidadConocida, limpiarNit } from '@contafi/shared';
 import { TIPOS_TERCERO, terceroSync } from '@contafi/sync';
 import type { BaseLocal } from './base.ts';
 import { ErrorLocal, crearTercero, type DatosTercero } from './contabilidad.ts';
 
 export const PLANTILLA_TERCEROS = [
-  'tipo_documento;numero;dv;nombre;tipos;correo;municipio;direccion',
-  'NIT;830945221;8;Distribuciones El Roble S.A.S.;cliente;compras@elroble.co;Bogotá;Cra 15 # 93-47',
-  'CC;1032556789;;Laura Restrepo Gómez;cliente,empleado;;Medellín;',
+  'tipo_documento;numero;dv;nombre;tipos;correo;municipio;direccion;responsabilidades',
+  'NIT;830945221;8;Distribuciones El Roble S.A.S.;cliente;compras@elroble.co;Bogotá;Cra 15 # 93-47;O-13,O-23',
+  'CC;1032556789;;Laura Restrepo Gómez;cliente,empleado;;Medellín;;R-99-PN',
 ].join('\r\n');
 
 const TIPOS_DOC: Record<string, string> = { NIT: '31', CC: '13', CE: '22', PASAPORTE: '41', PA: '41', TI: '12', '31': '31', '13': '13', '22': '22', '41': '41', '12': '12' };
@@ -28,7 +28,7 @@ export function leerTercerosCsv(texto: string): LecturaTerceros {
   const vistos = new Set<string>();
   filas.forEach((fila, i) => {
     const n = i + 1;
-    const [tipoDoc = '', numero = '', dv = '', nombre = '', tipos = '', correo = '', municipio = '', direccion = ''] =
+    const [tipoDoc = '', numero = '', dv = '', nombre = '', tipos = '', correo = '', municipio = '', direccion = '', resp = ''] =
       fila.split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
     if (i === 0 && /tipo/i.test(tipoDoc)) return; // encabezado
     const td = TIPOS_DOC[tipoDoc.toUpperCase()];
@@ -46,11 +46,17 @@ export function leerTercerosCsv(texto: string): LecturaTerceros {
     const invalidos = listaTipos.filter((t) => !(TIPOS_TERCERO as readonly string[]).includes(t));
     if (invalidos.length) { errores.push(`Fila ${n}: tipo de tercero "${invalidos.join(', ')}" no válido (cliente, proveedor, empleado, otro).`); return; }
     if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) { errores.push(`Fila ${n}: correo inválido "${correo}".`); return; }
+    const responsabilidades = [...new Set(resp.split(/[,|/ ]+/).map((r) => r.trim().toUpperCase()).filter(Boolean))];
+    const desconocidas = responsabilidades.filter((r) => !esResponsabilidadConocida(r));
+    if (desconocidas.length) {
+      errores.push(`Fila ${n}: responsabilidad fiscal "${desconocidas.join(', ')}" no reconocida (use ${Object.keys(RESPONSABILIDADES_FISCALES).join(', ')}).`);
+      return;
+    }
     const clave = `${td}:${num}`;
     if (vistos.has(clave)) { errores.push(`Fila ${n}: el documento ${num} está repetido en el archivo.`); return; }
     const tercero: DatosTercero = {
       tipo_doc: td, numero: num, dv: digito, nombre, tipos: listaTipos as DatosTercero['tipos'],
-      correo: correo || null, municipio: municipio || null, direccion: direccion || null,
+      correo: correo || null, municipio: municipio || null, direccion: direccion || null, responsabilidades,
     };
     // Los mismos límites que valida el servidor (largo del nombre, dirección...), para no fallar a mitad de la importación.
     const r = terceroSync.safeParse({ ...tercero, id: '00000000-0000-4000-8000-000000000000' });

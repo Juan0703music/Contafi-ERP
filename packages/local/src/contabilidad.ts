@@ -114,6 +114,9 @@ export async function editarTercero(base: BaseLocal, id: string, datos: DatosTer
   if (!actual) throw new ErrorLocal('NO_EXISTE', 'El tercero no existe.');
   const t: TerceroSync = { tipos: [], responsabilidades: [], activo: true, ...datos, id };
   validarTercero(t);
+  const [dup] = await base.consultar<{ nombre: string }>(
+    'select nombre from terceros where empresa_id = ? and tipo_doc = ? and numero = ? and id <> ?', [actual.empresa_id, t.tipo_doc, t.numero, id]);
+  if (dup) throw new ErrorLocal('TERCERO_DUPLICADO', `Ya existe otro tercero con ese documento: ${dup.nombre}.`);
   await base.lote(sentenciasTercero(actual.empresa_id, t, false));
 }
 

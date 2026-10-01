@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { migrar, guardarEmpresas, leerTercerosCsv, importarTerceros, tercerosLocales, PLANTILLA_TERCEROS, crearTercero } from '../src/index.ts';
+import { migrar, guardarEmpresas, leerTercerosCsv, importarTerceros, tercerosLocales, PLANTILLA_TERCEROS, crearTercero, editarTercero } from '../src/index.ts';
 import { baseNode } from './ayudas.ts';
 
 describe('importación masiva de terceros', () => {
@@ -7,8 +7,8 @@ describe('importación masiva de terceros', () => {
     const r = leerTercerosCsv(PLANTILLA_TERCEROS);
     expect(r.errores).toEqual([]);
     expect(r.terceros).toEqual([
-      expect.objectContaining({ tipo_doc: '31', numero: '830945221', dv: 8, tipos: ['cliente'], correo: 'compras@elroble.co' }),
-      expect.objectContaining({ tipo_doc: '13', numero: '1032556789', dv: null, tipos: ['cliente', 'empleado'] }),
+      expect.objectContaining({ tipo_doc: '31', numero: '830945221', dv: 8, tipos: ['cliente'], correo: 'compras@elroble.co', responsabilidades: ['O-13', 'O-23'] }),
+      expect.objectContaining({ tipo_doc: '13', numero: '1032556789', dv: null, tipos: ['cliente', 'empleado'], responsabilidades: ['R-99-PN'] }),
     ]);
     expect(leerTercerosCsv('NIT;800.197.268;;DIAN;otro').terceros[0]).toMatchObject({ numero: '800197268', dv: 4 });
   });
@@ -45,5 +45,20 @@ describe('límites del servidor al importar terceros', () => {
     expect(r.terceros).toEqual([]);
     expect(r.errores[0]).toMatch(/^Fila 1: nombre /);
     expect(leerTercerosCsv('CC;123456;;Ana;cliente,cliente').terceros[0]?.tipos).toEqual(['cliente']);
+    expect(leerTercerosCsv('NIT;900123456;;X;proveedor;;;;o-15 O-99').errores).toEqual([
+      'Fila 1: responsabilidad fiscal "O-99" no reconocida (use O-13, O-15, O-23, O-47, R-99-PN).']);
+  });
+});
+
+describe('editar terceros', () => {
+  it('guarda responsabilidades y no permite tomar el documento de otro tercero', async () => {
+    const base = baseNode();
+    await migrar(base);
+    await guardarEmpresas(base, [{ id: 'e1', firma_id: 'f', nit: '900123456', dv: 8, razon_social: 'Andina' }]);
+    await crearTercero(base, 'e1', { tipo_doc: '31', numero: '830945221', dv: 8, nombre: 'El Roble' });
+    const id = await crearTercero(base, 'e1', { tipo_doc: '13', numero: '1032556789', nombre: 'Laura' });
+    await editarTercero(base, id, { tipo_doc: '13', numero: '1032556789', nombre: 'Laura Restrepo', responsabilidades: ['R-99-PN'], tipos: ['empleado'] });
+    expect((await tercerosLocales(base, 'e1', 'Laura'))[0]).toMatchObject({ nombre: 'Laura Restrepo', responsabilidades: ['R-99-PN'], tipos: ['empleado'] });
+    await expect(editarTercero(base, id, { tipo_doc: '31', numero: '830945221', dv: 8, nombre: 'Laura' })).rejects.toThrow(/otro tercero.*El Roble/);
   });
 });

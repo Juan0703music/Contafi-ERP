@@ -68,7 +68,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Panel multi-empresa del contador | ✅ |
 | Ventas y compras manuales (sin facturación electrónica propia) | ✅ factura de venta y de compra con IVA por tarifa y retenciones, cartera por edades (FIFO), recaudos y pagos parciales |
 | Inventario básico | ✅ productos, kárdex por costo promedio derivado de los asientos (débito = entrada, crédito = salida), costo de ventas automático al facturar, aviso de existencias negativas; sincroniza entre PC |
-| Importación masiva de terceros | ✅ desde CSV (Excel), calcula el DV, valida por fila con los mismos límites del servidor y omite los que ya existen |
+| Terceros: responsabilidades fiscales e importación masiva | ✅ edición con responsabilidades del RUT (O-13, O-15, O-23, O-47, R-99-PN), municipio y dirección; importación desde CSV (Excel) que calcula el DV, valida por fila con los mismos límites del servidor y omite los que ya existen |
 | PUC personalizable | ✅ crear cuentas, subcuentas y auxiliares (heredan la naturaleza), editar e inactivar; también sin conexión; reglas en el servidor (D-022) |
 
 **Criterio de salida:** el asesor valida los reportes con una empresa real de prueba (👤 ⬜).
@@ -121,14 +121,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 
-## Pruebas automáticas (01/10/2026) — 198 en total
+## Pruebas automáticas (01/10/2026) — 200 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 47 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 23 ✓
-- `@contafi/local`: 43 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria compartida)
+- `@contafi/local`: 45 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria compartida)
 - `supabase` (PGlite con privilegios de Supabase): 43 ✓
 - `@contafi/jarvis`: 15 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 16 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 17 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC
