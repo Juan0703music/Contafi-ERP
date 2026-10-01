@@ -1,0 +1,23 @@
+{
+  "name": "@contafi/jarvis",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Asesor de IA local (sección 12): herramientas del motor, alertas por reglas, asistente con verificación de cifras y evaluación.",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc -p .",
+    "evaluar": "node scripts/evaluar.ts"
+  },
+  "dependencies": {
+    "@contafi/local": "workspace:*",
+    "@contafi/motor": "workspace:*",
+    "@contafi/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

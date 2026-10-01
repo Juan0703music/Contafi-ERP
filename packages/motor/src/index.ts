@@ -9,3 +9,4 @@ export * from './cierre.ts';
 export * from './permisos.ts';
 export * from './libros.ts';
 export * from './conciliacion.ts';
+export * from './cartera.ts';

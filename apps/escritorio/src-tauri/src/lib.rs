@@ -1,4 +1,5 @@
 mod base;
+mod ia;
 mod llave;
 
 use std::sync::Mutex;
@@ -7,12 +8,23 @@ use std::sync::Mutex;
 pub fn run() {
     tauri::Builder::default()
         .manage(base::EstadoBase(Mutex::new(None)))
+        .manage(ia::EstadoIA(Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             base::abrir_base,
             base::cerrar_base,
             base::sql_consultar,
-            base::sql_lote
+            base::sql_lote,
+            ia::ia_hardware,
+            ia::ia_archivos,
+            ia::ia_descargar,
+            ia::ia_iniciar,
+            ia::ia_detener
         ])
-        .run(tauri::generate_context!())
-        .expect("error al iniciar Contafi");
+        .build(tauri::generate_context!())
+        .expect("error al iniciar Contafi")
+        .run(|app, evento| {
+            if let tauri::RunEvent::Exit = evento {
+                ia::al_salir(app);
+            }
+        });
 }

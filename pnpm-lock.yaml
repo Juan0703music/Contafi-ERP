@@ -143,6 +143,28 @@ importers:
         specifier: ^3.2.0
         version: 3.2.7(@types/node@24.19.0)(lightningcss@1.33.0)
 
+  packages/jarvis:
+    dependencies:
+      '@contafi/local':
+        specifier: workspace:*
+        version: link:../local
+      '@contafi/motor':
+        specifier: workspace:*
+        version: link:../motor
+      '@contafi/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.0
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+      vitest:
+        specifier: ^3.2.0
+        version: 3.2.7(@types/node@24.19.0)(lightningcss@1.33.0)
+
   packages/local:
     dependencies:
       '@contafi/dian-xml':
