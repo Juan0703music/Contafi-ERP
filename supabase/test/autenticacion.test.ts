@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
-import { PUC_SEMILLA, aceptaMovimientoEnPlantilla, calcularDV } from '@contafi/shared';
+import { aceptaMovimientoEnPlantilla, calcularDV, plantillaCompletaPuc } from '@contafi/shared';
 import { crearBaseDePrueba, como, registrarUsuario, type Sesion } from './entorno.ts';
 import { generarPlantillaPuc, RUTA_MIGRACION } from '../scripts/generar-plantilla-puc.ts';
 
@@ -60,9 +60,9 @@ describe('firmas, MFA obligatorio para administradores y alta de empresas', () =
     empresa = (await uno<{ e: string }>(ana2, `select public.crear_empresa($1, '900.123.456', 8::smallint, 'Comercializadora Andina SAS') as e`, [firma])).e;
     const cuentas = await como<{ codigo: string; nivel: number; acepta_movimiento: boolean; exige_tercero: boolean }>(db, ana2,
       'select codigo, nivel, acepta_movimiento, exige_tercero from public.cuentas where empresa_id = $1', [empresa]);
-    expect(cuentas).toHaveLength(PUC_SEMILLA.length);
+    expect(cuentas).toHaveLength(plantillaCompletaPuc().length);
     for (const c of cuentas) {
-      expect(c.acepta_movimiento, c.codigo).toBe(aceptaMovimientoEnPlantilla(c.codigo)); // SQL y TypeScript coinciden
+      expect(c.acepta_movimiento, c.codigo).toBe(aceptaMovimientoEnPlantilla(c.codigo, plantillaCompletaPuc())); // SQL y TypeScript coinciden
     }
     expect(cuentas.find((c) => c.codigo === '130505')).toMatchObject({ nivel: 4, acepta_movimiento: true, exige_tercero: true });
     const tipos = await como<{ codigo: string }>(db, ana2, 'select codigo from public.tipos_comprobante where empresa_id = $1 order by codigo', [empresa]);

@@ -25,8 +25,8 @@ export function SaldosIniciales() {
 
   async function crear() {
     try {
-      const { numeroLocal } = await crearSaldosIniciales(base, empresa.id, fecha, lectura!.lineas);
-      avisar(`Comprobante de saldos iniciales ${numeroLocal} creado.`, 'ok');
+      const { numeroLocal, tercerosCreados } = await crearSaldosIniciales(base, empresa.id, fecha, lectura!.lineas, lectura!.tercerosNuevos);
+      avisar(`Comprobante de saldos iniciales ${numeroLocal} creado${tercerosCreados ? ` y ${tercerosCreados} tercero(s) nuevo(s)` : ''}.`, 'ok');
       refrescar();
       void sincronizarAhora();
       ir('comprobantes');
@@ -46,7 +46,7 @@ export function SaldosIniciales() {
         <div className="panel-body">
           <ol className="hint" style={{ marginTop: 0 }}>
             <li>Descarga la plantilla y ábrela en Excel: una fila por cuenta auxiliar (y por tercero cuando la cuenta lo exige).</li>
-            <li>Los terceros deben existir antes en Contafi (se buscan por NIT o cédula).</li>
+            <li>Los terceros se buscan por NIT o cédula. Si alguno no existe, escribe su nombre (y, si no es NIT, el tipo de documento: CC, CE…) y se crea al guardar.</li>
             <li>Guarda como <b>CSV</b> y cárgalo aquí. Débitos y créditos deben sumar lo mismo.</li>
           </ol>
           <div className="filtros-reporte">
@@ -57,11 +57,13 @@ export function SaldosIniciales() {
         </div>
         {lectura ? (
           <>
+            {lectura.tercerosNuevos.length > 0 && <div className="panel-body" style={{ paddingTop: 0 }}><div className="notice" style={{ margin: 0 }}>
+              <b>Se crearán {lectura.tercerosNuevos.length} tercero(s) nuevo(s):</b> {lectura.tercerosNuevos.map((t) => `${t.nombre} (${t.numero})`).join(', ')}.</div></div>}
             {lectura.errores.length > 0 && <div className="panel-body" style={{ paddingTop: 0 }}><div className="notice danger" style={{ margin: 0 }}><b>Corrija el archivo:</b><ul>{lectura.errores.map((e, i) => <li key={i}>{e}</li>)}</ul></div></div>}
             <div className="table-wrap"><table>
               <thead><tr><th>Cuenta</th><th className="wrap">Nota</th><th className="num">Débito</th><th className="num">Crédito</th></tr></thead>
               <tbody>
-                {lectura.lineas.map((l, i) => <tr key={i}><td className="mono">{l.cuenta}</td><td className="wrap">{l.nota}</td>
+                {lectura.lineas.map((l, i) => <tr key={i}><td className="mono">{l.cuenta}</td><td className="wrap">{l.nota}{l.terceroId?.startsWith('nuevo:') ? <span className="pill draft" style={{ marginLeft: 6 }}>tercero nuevo</span> : ''}</td>
                   <td className="num mono">{l.debito ? dinero(l.debito) : ''}</td><td className="num mono">{l.credito ? dinero(l.credito) : ''}</td></tr>)}
                 <tr className="fila-total"><td colSpan={2}>Totales</td><td className="num mono">{dinero(lectura.totalDebitos)}</td><td className="num mono">{dinero(lectura.totalCreditos)}</td></tr>
               </tbody></table></div>

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
+import { ESTRUCTURA_PUC, plantillaCompletaPuc } from '@contafi/shared';
 import { crearBaseDePrueba, como, registrarUsuario, type Sesion } from './entorno.ts';
 
 const ana: Sesion = { sub: randomUUID(), email: 'ana@firma.co', aal: 'aal2' };
@@ -26,6 +27,25 @@ beforeAll(async () => {
       [firma, u.email, JSON.stringify([{ empresa_id: empresa, rol }])]);
     await como(db, u, 'select public.aceptar_invitacion($1)', [inv.r.token]);
   }
+});
+
+describe('estructura completa del PUC (Decreto 2650)', () => {
+  it('toda empresa trae las 9 clases y todos los grupos, con su naturaleza y sin recibir movimientos', async () => {
+    const filas = await como<{ codigo: string; naturaleza: string; acepta_movimiento: boolean }>(db, ana,
+      'select codigo, naturaleza, acepta_movimiento from public.cuentas where empresa_id = $1 and length(codigo) <= 2', [empresa]);
+    expect(filas.map((f) => f.codigo).sort()).toEqual(ESTRUCTURA_PUC.map((c) => c.codigo).sort());
+    for (const c of ESTRUCTURA_PUC) expect(filas.find((f) => f.codigo === c.codigo)).toMatchObject({ naturaleza: c.naturaleza, acepta_movimiento: false });
+    // La plantilla del servidor es la misma que usa la app (semilla + estructura)
+    const plantilla = await como<{ codigo: string }>(db, ana, 'select codigo from public.plantilla_puc order by codigo');
+    expect(plantilla.map((p) => p.codigo)).toEqual(plantillaCompletaPuc().map((c) => c.codigo));
+  });
+
+  it('ya se pueden crear cuentas en grupos que la semilla no traía (12 Inversiones, 16 Intangibles)', async () => {
+    await registrar(contador, { codigo: '1205', nombre: 'Acciones' });
+    await registrar(contador, { codigo: '120505', nombre: 'Acciones en sociedades nacionales' });
+    expect(await cuenta('120505')).toMatchObject({ naturaleza: 'D', acepta_movimiento: true });
+    expect(await cuenta('1205')).toMatchObject({ acepta_movimiento: false });
+  });
 });
 
 describe('PUC personalizable en el servidor', () => {

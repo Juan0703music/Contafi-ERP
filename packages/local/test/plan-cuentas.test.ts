@@ -6,7 +6,7 @@ import type { Linea } from '@contafi/motor';
 import { crearBaseDePrueba, registrarUsuario, type Sesion } from '@contafi/supabase/test/entorno';
 import {
   migrar, guardarEmpresas, crearComprobante, leerComprobantes, sincronizar, planDeCuentas, crearCuenta, editarCuenta,
-  descartarCuentaRechazada,
+  descartarCuentaRechazada, leerPucCsv, importarPuc,
 } from '../src/index.ts';
 import { baseNode, enServidor, transporteDirecto } from './ayudas.ts';
 
@@ -93,5 +93,25 @@ describe('PUC personalizable', () => {
     await descartarCuentaRechazada(pc.base, empresa, '11200501');
     expect(await pc.cuenta('11200501')).toMatchObject({ nombre: 'Davivienda ahorros 9981-2', errorSync: null });
     expect((await pc.sync()).enviados).toBe(0);
+  });
+});
+
+describe('importar el plan de cuentas (migración asistida)', () => {
+  it('lee el CSV y crea solo lo que falta, de padre a hijo, aunque el archivo venga desordenado', async () => {
+    const pc = await nuevoPC(ana);
+    const lectura = leerPucCsv(['Código;Nombre;Exige tercero', '12050501;Acciones Ecopetrol;si', '1205;Acciones;', '120505;Acciones sociedades nacionales;no',
+      '1105.05;Caja general;', '13;Deudores', '123;Malo;', '1210;;', '16;Inventario que no es grupo'].join('\n'));
+    expect(lectura.errores).toEqual(['Fila 7: código "123" inválido (1, 2, 4, 6, 8, 10 o 12 dígitos).', 'Fila 8: falta el nombre de la cuenta 1210.']);
+    const r = await importarPuc(pc.base, empresa, lectura.filas);
+    expect(r).toEqual({ creadas: 3, existentes: 3, errores: [] });
+    expect(await pc.cuenta('12050501')).toMatchObject({ exigeTercero: true, aceptaMovimiento: true, pendiente: true });
+    expect(await pc.cuenta('120505')).toMatchObject({ aceptaMovimiento: false });
+    expect(await pc.cuenta('16')).toMatchObject({ nombre: 'Intangibles' }); // el grupo existente no se toca
+    // Sin padre y con un padre que ya tiene movimientos: se informa por cuenta
+    const r2 = await importarPuc(pc.base, empresa, [{ codigo: '13809901', nombre: 'Sin padre', exigeTercero: false }, { codigo: '1120050101', nombre: 'Bajo una con movimientos', exigeTercero: false }]);
+    expect(r2.creadas).toBe(0);
+    expect(r2.errores[0]).toMatch(/^13809901 Sin padre: Primero cree la cuenta 138099/);
+    expect(r2.errores[1]).toMatch(/1120050101.*ya tiene movimientos/);
+    expect((await pc.sync()).cuentasRechazadas).toBe(0);
   });
 });

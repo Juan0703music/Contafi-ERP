@@ -92,6 +92,7 @@ export async function crearCuenta(base: BaseLocal, empresa: string, codigo: stri
 
 /** Cambia nombre, exigencias o estado. El código, la naturaleza y el nivel no cambian. */
 export async function editarCuenta(base: BaseLocal, empresa: string, codigo: string, datos: DatosCuenta): Promise<void> {
+  if (codigo.length <= 2) throw new ErrorLocal('CODIGO_INVALIDO', 'Las clases y los grupos los fija el PUC (Decreto 2650); no se modifican.');
   const nombre = validarNombre(datos.nombre);
   const [actual] = await base.consultar<{ activa: number }>('select activa from cuentas where empresa_id = ? and codigo = ?', [empresa, codigo]);
   if (!actual) throw new ErrorLocal('NO_EXISTE', `La cuenta ${codigo} no existe.`);
@@ -141,4 +142,64 @@ export function sentenciasQuitarCuentaLocal(empresa: string, codigo: string): Se
                       select 1 from cuentas h where h.empresa_id = cuentas.empresa_id and h.codigo like cuentas.codigo || '%' and h.codigo <> cuentas.codigo)
                     where empresa_id = ? and codigo = ?`, empresa, padre)] : []),
   ];
+}
+
+// ------------------------------------------------------------------ importación (migración asistida)
+
+export const PLANTILLA_PUC = [
+  'codigo;nombre;exige_tercero',
+  '1205;Acciones;no',
+  '120505;Acciones en sociedades nacionales;no',
+  '11100501;Bancolombia cuenta corriente 123-456;no',
+].join('\r\n');
+
+export interface FilaPuc { codigo: string; nombre: string; exigeTercero: boolean }
+export interface LecturaPuc { filas: FilaPuc[]; errores: string[] }
+
+/** Lee el plan de cuentas exportado del software anterior (código, nombre y, opcional, si exige tercero). */
+export function leerPucCsv(texto: string): LecturaPuc {
+  const lineas = texto.replace(/^﻿/, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const sep = [';', '\t', ','].find((x) => (lineas[0] ?? '').includes(x)) ?? ';';
+  const filas: FilaPuc[] = [];
+  const errores: string[] = [];
+  const vistos = new Set<string>();
+  lineas.forEach((l, i) => {
+    const n = i + 1;
+    const [cod = '', nombre = '', exige = ''] = l.split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
+    const codigo = cod.replace(/[.\s-]/g, '');
+    if (i === 0 && !/^\d/.test(codigo)) return; // encabezado
+    if (!/^[1-9]\d*$/.test(codigo) || ![1, 2, 4, 6, 8, 10, 12].includes(codigo.length)) {
+      errores.push(`Fila ${n}: código "${cod}" inválido (1, 2, 4, 6, 8, 10 o 12 dígitos).`); return;
+    }
+    if (!nombre || nombre.length > 200) { errores.push(`Fila ${n}: falta el nombre de la cuenta ${codigo}.`); return; }
+    if (vistos.has(codigo)) return; // repetida en el archivo
+    vistos.add(codigo);
+    filas.push({ codigo, nombre, exigeTercero: /^(s|si|sí|x|1|true)$/i.test(exige) });
+  });
+  if (!filas.length && !errores.length) errores.push('El archivo no tiene cuentas.');
+  return { filas, errores };
+}
+
+export interface ResultadoImportacionPuc { creadas: number; existentes: number; errores: string[] }
+
+/**
+ * Crea las cuentas que faltan, de padre a hijo, con las mismas reglas que crearCuenta (y sin conexión:
+ * viajan al servidor al sincronizar). Las que ya existen se conservan como están.
+ */
+export async function importarPuc(base: BaseLocal, empresa: string, filas: readonly FilaPuc[]): Promise<ResultadoImportacionPuc> {
+  const existentes = new Set((await planDeCuentas(base, empresa)).map((c) => c.codigo));
+  const r: ResultadoImportacionPuc = { creadas: 0, existentes: 0, errores: [] };
+  const ordenadas = [...filas].sort((a, b) => a.codigo.length - b.codigo.length || a.codigo.localeCompare(b.codigo));
+  for (const f of ordenadas) {
+    if (existentes.has(f.codigo)) { r.existentes++; continue; }
+    if (f.codigo.length <= 2) { r.errores.push(`${f.codigo} ${f.nombre}: las clases y los grupos los fija el PUC; este no existe en el Decreto 2650.`); continue; }
+    try {
+      await crearCuenta(base, empresa, f.codigo, { nombre: f.nombre, exigeTercero: f.exigeTercero });
+      existentes.add(f.codigo);
+      r.creadas++;
+    } catch (e) {
+      r.errores.push(`${f.codigo} ${f.nombre}: ${(e as Error).message}`);
+    }
+  }
+  return r;
 }

@@ -1,4 +1,4 @@
-import { PUC_SEMILLA, aceptaMovimientoEnPlantilla, aCentavos, calcularDV, nivelPuc } from '@contafi/shared';
+import { aceptaMovimientoEnPlantilla, aCentavos, calcularDV, nivelPuc, plantillaCompletaPuc } from '@contafi/shared';
 import { validarComprobante, formatearConsecutivo, type Linea } from '@contafi/motor';
 import {
   migrar, guardarEmpresas, crearTercero, crearComprobante, contextoLocal, s,
@@ -52,11 +52,12 @@ export async function crearEmpresaDemo(base: BaseLocal, empresa: EmpresaLocal): 
 }
 
 async function sembrarCatalogos(base: BaseLocal, e: string): Promise<void> {
+  const plantilla = plantillaCompletaPuc();
   await base.lote([
-    ...PUC_SEMILLA.map((c) => s(
+    ...plantilla.map((c) => s(
       `insert into cuentas (empresa_id, codigo, nombre, naturaleza, nivel, acepta_movimiento, exige_tercero, exige_centro_costo, activa)
        values (?, ?, ?, ?, ?, ?, ?, 0, 1)`,
-      e, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo), c.exigeTercero)),
+      e, c.codigo, c.nombre, c.naturaleza, nivelPuc(c.codigo), aceptaMovimientoEnPlantilla(c.codigo, plantilla), c.exigeTercero)),
     ...TIPOS.map(([codigo, nombre]) => s('insert into tipos_comprobante (empresa_id, codigo, nombre, prefijo) values (?, ?, ?, ?)', e, codigo, nombre, codigo)),
   ]);
 }

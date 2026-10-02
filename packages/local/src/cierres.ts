@@ -1,7 +1,7 @@
-import { leerMontoUsuario, limpiarNit, type FechaISO } from '@contafi/shared';
+import { calcularDV, leerMontoUsuario, limpiarNit, type FechaISO } from '@contafi/shared';
 import { ErrorMotor, estadoResultados, lineasCierreAnual, type Cuenta, type Linea } from '@contafi/motor';
 import { s, type BaseLocal } from './base.ts';
-import { comprobantesParaReportes, crearComprobante, cuentasLocales } from './contabilidad.ts';
+import { comprobantesParaReportes, crearComprobante, crearTercero, cuentasLocales, type DatosTercero } from './contabilidad.ts';
 
 // ------------------------------------------------------------------ períodos (regla 4)
 
@@ -81,14 +81,19 @@ export async function utilidadDelAnio(base: BaseLocal, empresa: string, anio: nu
 // ------------------------------------------------------------------ saldos iniciales
 
 export const PLANTILLA_SALDOS = [
-  'cuenta;nit_tercero;debito;credito;nota',
-  '111005;;50.000.000;0;Saldo en bancos',
-  '130505;830945221;12.500.000;0;Cartera de El Roble',
-  '310505;;0;62.500.000;Capital',
+  'cuenta;nit_tercero;debito;credito;nota;nombre_tercero;tipo_documento',
+  '111005;;50.000.000;0;Saldo en bancos;;',
+  '130505;830945221;12.500.000;0;Cartera de El Roble;Distribuciones El Roble S.A.S.;NIT',
+  '310505;;0;62.500.000;Capital;;',
 ].join('\r\n');
+
+/** Prefijo de las líneas cuyo tercero se crea al guardar los saldos (aún no tiene id). */
+const NUEVO = 'nuevo:';
 
 export interface LecturaSaldos {
   lineas: Linea[];
+  /** Terceros que no existen y se crearán al guardar (el archivo trae su nombre). */
+  tercerosNuevos: DatosTercero[];
   errores: string[];
   totalDebitos: bigint;
   totalCreditos: bigint;
@@ -106,31 +111,55 @@ export async function leerSaldosIniciales(base: BaseLocal, empresa: string, text
   const sep = (renglones[0] ?? '').includes(';') ? ';' : ',';
   const errores: string[] = [];
   const lineas: Linea[] = [];
+  const nuevos = new Map<string, DatosTercero>();
   renglones.forEach((renglon, i) => {
     const n = i + 1;
-    const [cuenta = '', nit = '', deb = '', cred = '', ...nota] = renglon.split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
+    const [cuenta = '', nit = '', deb = '', cred = '', nota = '', nombreTercero = '', tipoDoc = ''] = renglon.split(sep).map((c) => c.trim().replace(/^"|"$/g, ''));
     if (i === 0 && !/^\d/.test(cuenta)) return; // encabezado
     const c = cuentas.get(cuenta);
     if (!c) { errores.push(`Fila ${n}: la cuenta "${cuenta}" no existe.`); return; }
     if (!c.aceptaMovimiento) { errores.push(`Fila ${n}: la cuenta ${cuenta} no es auxiliar.`); return; }
     let terceroId: string | null = null;
     if (nit) {
-      terceroId = terceros.get(limpiarNit(nit)) ?? null;
-      if (!terceroId) { errores.push(`Fila ${n}: no existe un tercero con documento ${nit}. Créelo primero.`); return; }
+      const doc = limpiarNit(nit);
+      terceroId = terceros.get(doc) ?? null;
+      if (!terceroId) {
+        // Migración: si el archivo trae el nombre, el tercero se crea al guardar los saldos.
+        if (!nombreTercero) { errores.push(`Fila ${n}: no existe un tercero con documento ${nit}. Escriba su nombre en la columna nombre_tercero para crearlo, o créelo primero.`); return; }
+        const td = { '': '31', NIT: '31', CC: '13', CE: '22', PASAPORTE: '41', TI: '12' }[tipoDoc.toUpperCase()];
+        if (!td) { errores.push(`Fila ${n}: tipo de documento "${tipoDoc}" no reconocido (NIT, CC, CE, PASAPORTE o TI).`); return; }
+        if (!/^\d{3,15}$/.test(doc)) { errores.push(`Fila ${n}: documento inválido "${nit}".`); return; }
+        if (!nuevos.has(doc)) {
+          const tipo = cuenta.startsWith('13') ? 'cliente' : cuenta.startsWith('22') || cuenta.startsWith('23') ? 'proveedor' : cuenta.startsWith('25') ? 'empleado' : 'otro';
+          nuevos.set(doc, { tipo_doc: td, numero: doc, dv: td === '31' ? calcularDV(doc) : null, nombre: nombreTercero, tipos: [tipo] });
+        }
+        terceroId = `${NUEVO}${doc}`;
+      }
     } else if (c.exigeTercero) { errores.push(`Fila ${n}: la cuenta ${cuenta} exige tercero.`); return; }
     const debito = leerMontoUsuario(deb || '0');
     const credito = leerMontoUsuario(cred || '0');
     if (debito === null || credito === null || debito < 0n || credito < 0n) { errores.push(`Fila ${n}: valores inválidos ("${deb}", "${cred}").`); return; }
     if (debito === 0n && credito === 0n) return; // fila en cero: se ignora
-    lineas.push({ cuenta, terceroId, debito, credito, nota: nota.join(sep) || null });
+    lineas.push({ cuenta, terceroId, debito, credito, nota: nota || null });
   });
   return {
-    lineas, errores,
+    lineas, errores, tercerosNuevos: [...nuevos.values()],
     totalDebitos: lineas.reduce((s, l) => s + l.debito, 0n),
     totalCreditos: lineas.reduce((s, l) => s + l.credito, 0n),
   };
 }
 
-export async function crearSaldosIniciales(base: BaseLocal, empresa: string, fecha: FechaISO, lineas: Linea[]): Promise<{ id: string; numeroLocal: string }> {
-  return crearComprobante(base, empresa, { tipo: 'SI', fecha, concepto: 'Saldos iniciales', origen: 'saldos_iniciales', lineas });
+/** Crea los terceros nuevos (si los hay) y el comprobante de saldos iniciales. */
+export async function crearSaldosIniciales(
+  base: BaseLocal, empresa: string, fecha: FechaISO, lineas: Linea[], tercerosNuevos: readonly DatosTercero[] = [],
+): Promise<{ id: string; numeroLocal: string; tercerosCreados: number }> {
+  const deb = lineas.reduce((s, l) => s + l.debito, 0n);
+  const cred = lineas.reduce((s, l) => s + l.credito, 0n);
+  // Antes de crear terceros: si los saldos no cuadran, no se toca nada.
+  if (deb !== cred || deb === 0n) throw new ErrorMotor([{ codigo: 'DESCUADRADO', mensaje: 'Los débitos y los créditos de los saldos iniciales deben sumar lo mismo.' }]);
+  const ids = new Map<string, string>();
+  for (const t of tercerosNuevos) ids.set(`${NUEVO}${t.numero}`, await crearTercero(base, empresa, t));
+  const definitivas = lineas.map((l) => (l.terceroId?.startsWith(NUEVO) ? { ...l, terceroId: ids.get(l.terceroId) ?? null } : l));
+  const r = await crearComprobante(base, empresa, { tipo: 'SI', fecha, concepto: 'Saldos iniciales', origen: 'saldos_iniciales', lineas: definitivas });
+  return { ...r, tercerosCreados: ids.size };
 }

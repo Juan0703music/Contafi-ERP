@@ -260,7 +260,8 @@ const csv = await page.$('#sArchivo');
 await csv.uploadFile(new URL('./saldos-ejemplo.csv', import.meta.url).pathname);
 await page.waitForSelector('.fila-total', { timeout: 5000 });
 const saldos = await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent);
-verificar('Saldos iniciales', saldos === 'Balanceado', saldos);
+const nuevosSaldos = await page.$eval('.notice', (n) => n.textContent).catch(() => '');
+verificar('Saldos iniciales', saldos === 'Balanceado' && nuevosSaldos.includes('Comercial Nueva Era S.A.S. (900555888)'), `${saldos} · ${nuevosSaldos}`);
 await foto('07e-saldos-iniciales');
 
 await ir('Libros');
@@ -325,6 +326,19 @@ const editado = await page.$eval('tbody tr', (n) => n.textContent);
 verificar('Responsabilidades fiscales', editado.includes('O-13 O-23'), editado);
 await ir('Plan de cuentas');
 await foto('10-cuentas');
+// Migración: importar el plan de cuentas del software anterior (crea solo lo que falta)
+const csvPuc = `${S}/puc-otro-software.csv`;
+writeFileSync(csvPuc, ['Código;Nombre;Exige tercero', '120505;Acciones en sociedades nacionales;', '1205;Acciones;', '110505;Caja general;', '12050501;Acciones Ecopetrol;sí'].join('\n'));
+await boton('Importar CSV');
+await (await page.waitForSelector('#pArchivo')).uploadFile(csvPuc);
+await page.waitForFunction(() => [...document.querySelectorAll('.modal button')].some((b) => b.textContent === 'Crear 3 cuenta(s)'), { timeout: 5000 });
+await boton('Crear 3 cuenta(s)');
+await new Promise((r) => setTimeout(r, 800));
+await page.type('input[aria-label="Buscar cuenta"]', '1205');
+await new Promise((r) => setTimeout(r, 500));
+const filasImportadas = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.querySelector('td')?.textContent));
+verificar('Plan de cuentas importado', filasImportadas.join(',') === '1205,120505,12050501', filasImportadas.join(', '));
+await page.$eval('input[aria-label="Buscar cuenta"]', (n) => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(n, ''); n.dispatchEvent(new Event('input', { bubbles: true })); });
 // PUC personalizable: auxiliar bajo 112005; el padre deja de ser auxiliar
 await page.click('button[aria-label="Subcuenta de 112005"]');
 await page.waitForSelector('#cCodigo');

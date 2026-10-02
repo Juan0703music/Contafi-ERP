@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
-import { aCentavos as $ } from '@contafi/shared';
+import { aCentavos as $, plantillaCompletaPuc } from '@contafi/shared';
 import { ErrorMotor, type Linea } from '@contafi/motor';
 import { crearBaseDePrueba, registrarUsuario, type Sesion } from '@contafi/supabase/test/entorno';
 import {
@@ -64,7 +64,7 @@ describe('base local', () => {
 
   it('la descarga inicial trae el PUC y los tipos de comprobante', async () => {
     const pc = await nuevoPC(ana, 'PC inicial');
-    expect(await cuentasLocales(pc.base, empresa)).toHaveLength(124);
+    expect(await cuentasLocales(pc.base, empresa)).toHaveLength(plantillaCompletaPuc().length);
   });
 
   it('valida con el motor antes de guardar, sin conexión', async () => {

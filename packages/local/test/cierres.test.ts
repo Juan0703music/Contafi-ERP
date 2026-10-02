@@ -5,7 +5,7 @@ import { aCentavos as $ } from '@contafi/shared';
 import { ErrorMotor, type Linea } from '@contafi/motor';
 import { crearBaseDePrueba, registrarUsuario, type Sesion } from '@contafi/supabase/test/entorno';
 import {
-  migrar, guardarEmpresas, sincronizar, crearComprobante, crearTercero, balancePruebaLocal, leerComprobantes,
+  migrar, guardarEmpresas, sincronizar, crearComprobante, crearTercero, balancePruebaLocal, leerComprobantes, tercerosLocales,
   resumenPeriodos, vistaCierreAnual, generarCierreAnual, leerSaldosIniciales, crearSaldosIniciales, PLANTILLA_SALDOS,
 } from '../src/index.ts';
 import { baseNode, enServidor, transporteDirecto } from './ayudas.ts';
@@ -55,11 +55,39 @@ describe('saldos iniciales desde CSV', () => {
       'Fila 2: la cuenta 1105 no es auxiliar.',
       'Fila 3: la cuenta "999999" no existe.',
       'Fila 4: la cuenta 130505 exige tercero.',
-      'Fila 5: no existe un tercero con documento 123456789. Créelo primero.',
+      'Fila 5: no existe un tercero con documento 123456789. Escriba su nombre en la columna nombre_tercero para crearlo, o créelo primero.',
       'Fila 6: valores inválidos ("abc", "0").',
     ]);
     expect(r.lineas).toEqual([expect.objectContaining({ cuenta: '111005', debito: $('250.50') })]);
     await expect(crearSaldosIniciales(base, empresa, '2025-01-01', r.lineas)).rejects.toThrow(ErrorMotor); // descuadrado
+  });
+});
+
+describe('saldos iniciales que crean los terceros que faltan (migración)', () => {
+  it('crea cada tercero una vez, con su DV y su tipo según la cuenta, y lo usa en todas sus líneas', async () => {
+    const { base, sync } = await nuevoPC();
+    const csv = [PLANTILLA_SALDOS.split('\r\n')[0], '130505;860034313;10.000.000;0;Factura 1;Banco Davivienda S.A.;NIT',
+      '130505;860034313;2.500.000;0;Factura 2;Banco Davivienda S.A.;', '220505;1032556789;0;4.000.000;Proveedor persona;Laura Restrepo;CC',
+      '310505;;0;8.500.000;Capital;;', '130505;900;1;0;x;Mal;XX'].join('\n');
+    const r = await leerSaldosIniciales(base, empresa, csv);
+    expect(r.errores).toEqual(['Fila 6: tipo de documento "XX" no reconocido (NIT, CC, CE, PASAPORTE o TI).']);
+    expect(r.tercerosNuevos).toEqual([
+      expect.objectContaining({ tipo_doc: '31', numero: '860034313', dv: 7, nombre: 'Banco Davivienda S.A.', tipos: ['cliente'] }),
+      expect.objectContaining({ tipo_doc: '13', numero: '1032556789', dv: null, nombre: 'Laura Restrepo', tipos: ['proveedor'] }),
+    ]);
+    const creado = await crearSaldosIniciales(base, empresa, '2025-01-01', r.lineas, r.tercerosNuevos);
+    expect(creado.tercerosCreados).toBe(2);
+    const roble = (await tercerosLocales(base, empresa, '860034313'))[0]!;
+    const [c] = await leerComprobantes(base, empresa, { estados: ['pendiente_sync'] });
+    expect(c!.lineas.filter((l) => l.terceroId === roble.id)).toHaveLength(2);
+    expect(await sync()).toMatchObject({ contabilizados: 1, tercerosRegistrados: 2, error: null });
+  });
+
+  it('si los saldos no cuadran, no crea ningún tercero', async () => {
+    const { base } = await nuevoPC();
+    const r = await leerSaldosIniciales(base, empresa, 'cuenta;nit;debito;credito;nota;nombre\n130505;901223556;100;0;x;Norte SAS');
+    await expect(crearSaldosIniciales(base, empresa, '2025-01-01', r.lineas, r.tercerosNuevos)).rejects.toThrow(ErrorMotor);
+    expect(await tercerosLocales(base, empresa, '901223556')).toEqual([]);
   });
 });
 

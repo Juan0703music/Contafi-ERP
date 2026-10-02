@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { PGlite } from '@electric-sql/pglite';
+import { plantillaCompletaPuc } from '@contafi/shared';
 import { crearBaseDePrueba, como, registrarUsuario, type Sesion } from '@contafi/supabase/test/entorno';
 import {
   ErrorAcceso, loteEnvio, obtenerCambios, procesarEnvio, VERSION_PROTOCOLO,
@@ -250,7 +251,7 @@ describe('recepción incremental (sección 9.3)', () => {
     }
     expect(paginas).toBeGreaterThan(2);
     const cuentas = new Set(todo.flatMap((p) => (p.cuentas ?? []).map((c) => c['codigo'])));
-    expect(cuentas.size).toBe(125); // toda la plantilla del PUC y la auxiliar creada sin conexión
+    expect(cuentas.size).toBe(plantillaCompletaPuc().length + 1); // toda la plantilla del PUC y la auxiliar creada sin conexión
     expect(todo.flatMap((p) => p.tipos_comprobante ?? [])).toHaveLength(9);
   });
 

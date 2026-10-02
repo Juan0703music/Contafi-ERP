@@ -188,7 +188,50 @@ export const PUC_SEMILLA: readonly CuentaPlantilla[] = [
 
 /** Una cuenta de la plantilla acepta movimiento si no tiene subcuentas. */
 export function aceptaMovimientoEnPlantilla(codigo: string, plan: readonly CuentaPlantilla[] = PUC_SEMILLA): boolean {
+  // Clases y grupos nunca reciben movimientos, aunque no tengan cuentas debajo.
+  if (codigo.length <= 2) return false;
   return !plan.some((x) => x.codigo !== codigo && x.codigo.startsWith(codigo) && codigoPadre(x.codigo) === codigo);
+}
+
+/**
+ * Clases y grupos del PUC (Decreto 2650 de 1993). Los fija la norma: las empresas no los crean, así que
+ * todos vienen en la plantilla aunque la semilla no traiga cuentas debajo (si no, no se podría migrar el
+ * plan de cuentas de una empresa con, por ejemplo, inversiones o intangibles).
+ */
+export const ESTRUCTURA_PUC: readonly CuentaPlantilla[] = [
+  c('1', 'ACTIVO', 'D'),
+  c('11', 'Disponible', 'D'), c('12', 'Inversiones', 'D'), c('13', 'Deudores', 'D'), c('14', 'Inventarios', 'D'),
+  c('15', 'Propiedades, planta y equipo', 'D'), c('16', 'Intangibles', 'D'), c('17', 'Diferidos', 'D'),
+  c('18', 'Otros activos', 'D'), c('19', 'Valorizaciones', 'D'),
+  c('2', 'PASIVO', 'C'),
+  c('21', 'Obligaciones financieras', 'C'), c('22', 'Proveedores', 'C'), c('23', 'Cuentas por pagar', 'C'),
+  c('24', 'Impuestos, gravámenes y tasas', 'C'), c('25', 'Obligaciones laborales', 'C'), c('26', 'Pasivos estimados y provisiones', 'C'),
+  c('27', 'Diferidos', 'C'), c('28', 'Otros pasivos', 'C'), c('29', 'Bonos y papeles comerciales', 'C'),
+  c('3', 'PATRIMONIO', 'C'),
+  c('31', 'Capital social', 'C'), c('32', 'Superávit de capital', 'C'), c('33', 'Reservas', 'C'), c('34', 'Revalorización del patrimonio', 'C'),
+  c('35', 'Dividendos o participaciones decretados en acciones, cuotas o partes de interés social', 'C'),
+  c('36', 'Resultados del ejercicio', 'C'), c('37', 'Resultados de ejercicios anteriores', 'C'), c('38', 'Superávit por valorizaciones', 'C'),
+  c('4', 'INGRESOS', 'C'),
+  c('41', 'Operacionales', 'C'), c('42', 'No operacionales', 'C'), c('47', 'Ajustes por inflación', 'C'),
+  c('5', 'GASTOS', 'D'),
+  c('51', 'Operacionales de administración', 'D'), c('52', 'Operacionales de ventas', 'D'), c('53', 'No operacionales', 'D'),
+  c('54', 'Impuesto de renta y complementarios', 'D'), c('59', 'Ganancias y pérdidas', 'D'),
+  c('6', 'COSTOS DE VENTAS', 'D'),
+  c('61', 'Costo de ventas y de prestación de servicios', 'D'), c('62', 'Compras', 'D'),
+  c('7', 'COSTOS DE PRODUCCIÓN O DE OPERACIÓN', 'D'),
+  c('71', 'Materia prima', 'D'), c('72', 'Mano de obra directa', 'D'), c('73', 'Costos indirectos', 'D'), c('74', 'Contratos de servicios', 'D'),
+  c('8', 'CUENTAS DE ORDEN DEUDORAS', 'D'),
+  c('81', 'Derechos contingentes', 'D'), c('82', 'Deudoras fiscales', 'D'), c('83', 'Deudoras de control', 'D'),
+  c('84', 'Derechos contingentes por contra (CR)', 'C'), c('85', 'Deudoras fiscales por contra (CR)', 'C'), c('86', 'Deudoras de control por contra (CR)', 'C'),
+  c('9', 'CUENTAS DE ORDEN ACREEDORAS', 'C'),
+  c('91', 'Responsabilidades contingentes', 'C'), c('92', 'Acreedoras fiscales', 'C'), c('93', 'Acreedoras de control', 'C'),
+  c('94', 'Responsabilidades contingentes por contra (DB)', 'D'), c('95', 'Acreedoras fiscales por contra (DB)', 'D'), c('96', 'Acreedoras de control por contra (DB)', 'D'),
+];
+
+/** Plantilla completa para una empresa nueva: la semilla y toda la estructura de clases y grupos. */
+export function plantillaCompletaPuc(): CuentaPlantilla[] {
+  const codigos = new Set(PUC_SEMILLA.map((x) => x.codigo));
+  return [...PUC_SEMILLA, ...ESTRUCTURA_PUC.filter((x) => !codigos.has(x.codigo))].sort((a, b) => a.codigo.localeCompare(b.codigo));
 }
 
 /** Cuentas por defecto que usa el motor en los asientos automáticos (configurables por empresa). */
