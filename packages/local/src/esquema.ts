@@ -181,6 +181,11 @@ export const MIGRACIONES: readonly string[][] = [
     `drop table cola_salida`,
     `alter table cola_salida_nueva rename to cola_salida`,
   ],
+  // 8 · Calendario tributario (por año; lo carga el contador y llega del servidor) y obligaciones de cada empresa
+  [
+    `create table calendario (anio integer primary key, filas text not null) strict`,
+    `create table obligaciones (empresa_id text primary key, codigos text not null) strict`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

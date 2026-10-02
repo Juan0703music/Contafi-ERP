@@ -11,3 +11,4 @@ export * from './ventas.ts';
 export * from './inventario.ts';
 export * from './importar-terceros.ts';
 export * from './plan-cuentas.ts';
+export * from './calendario.ts';

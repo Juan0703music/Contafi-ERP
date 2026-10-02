@@ -149,3 +149,11 @@ no tarifas, y gana lo último aprendido. Un valor no aprendido viaja como null y
 otro PC (un PC puede aprender la cuenta y otro las retenciones del mismo proveedor). Si el servidor
 rechaza una regla (por ejemplo, su cuenta ya no es auxiliar), queda como preferencia de ese PC.
 
+## D-026 · Calendario tributario cargado por el contador, sin fechas en el código (2026-10-02)
+Los vencimientos dependen del decreto del calendario de cada año y del último dígito del NIT. Contafi no
+trae esas fechas (regla de oro): el contador copia las del decreto en una plantilla CSV (obligación,
+nombre, período, último dígito o vacío si aplica a todos, fecha) y la carga en "Impuestos y retenciones".
+El calendario es de la firma y año (`guardar_calendario`, en línea como la UVT) y baja a todos los PC;
+cada empresa marca sus obligaciones (`guardar_obligaciones`). El panel, "Mis empresas" y Jarvis muestran
+lo que vence en los próximos días; las fechas de la plantilla están marcadas como ejemplo.
+

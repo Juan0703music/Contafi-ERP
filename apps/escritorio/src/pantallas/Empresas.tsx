@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { resumenEmpresa, sincronizar } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
-import { Icono, dinero, haceCuanto } from '../componentes/comunes.tsx';
+import { Icono, dinero, fechaCorta, haceCuanto } from '../componentes/comunes.tsx';
 import { esAdministrador } from '../datos/firma.ts';
 import { NuevaEmpresa } from './NuevaEmpresa.tsx';
 
@@ -40,7 +40,7 @@ export function Empresas() {
       </div>
       <div className="panel">
         <div className="table-wrap"><table>
-          <thead><tr><th className="wrap">Empresa</th><th>Última sincronización</th><th className="num">Pendientes</th><th>Meses sin cerrar</th><th className="num">Utilidad del año</th><th className="wrap">Atención</th><th></th></tr></thead>
+          <thead><tr><th className="wrap">Empresa</th><th>Última sincronización</th><th className="num">Pendientes</th><th>Meses sin cerrar</th><th className="wrap">Próximo vencimiento</th><th className="num">Utilidad del año</th><th className="wrap">Atención</th><th></th></tr></thead>
           <tbody>{empresas.map((e, i) => {
             const r = datos?.[i];
             return (
@@ -49,6 +49,8 @@ export function Empresas() {
                 <td>{sincronizando === e.id ? <span className="pill open">Sincronizando…</span> : haceCuanto(r?.sync.ultimaSincronizacion ?? null)}</td>
                 <td className="num mono">{r?.sync.pendientes || ''}</td>
                 <td>{r?.mesesSinCerrar.map((m) => MESES[m - 1]).join(', ')}</td>
+                <td className="wrap">{r?.vencimientos[0] ? <>
+                  <span className={`pill ${r.vencimientos[0].dias <= 7 ? 'draft' : ''}`}>{fechaCorta(r.vencimientos[0].fecha)}</span> {r.vencimientos[0].nombre}</> : ''}</td>
                 <td className="num mono">{r ? dinero(r.utilidadAnio) : ''}</td>
                 <td className="wrap">{r?.alertas.length ? r.alertas.map((a) => <span key={a} className="pill draft" style={{ margin: '2px 4px 2px 0' }}>{a}</span>) : <span className="pill posted">Al día</span>}</td>
                 <td className="btn-row"><button className="btn ghost sm" onClick={() => { cambiarEmpresa(e.id); ir('panel'); }}>Abrir<Icono nombre="arrowRight" /></button></td>

@@ -38,6 +38,19 @@ export function calcularAlertas(d: DatosEmpresa): Alerta[] {
     alertas.push({ id: 'por-aprobar', nivel: 'media', titulo: `${d.sync.porAprobar} comprobante(s) esperan aprobación`, detalle: 'Un contador debe aprobarlos para que afecten los saldos oficiales.', ruta: 'comprobantes' });
   }
 
+  // Calendario tributario: lo que vence en los próximos 7 días (si el contador cargó el calendario)
+  const proximos = d.vencimientos.filter((v) => v.dias <= 7);
+  if (proximos.length) {
+    const primero = proximos[0]!;
+    alertas.push({
+      id: 'vencimientos', nivel: primero.dias <= 2 ? 'alta' : 'media',
+      titulo: primero.dias === 0 ? `Hoy vence: ${primero.nombre} (${primero.periodo})`
+        : `${proximos.length} vencimiento(s) tributario(s) en los próximos 7 días`,
+      detalle: proximos.map((v) => `${v.nombre} ${v.periodo}: ${v.fecha}${v.dias === 0 ? ' (hoy)' : ` (en ${v.dias} día${v.dias === 1 ? '' : 's'})`}`).join(' · '),
+      ruta: 'panel',
+    });
+  }
+
   // Cartera vencida (sin vencimiento por documento: se mide desde la fecha de la factura)
   const cartera = antiguedadSaldos(d.comprobantes, '1305', 'D', hoy).filter((x) => x.saldo > 0n);
   const sumar = (f: (x: (typeof cartera)[number]) => Centavos) => cartera.reduce((s, x) => s + f(x), 0n);

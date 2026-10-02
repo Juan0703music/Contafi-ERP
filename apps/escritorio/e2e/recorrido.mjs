@@ -4,7 +4,7 @@
  *       FIREFOX=/usr/bin/firefox PERFIL=~/snap/firefox/common/contafi-e2e pnpm --filter @contafi/escritorio e2e
  * (PERFIL solo hace falta con el Firefox de snap, que no puede usar perfiles en /tmp.)
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import puppeteer from 'puppeteer-core';
 const S = new URL('./capturas', import.meta.url).pathname;
 mkdirSync(S, { recursive: true });
@@ -158,6 +158,29 @@ await page.select('#rCta', '236540');
 await boton('Guardar');
 await page.waitForSelector('tbody tr td.mono', { timeout: 5000 });
 await foto('07a-impuestos');
+
+// Calendario tributario: fechas de PRUEBA relativas a hoy (el NIT de Andina termina en 6)
+const enDias = (n) => { const f = new Date(Date.now() + n * 86_400_000); return `${String(f.getDate()).padStart(2, '0')}/${String(f.getMonth() + 1).padStart(2, '0')}/${f.getFullYear()}`; };
+const csvCalendario = `${S}/calendario-e2e.csv`;
+writeFileSync(csvCalendario, ['obligacion;nombre;periodo;ultimo_digito_nit;fecha', `RETENCION;Retención en la fuente;P1;6;${enDias(3)}`,
+  `RETENCION;Retención en la fuente;P1;7;${enDias(4)}`, `IVA_BIM;IVA bimestral;B5;6;${enDias(20)}`, `RENTA;Renta;2025;6;${enDias(10)}`].join('\n'));
+await page.$eval('#cAnio', (n, v) => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(n, v); n.dispatchEvent(new Event('input', { bubbles: true })); },
+  String(new Date(Date.now() + 3 * 86_400_000).getFullYear()));
+await (await page.$('#cArchivo')).uploadFile(csvCalendario);
+await page.waitForFunction(() => [...document.querySelectorAll('button')].some((b) => b.textContent.startsWith('Guardar calendario') && !b.disabled), { timeout: 5000 });
+const guardarCal = await page.$$('button');
+for (const b of guardarCal) if ((await b.evaluate((n) => n.textContent)).startsWith('Guardar calendario')) { await b.click(); break; }
+await page.waitForSelector('input[aria-label="Obligación RETENCION"]', { timeout: 5000 });
+await page.click('input[aria-label="Obligación RETENCION"]');
+await page.click('input[aria-label="Obligación IVA_BIM"]');
+await boton('Guardar obligaciones');
+await new Promise((r) => setTimeout(r, 800));
+await foto('07a2-calendario');
+await ir('Panel');
+await page.waitForFunction(() => [...document.querySelectorAll('h2')].some((h) => h.textContent === 'Próximos vencimientos'), { timeout: 5000 });
+const venc = await page.$$eval('.panel', (ps) => ps.find((p) => p.querySelector('h2')?.textContent === 'Próximos vencimientos').querySelectorAll('tbody tr').length);
+verificar('Vencimientos del calendario tributario', venc === 2, `${venc} vencimiento(s) para el NIT terminado en 6 (retención en 3 días, IVA en 20)`);
+await foto('07a3-panel-vencimientos');
 
 // Importación DIAN: subir los XML de ejemplo, cambiar la cuenta de la factura, aplicar la retención y contabilizar
 await ir('Importar DIAN');

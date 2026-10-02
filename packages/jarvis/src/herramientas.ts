@@ -291,8 +291,20 @@ export const HERRAMIENTAS: Herramienta[] = [
     },
   },
   {
+    nombre: 'proximos_vencimientos',
+    descripcion: 'Obligaciones tributarias que vencen pronto (declaraciones y pagos) según el calendario cargado y el NIT de la empresa.',
+    parametros: { dias: { type: 'integer', description: 'Cuántos días hacia adelante (por defecto 30, máximo 45)' } },
+    ejecutar: (a, d) => {
+      const dias = entero(a['dias'], 30, 45);
+      return {
+        desde: d.hoy, dias,
+        vencimientos: d.vencimientos.filter((v) => v.dias <= dias).map((v) => ({ obligacion: v.nombre, periodo: v.periodo, fecha: v.fecha, dias_restantes: v.dias })),
+      };
+    },
+  },
+  {
     nombre: 'alertas_empresa',
-    descripcion: 'Lo que requiere atención: cartera vencida, cuentas por pagar viejas, IVA del bimestre, meses sin cerrar, rechazos, gastos inusuales.',
+    descripcion: 'Lo que requiere atención: vencimientos tributarios, cartera vencida, cuentas por pagar viejas, IVA del bimestre, meses sin cerrar, rechazos, gastos inusuales.',
     parametros: {},
     ejecutar: (_a, d) => ({ alertas: calcularAlertas(d).map((x) => ({ nivel: x.nivel, titulo: x.titulo, detalle: x.detalle })) }),
   },

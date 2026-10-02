@@ -184,10 +184,12 @@ export interface RespuestaEnvio {
 /**
  * Tablas que bajan a los PC. `uvt` es la UVT de la firma por año (clave: el año), `conceptos_empresa`
  * los conceptos de retención de la empresa (clave: el código) y `reglas_proveedor` lo aprendido al
- * importar (clave: el NIT).
+ * importar (clave: el NIT). `calendario` es el calendario tributario de la firma (clave: el año; un
+ * registro trae todas las filas del año) y `obligaciones` las obligaciones de la empresa (un solo registro).
  */
 export const TABLAS_SYNC = [
-  'cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'uvt', 'conceptos_empresa', 'reglas_proveedor', 'comprobantes',
+  'cuentas', 'terceros', 'productos', 'centros_costo', 'periodos', 'tipos_comprobante', 'uvt', 'conceptos_empresa', 'reglas_proveedor',
+  'calendario', 'obligaciones', 'comprobantes',
 ] as const;
 export type TablaSync = (typeof TABLAS_SYNC)[number];
 

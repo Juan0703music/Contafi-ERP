@@ -199,7 +199,10 @@ export function claveRegistro(tabla: TablaSync, fila: Record<string, unknown>): 
     case 'conceptos_empresa':
       return String(fila['codigo']);
     case 'uvt':
+    case 'calendario':
       return String(fila['anio']);
+    case 'obligaciones':
+      return 'obligaciones';
     case 'reglas_proveedor':
       return String(fila['nit']);
     case 'periodos':

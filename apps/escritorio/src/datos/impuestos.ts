@@ -1,7 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { aDecimal } from '@contafi/shared';
+import type { FilaCalendario } from '@contafi/motor';
 import {
-  conceptosRetencion, desactivarConcepto, guardarConcepto, guardarUvt, leerUvt, validarConcepto,
+  conceptosRetencion, desactivarConcepto, guardarCalendario, guardarConcepto, guardarObligaciones, guardarUvt, leerUvt, validarConcepto,
   type BaseLocal, type DatosConcepto,
 } from '@contafi/local';
 import { mensajeServidor } from './firma.ts';
@@ -15,6 +16,10 @@ export interface ConfiguracionImpuestos {
   guardarUvt(empresa: string, anio: number, valor: string): Promise<void>;
   guardarConcepto(empresa: string, d: DatosConcepto): Promise<void>;
   desactivarConcepto(empresa: string, codigo: string): Promise<void>;
+  /** Calendario tributario del año (para toda la firma). */
+  guardarCalendario(empresa: string, anio: number, filas: readonly FilaCalendario[]): Promise<void>;
+  /** Obligaciones de la empresa (códigos del calendario). */
+  guardarObligaciones(empresa: string, codigos: readonly string[]): Promise<void>;
 }
 
 export function impuestosLocales(base: BaseLocal): ConfiguracionImpuestos {
@@ -23,6 +28,8 @@ export function impuestosLocales(base: BaseLocal): ConfiguracionImpuestos {
     guardarUvt: (_e, anio, valor) => guardarUvt(base, anio, valor),
     guardarConcepto: (empresa, d) => guardarConcepto(base, empresa, d),
     desactivarConcepto: (empresa, codigo) => desactivarConcepto(base, empresa, codigo),
+    guardarCalendario: (_e, anio, filas) => guardarCalendario(base, anio, filas),
+    guardarObligaciones: (empresa, codigos) => guardarObligaciones(base, empresa, codigos),
   };
 }
 
@@ -47,5 +54,7 @@ export function impuestosNube(sb: SupabaseClient, base: BaseLocal): Configuracio
         cuenta: c.cuenta, aplica_en: c.aplicaEn, activo: false,
       } });
     },
+    guardarCalendario: (empresa, anio, filas) => rpc('guardar_calendario', { p_empresa: empresa, p_anio: anio, p_filas: filas }),
+    guardarObligaciones: (empresa, codigos) => rpc('guardar_obligaciones', { p_empresa: empresa, p_codigos: [...codigos] }),
   };
 }

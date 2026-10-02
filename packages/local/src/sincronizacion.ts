@@ -1,5 +1,5 @@
 import { aCentavos, aDecimal, esFechaValida } from '@contafi/shared';
-import { aMilesimas } from '@contafi/motor';
+import { aMilesimas, type FilaCalendario } from '@contafi/motor';
 import {
   VERSION_PROTOCOLO,
   type ComprobanteSync, type ConsultaCambios, type CuentaSync, type LoteEnvio, type ProductoSync, type ReglaProveedorSync, type RespuestaCambios,
@@ -7,6 +7,7 @@ import {
 } from '@contafi/sync';
 import { s, type BaseLocal, type Sentencia } from './base.ts';
 import { sentenciaConcepto } from './retenciones.ts';
+import { sentenciaCalendario, sentenciaObligaciones } from './calendario.ts';
 
 /** Cómo llega la app al servidor. En la app: HTTP (`transporteHttp`); en pruebas: directo a PGlite. */
 export interface Transporte {
@@ -313,6 +314,8 @@ function sentenciasRegistros(empresa: string, registros: RespuestaCambios['regis
       base_minima_uvt: String(c['base_minima_uvt']), cuenta: String(c['cuenta']), aplica_en: c['aplica_en'] as 'compras' | 'ventas',
     }, !!c['activo']));
   }
+  for (const c of registros.calendario ?? []) out.push(sentenciaCalendario(Number(c['anio']), c['filas'] as FilaCalendario[]));
+  for (const o of registros.obligaciones ?? []) out.push(sentenciaObligaciones(empresa, (o['codigos'] as string[] | null) ?? []));
   for (const r of registros.reglas_proveedor ?? []) {
     const ret = r['retenciones'];
     out.push(s(`insert into reglas_proveedor (empresa_id, nit, cuenta, retenciones, actualizado_en) values (?, ?, ?, ?, ?)

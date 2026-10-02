@@ -65,7 +65,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Saldos iniciales | ✅ desde CSV (Excel), con validación por fila |
 | Conciliación bancaria con importación de extractos | ✅ CSV de los bancos (valor con signo o débito/crédito), emparejamiento automático, manual, y registro de cargos desde el extracto · ⬜ formatos específicos por banco si alguno no se reconoce |
 | Reportes NIIF y libros en PDF y Excel | ✅ libro diario, mayor y balances, auxiliares (por cuenta y tercero), auxiliar de impuestos por período (IVA generado/descontable y retenciones con base, por tercero para certificados), situación financiera y resultados · ⬜ flujo de efectivo y cambios en el patrimonio (versión 1.x) |
-| Panel multi-empresa del contador | ✅ |
+| Panel multi-empresa del contador | ✅ pendientes, alertas y vencimientos (calendario tributario que el contador carga desde el decreto del año; obligaciones por empresa; último dígito del NIT; D-026) · 👤 ⬜ cargar el calendario del decreto vigente |
 | Ventas y compras manuales (sin facturación electrónica propia) | ✅ factura de venta y de compra con IVA por tarifa y retenciones, cartera por edades (FIFO), recaudos y pagos parciales |
 | Inventario básico | ✅ productos, kárdex por costo promedio derivado de los asientos (débito = entrada, crédito = salida), costo de ventas automático al facturar, aviso de existencias negativas; sincroniza entre PC |
 | Terceros: responsabilidades fiscales e importación masiva | ✅ edición con responsabilidades del RUT (O-13, O-15, O-23, O-47, R-99-PN), municipio y dirección; importación desde CSV (Excel) que calcula el DV, valida por fila con los mismos límites del servidor y omite los que ya existen |
@@ -78,8 +78,8 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Tarea | Estado |
 |---|---|
 | Proceso auxiliar llama.cpp, descarga del modelo y detección de hardware | ✅ en Rust (compila en Windows): descarga reanudable con SHA-256, RAM, 127.0.0.1 + puerto aleatorio + token, apagado al salir y tras 5 min sin uso · 👤 ⬜ probarlo en un PC con Windows |
-| Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 14 herramientas (incluye inventario bajo) y alertas por reglas (incluye existencias negativas) · ⬜ calendario tributario (requiere los vencimientos del año como parámetros) |
-| Banco de preguntas y evaluación (12.5) | ✅ 44 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
+| Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 15 herramientas (incluye inventario bajo y próximos vencimientos) y alertas por reglas (incluye existencias negativas y vencimientos tributarios de los próximos 7 días) |
+| Banco de preguntas y evaluación (12.5) | ✅ 46 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
 
 **Medición real** (Qwen3-4B Q4_K_M en un portátil i5-8265U, 4 núcleos, sin tarjeta gráfica; Linux):
 
@@ -121,14 +121,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 
-## Pruebas automáticas (02/10/2026) — 204 en total
+## Pruebas automáticas (02/10/2026) — 211 en total
 - `@contafi/shared`: 15 ✓
-- `@contafi/motor`: 50 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance)
+- `@contafi/motor`: 52 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 24 ✓
-- `@contafi/local`: 46 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
-- `supabase` (PGlite con privilegios de Supabase): 43 ✓
-- `@contafi/jarvis`: 15 ✓
+- `@contafi/local`: 48 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
+- `supabase` (PGlite con privilegios de Supabase): 45 ✓
+- `@contafi/jarvis`: 16 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 18 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 19 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

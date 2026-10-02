@@ -3,6 +3,7 @@ import { formatoTarifa } from '@contafi/shared';
 import { conceptosRetencion, cuentasLocales, uvtsConfiguradas, ErrorLocal, type DatosConcepto } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, Modal, Vacio, dinero } from '../componentes/comunes.tsx';
+import { CalendarioTributario } from './Calendario.tsx';
 
 const TIPOS = { RETEFUENTE: 'Retención en la fuente', RETEIVA: 'ReteIVA', RETEICA: 'ReteICA' } as const;
 
@@ -69,6 +70,7 @@ export function Impuestos() {
             </tbody></table></div>
         ) : <Vacio icono="sliders">Aún no hay conceptos. Crea los que usa esta empresa (por ejemplo, retención en la fuente por compras o servicios, reteIVA y reteICA del municipio).</Vacio>}
       </div>
+      <CalendarioTributario />
       {editando && datos && <EditarConcepto inicial={editando} cuentas={datos.cuentas} alCerrar={() => setEditando(null)} />}
     </>
   );

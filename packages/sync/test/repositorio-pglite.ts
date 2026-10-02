@@ -27,6 +27,10 @@ export const SQL_REGISTROS: Record<TablaSync, string> = {
   centros_costo: 'select * from public.centros_costo where empresa_id = $1 and id = any($2::uuid[])',
   uvt: `select u.anio, u.uvt::text as uvt from public.uvt_firma u join public.empresas e on e.firma_id = u.firma_id
          where e.id = $1 and u.anio::text = any($2::text[])`,
+  calendario: `select c.anio, c.filas from public.calendario_firma c join public.empresas e on e.firma_id = c.firma_id
+                where e.id = $1 and c.anio::text = any($2::text[])`,
+  // Un solo registro por empresa; los ids no importan.
+  obligaciones: 'select codigos from public.obligaciones_empresa where empresa_id = $1 and $2::text[] is not null',
   reglas_proveedor: 'select nit, cuenta, retenciones from public.reglas_proveedor where empresa_id = $1 and nit = any($2::text[])',
   conceptos_empresa: `select codigo, tipo, nombre, tarifa_ppm::int as tarifa_ppm, base_minima_uvt::text as base_minima_uvt, cuenta, aplica_en, activo
                         from public.conceptos_empresa where empresa_id = $1 and codigo = any($2::text[])`,

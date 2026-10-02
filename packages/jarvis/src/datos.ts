@@ -1,7 +1,7 @@
 import { formatoCOP, hoyBogota, type Centavos, type FechaISO } from '@contafi/shared';
-import type { Comprobante, Cuenta } from '@contafi/motor';
+import type { Comprobante, Cuenta, Vencimiento } from '@contafi/motor';
 import {
-  comprobantesParaReportes, cuentasLocales, estadoSincronizacion, productosLocales, tercerosLocales,
+  comprobantesParaReportes, cuentasLocales, estadoSincronizacion, productosLocales, tercerosLocales, vencimientosLocales,
   type BaseLocal, type EmpresaLocal, type EstadoSincronizacion, type ProductoLocal, type TerceroLocal,
 } from '@contafi/local';
 
@@ -23,11 +23,14 @@ export interface DatosEmpresa {
   /** "AAAA-MM" de los períodos cerrados. */
   periodosCerrados: Set<string>;
   productos: ProductoLocal[];
+  /** Vencimientos de los próximos 45 días (calendario tributario cargado y obligaciones de la empresa). */
+  vencimientos: Vencimiento[];
 }
 
 /** Carga una sola vez los datos locales de la empresa para responder una pregunta. */
 export async function cargarDatos(ctx: ContextoJarvis): Promise<DatosEmpresa> {
-  const [cuentas, comprobantes, terceros, sync, cerrados, productos] = await Promise.all([
+  const hoy = ctx.hoy ?? hoyBogota();
+  const [cuentas, comprobantes, terceros, sync, cerrados, productos, vencimientos] = await Promise.all([
     cuentasLocales(ctx.base, ctx.empresa.id),
     // Incluye lo pendiente de sincronizar: Jarvis lo advierte como provisional.
     comprobantesParaReportes(ctx.base, ctx.empresa.id, { incluirPendientes: true }),
@@ -35,9 +38,10 @@ export async function cargarDatos(ctx: ContextoJarvis): Promise<DatosEmpresa> {
     estadoSincronizacion(ctx.base, ctx.empresa.id),
     ctx.base.consultar<{ p: string }>(`select printf('%04d-%02d', anio, mes) as p from periodos where empresa_id = ? and estado = 'cerrado'`, [ctx.empresa.id]),
     productosLocales(ctx.base, ctx.empresa.id),
+    vencimientosLocales(ctx.base, ctx.empresa.id, hoy, 45),
   ]);
   return {
-    hoy: ctx.hoy ?? hoyBogota(), cuentas, comprobantes, terceros, sync, periodosCerrados: new Set(cerrados.map((x) => x.p)), productos,
+    hoy, cuentas, comprobantes, terceros, sync, periodosCerrados: new Set(cerrados.map((x) => x.p)), productos, vencimientos,
     nombresCuenta: new Map(cuentas.map((c) => [c.codigo, c.nombre])),
     nombresTercero: new Map(terceros.map((t) => [t.id, t.nombre])),
   };

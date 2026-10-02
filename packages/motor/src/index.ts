@@ -11,3 +11,4 @@ export * from './libros.ts';
 export * from './conciliacion.ts';
 export * from './cartera.ts';
 export * from './auxiliar-impuestos.ts';
+export * from './calendario.ts';

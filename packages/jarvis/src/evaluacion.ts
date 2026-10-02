@@ -49,6 +49,8 @@ export const BANCO_PREGUNTAS: { pregunta: string; herramienta: string }[] = [
   { pregunta: '¿Qué productos se están acabando?', herramienta: 'inventario_bajo' },
   { pregunta: '¿Cómo está el inventario?', herramienta: 'inventario_bajo' },
   { pregunta: '¿Qué movimientos tuvo la cuenta 5195 este año?', herramienta: 'movimientos_cuenta' },
+  { pregunta: '¿Qué vence este mes?', herramienta: 'proximos_vencimientos' },
+  { pregunta: '¿Qué tengo que declarar esta semana?', herramienta: 'proximos_vencimientos' },
 ];
 
 export interface ResultadoEvaluacion {

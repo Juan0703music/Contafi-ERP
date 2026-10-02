@@ -71,6 +71,14 @@ const INTENCIONES: [RegExp, Intencion][] = [
     herramienta: 'saldo_cuenta', argumentos: (t) => ({ cuenta: /cuenta (\d{2,10})/.exec(normalizar(t))![1] }),
     redactar: (r) => `El saldo de ${v(r['cuenta'])} ${v(r['nombre'])} al ${v(r['fecha_corte'])} es ${v(r['saldo'])}.`,
   }],
+  [/\b(vencen?|vencimientos?|calendario tributario|que (tengo|hay) que (declarar|pagar)|cuando (se )?declar)/, {
+    herramienta: 'proximos_vencimientos', argumentos: () => ({}),
+    redactar: (r) => {
+      const l = r['vencimientos'] as { obligacion: string; periodo: string; fecha: string; dias_restantes: number }[];
+      if (l.length) return `En los próximos ${v(r['dias'])} días vence: ${l.map((x) => `${x.obligacion} ${x.periodo} el ${x.fecha}${x.dias_restantes === 0 ? ' (hoy)' : ` (en ${x.dias_restantes} días)`}`).join('; ')}.`;
+      return 'No hay vencimientos en los próximos días según el calendario cargado. Si aún no lo ha cargado, hágalo en Impuestos y retenciones → Calendario tributario.';
+    },
+  }],
   [/\biva\b/, {
     herramienta: 'iva_periodo', argumentos: (t, d) => rangoDesdeTexto(t, d.hoy),
     redactar: (r) => `IVA del ${v(r['desde'])} al ${v(r['hasta'])}: generado ${v(r['iva_generado'])}, descontable ${v(r['iva_descontable'])}. Saldo estimado: ${v(r['saldo_a_pagar'])}. ${v(r['nota'])}`,

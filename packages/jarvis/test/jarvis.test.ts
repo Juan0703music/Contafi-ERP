@@ -4,6 +4,7 @@ import {
   cargarDatos, ejecutarHerramienta, verificarCifras, calcularAlertas, preguntarConReglas, preguntarConIA, evaluar,
   definicionesOpenAI, HERRAMIENTAS, bimestre, type ClienteLLM, type MensajeLLM,
 } from '../src/index.ts';
+import { guardarCalendario, guardarObligaciones, leerCalendarioCsv } from '@contafi/local';
 import { EMPRESA, HOY, empresaDePrueba } from './ayudas.ts';
 
 const ctx = async () => ({ base: await empresaDePrueba(), empresa: EMPRESA, hoy: HOY });
@@ -167,3 +168,22 @@ describe('asistente con IA (con un modelo simulado)', () => {
 });
 
 void $;
+
+describe('calendario tributario', () => {
+  it('alerta y responde lo que vence según el calendario cargado y el último dígito del NIT', async () => {
+    const base = await empresaDePrueba();
+    const c = { base, empresa: EMPRESA, hoy: HOY };
+    expect((await preguntarConReglas('¿Qué vence este mes?', c)).texto).toMatch(/Calendario tributario/); // sin calendario
+    // FECHAS DE EJEMPLO PARA PRUEBAS: no son las del decreto. El NIT de la empresa termina en 6.
+    const { filas } = leerCalendarioCsv(['RETENCION;Retención en la fuente;2026-09;6;06/10/2026', 'RETENCION;Retención en la fuente;2026-09;7;07/10/2026',
+      'IVA_BIM;IVA bimestral;2026-B4;6;30/09/2026'].join('\n'), 2026);
+    await guardarCalendario(base, 2026, filas);
+    await guardarObligaciones(base, EMPRESA.id, ['RETENCION', 'IVA_BIM']);
+    const alerta = calcularAlertas(await cargarDatos(c)).find((a) => a.id === 'vencimientos');
+    expect(alerta).toMatchObject({ nivel: 'alta', titulo: 'Hoy vence: IVA bimestral (2026-B4)' });
+    expect(alerta!.detalle).toBe('IVA bimestral 2026-B4: 2026-09-30 (hoy) · Retención en la fuente 2026-09: 2026-10-06 (en 6 días)');
+    const r = await preguntarConReglas('¿Qué vence este mes?', c);
+    expect(r.herramientas.map((h) => h.nombre)).toEqual(['proximos_vencimientos']);
+    expect(r.texto).toBe('En los próximos 30 días vence: IVA bimestral 2026-B4 el 2026-09-30 (hoy); Retención en la fuente 2026-09 el 2026-10-06 (en 6 días).');
+  });
+});

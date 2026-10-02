@@ -129,13 +129,20 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
             consulta = sb.from('periodos').select('*').eq('empresa_id', empresa).or(filtro);
             break;
           }
-          case 'uvt': {
-            // La UVT es de la firma de la empresa (RLS: miembros de la firma).
+          case 'uvt':
+          case 'calendario': {
+            // La UVT y el calendario son de la firma de la empresa (RLS: miembros de la firma).
             const { data: e, error: errEmpresa } = await sb.from('empresas').select('firma_id').eq('id', empresa).single();
             if (errEmpresa) throw traducirError(errEmpresa);
-            consulta = sb.from('uvt_firma').select('anio,uvt::text').eq('firma_id', (e as { firma_id: string }).firma_id).in('anio', grupo.map(Number));
+            const firma = (e as { firma_id: string }).firma_id;
+            consulta = tabla === 'uvt'
+              ? sb.from('uvt_firma').select('anio,uvt::text').eq('firma_id', firma).in('anio', grupo.map(Number))
+              : sb.from('calendario_firma').select('anio,filas').eq('firma_id', firma).in('anio', grupo.map(Number));
             break;
           }
+          case 'obligaciones':
+            consulta = sb.from('obligaciones_empresa').select('codigos').eq('empresa_id', empresa);
+            break;
           case 'reglas_proveedor':
             consulta = sb.from('reglas_proveedor').select('nit,cuenta,retenciones').eq('empresa_id', empresa).in('nit', grupo);
             break;

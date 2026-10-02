@@ -1,5 +1,5 @@
 import { balanceGeneral, estadoResultados } from '@contafi/motor';
-import { comprobantesParaReportes, hoyContable, leerComprobantes } from '@contafi/local';
+import { comprobantesParaReportes, hoyContable, leerComprobantes, vencimientosLocales } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, PillEstado, Vacio, dinero, fechaCorta, haceCuanto } from '../componentes/comunes.tsx';
 
@@ -10,6 +10,7 @@ export function Panel({ nuevoComprobante }: { nuevoComprobante: () => void }) {
     const cs = await comprobantesParaReportes(base, empresa.id, { incluirPendientes: true });
     const recientes = (await leerComprobantes(base, empresa.id)).slice(-6).reverse();
     return {
+      vencimientos: await vencimientosLocales(base, empresa.id, fecha, 30),
       bg: balanceGeneral(cs, fecha),
       er: estadoResultados(cs, { desde: `${fecha.slice(0, 4)}-01-01`, hasta: fecha }),
       recientes,
@@ -51,6 +52,19 @@ export function Panel({ nuevoComprobante }: { nuevoComprobante: () => void }) {
           {kpi('Utilidad del año', datos.er.utilidadNeta, datos.er.utilidadNeta < 0n ? 'trendingDown' : 'trendingUp', datos.er.utilidadNeta < 0n ? 'danger' : '', `Ingresos ${dinero(datos.er.ingresosOperacionales)}`)}
         </div>
       )}
+
+      {datos && datos.vencimientos.length > 0 && (
+        <div className="panel">
+          <div className="panel-head"><h2>Próximos vencimientos</h2><button className="btn ghost sm" onClick={() => ir('impuestos')}>Calendario<Icono nombre="arrowRight" /></button></div>
+          <div className="table-wrap"><table>
+            <thead><tr><th>Fecha</th><th className="wrap">Obligación</th><th>Período</th><th>Faltan</th></tr></thead>
+            <tbody>{datos.vencimientos.map((v) => (
+              <tr key={`${v.obligacion}-${v.periodo}-${v.fecha}`}>
+                <td>{fechaCorta(v.fecha)}</td><td className="wrap">{v.nombre}</td><td className="mono">{v.periodo}</td>
+                <td>{v.dias === 0 ? <span className="pill annulled">Hoy</span> : v.dias <= 7 ? <span className="pill draft">{v.dias} día(s)</span> : `${v.dias} días`}</td>
+              </tr>))}
+            </tbody></table></div>
+        </div>)}
 
       <div className="panel">
         <div className="panel-head"><h2>Últimos comprobantes</h2><button className="btn ghost sm" onClick={() => ir('comprobantes')}>Ver todos<Icono nombre="arrowRight" /></button></div>
