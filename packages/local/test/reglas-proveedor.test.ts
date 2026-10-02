@@ -44,7 +44,7 @@ describe('reglas por proveedor compartidas entre PC', () => {
       s(`insert into reglas_proveedor (empresa_id, nit, cuenta, actualizado_en) values ('e1', '901223556', '519530', '2026-09-01')`),
       s(`insert into retenciones_proveedor (empresa_id, nit, codigo) values ('e1', '901223556', 'RICA'), ('e1', '901223556', 'RF-COMPRAS'), ('e1', '830945221', 'RF-SERV')`),
     ]);
-    expect(await migrar(base)).toBe(2);
+    expect(await migrar(base)).toBe(3);
     expect(await reglasProveedor(base, 'e1')).toEqual({ '901223556': '519530' }); // 830945221 solo tiene retenciones
     expect(await retencionesDeProveedor(base, 'e1', '901223556')).toEqual(['RF-COMPRAS', 'RICA']);
     expect(await retencionesDeProveedor(base, 'e1', '830945221')).toEqual(['RF-SERV']);

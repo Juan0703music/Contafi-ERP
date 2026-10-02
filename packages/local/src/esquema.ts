@@ -186,6 +186,13 @@ export const MIGRACIONES: readonly string[][] = [
     `create table calendario (anio integer primary key, filas text not null) strict`,
     `create table obligaciones (empresa_id text primary key, codigos text not null) strict`,
   ],
+  // 9 · Métricas de sincronización por empresa (Fase 6: "medir la sincronización"; diagnóstico para soporte)
+  [
+    `create table metricas_sync (
+       empresa_id text primary key, sincronizaciones integer not null default 0, operaciones integer not null default 0,
+       rechazos integer not null default 0, fallos integer not null default 0, desde text not null, ultimo_fallo text
+     ) strict`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

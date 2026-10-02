@@ -438,7 +438,24 @@ export async function sincronizar(
   if (await enviarCola(base, transporte, opciones.empresa, opciones.dispositivo, resumen)) {
     await recibirCambios(base, transporte, opciones.empresa, resumen);
   }
+  await registrarMetricas(base, opciones.empresa, resumen);
   return resumen;
+}
+
+/** Contadores para el diagnóstico de soporte. Una falla aquí nunca debe afectar la sincronización. */
+async function registrarMetricas(base: BaseLocal, empresa: string, r: ResumenSincronizacion): Promise<void> {
+  const operaciones = r.enviados + r.tercerosRegistrados + r.tercerosRechazados + r.recibidos;
+  const rechazos = r.rechazados + r.tercerosRechazados + r.cuentasRechazadas;
+  const t = ahora();
+  try {
+    await base.lote([s(
+      `insert into metricas_sync (empresa_id, sincronizaciones, operaciones, rechazos, fallos, desde, ultimo_fallo)
+       values (?, 1, ?, ?, ?, ?, ?)
+       on conflict (empresa_id) do update set sincronizaciones = sincronizaciones + 1, operaciones = operaciones + excluded.operaciones,
+         rechazos = rechazos + excluded.rechazos, fallos = fallos + excluded.fallos,
+         ultimo_fallo = coalesce(excluded.ultimo_fallo, metricas_sync.ultimo_fallo)`,
+      empresa, operaciones, rechazos, r.error ? 1 : 0, t, r.error ? `${t} ${r.error}`.slice(0, 300) : null)]);
+  } catch { /* sin métricas no pasa nada */ }
 }
 
 // ------------------------------------------------------------------ transporte HTTP

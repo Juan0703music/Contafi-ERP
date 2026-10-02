@@ -1,15 +1,27 @@
-import { leerComprobantes, tercerosLocales } from '@contafi/local';
+import { useState } from 'react';
+import { diagnosticoLocal, leerComprobantes, tercerosLocales, textoDiagnostico } from '@contafi/local';
 import { useApp, useDatos } from '../estado.tsx';
 import { Icono, Vacio, fechaCorta, haceCuanto } from '../componentes/comunes.tsx';
 
 export function Sincronizacion() {
-  const { base, empresa, version, sync, sincronizarAhora, modo } = useApp();
+  const { base, empresa, version, sync, sincronizarAhora, modo, dispositivo, avisar } = useApp();
+  const [verDiagnostico, setVerDiagnostico] = useState(false);
   const { datos } = useDatos(async () => ({
     rechazados: await leerComprobantes(base, empresa.id, { estados: ['rechazado'] }),
     tercerosError: (await tercerosLocales(base, empresa.id)).filter((t) => t.errores_sync),
     cola: await base.consultar<{ tipo: string; registro_id: string; intentos: number; ultimo_error: string | null }>(
       'select tipo, registro_id, intentos, ultimo_error from cola_salida where empresa_id = ? order by seq limit 50', [empresa.id]),
+    diagnostico: await diagnosticoLocal(base, empresa.id),
   }), [base, empresa.id, version, sync.enCurso]);
+  const texto = datos ? textoDiagnostico(datos.diagnostico, {
+    app: dispositivo.version_app, sistema: navigator.userAgent.match(/\(([^)]+)\)/)?.[1] ?? navigator.platform,
+    modo: modo === 'demo' ? 'demostración' : 'nube', nit: empresa.nit, dispositivo: dispositivo.id,
+  }) : '';
+
+  async function copiar() {
+    try { await navigator.clipboard.writeText(texto); avisar('Diagnóstico copiado. Pégalo en el mensaje a soporte.', 'ok'); }
+    catch { setVerDiagnostico(true); avisar('Selecciona el texto y cópialo.', ''); }
+  }
   const e = sync.estado;
 
   const mini = (etiqueta: string, valor: string | number, tono = '') => (
@@ -55,6 +67,18 @@ export function Sincronizacion() {
               <tr key={c.registro_id}><td>{c.tipo}</td><td className="mono">{c.registro_id.slice(0, 8)}</td><td className="num">{c.intentos}</td><td className="wrap">{c.ultimo_error ?? ''}</td></tr>))}
             </tbody></table></div>
         ) : <Vacio icono="check">Todo está sincronizado.</Vacio>}
+      </div>
+      <div className="panel">
+        <div className="panel-head"><h2>Diagnóstico para soporte</h2>
+          <div className="btn-row">
+            <button className="btn ghost sm" onClick={() => setVerDiagnostico(!verDiagnostico)}>{verDiagnostico ? 'Ocultar' : 'Ver'}</button>
+            <button className="btn sm" disabled={!texto} onClick={() => void copiar()}><Icono nombre="file" />Copiar diagnóstico</button>
+          </div></div>
+        <div className="panel-body">
+          <p className="hint" style={{ marginTop: 0 }}>Solo datos técnicos (versión, cola, errores y conteos): sin montos, nombres de terceros ni conceptos.
+            {datos?.diagnostico.erroresPorMil != null && <> Errores de sincronización: <b>{datos.diagnostico.erroresPorMil} por cada 1.000 operaciones</b>.</>}</p>
+          {verDiagnostico && <pre className="mono" style={{ whiteSpace: 'pre-wrap', fontSize: 12, margin: 0, userSelect: 'all' }}>{texto}</pre>}
+        </div>
       </div>
     </>
   );

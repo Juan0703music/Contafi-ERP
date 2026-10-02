@@ -13,3 +13,4 @@ export * from './importar-terceros.ts';
 export * from './plan-cuentas.ts';
 export * from './calendario.ts';
 export * from './doble-corrida.ts';
+export * from './diagnostico.ts';

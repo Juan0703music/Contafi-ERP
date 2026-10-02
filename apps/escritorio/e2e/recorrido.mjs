@@ -353,6 +353,9 @@ const filasPuc = await page.$$eval('tbody tr', (trs) => trs.map((t) => t.textCon
 verificar('Cuenta auxiliar creada', filasPuc.length === 2 && filasPuc[0].includes('Mayor') && filasPuc[1].includes('11200501') && filasPuc[1].includes('Auxiliar'), filasPuc.join(' | '));
 await ir('Sincronización');
 await foto('11-sincronizacion');
+await boton('Ver');
+const diag = await page.$eval('pre', (n) => n.textContent);
+verificar('Diagnóstico para soporte', diag.startsWith('Diagnóstico de Contafi') && diag.includes('NIT 900123456') && !/Roble|Andina|\$/.test(diag), diag.split('\n')[4] ?? '');
 
 // Equipo de la firma (simulado en la demostración): invitar con rol por empresa y cambiar accesos
 await ir('Equipo de la firma');

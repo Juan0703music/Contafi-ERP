@@ -105,7 +105,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 |---|---|
 | Instalación y bienvenida de 3 contadores, con migración asistida de sus saldos | ✅ bienvenida en la nube; migración desde CSV: plan de cuentas (crea solo lo que falta, de padre a hijo), terceros, y saldos iniciales que crean los terceros que falten · 👤 instalar con los pilotos |
 | Doble corrida durante 2 cierres mensuales | ✅ pantalla "Doble corrida": compara el balance de Contafi con el del software anterior (CSV de Siigo, World Office, Helisa…) a la fecha de corte, a cualquier nivel del PUC · 👤 hacer los 2 cierres con los pilotos |
-| Corregir errores y medir la sincronización y la carga de soporte | ⬜ diagnóstico para soporte |
+| Corregir errores y medir la sincronización y la carga de soporte | ✅ métricas de sincronización por empresa (operaciones, rechazos, fallos de red, errores por cada 1.000 operaciones) y "Copiar diagnóstico" para soporte, sin montos ni nombres · 👤 medir con los pilotos |
 | Recoger testimonios | 👤 ⬜ |
 
 **Criterio de salida:** cero diferencias en los 2 cierres (sección 13) y pilotos dispuestos a pagar (👤).
@@ -148,14 +148,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 18. La plantilla del PUC no traía todos los grupos del Decreto 2650 (12 Inversiones, 16 Intangibles, 26 Pasivos estimados, 32 a 35 del patrimonio, clases 7 a 9…). Como las empresas no crean grupos, una empresa con esas cuentas no podía migrar. Ahora trae las 9 clases y sus 52 grupos, que nunca reciben movimientos ni se editan (antes se podía renombrar o inactivar un grupo).
 
-## Pruebas automáticas (02/10/2026) — 228 en total
+## Pruebas automáticas (02/10/2026) — 229 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 56 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance, la doble corrida de los libros contra sí mismos da cero diferencias)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 24 ✓
-- `@contafi/local`: 54 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
+- `@contafi/local`: 55 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
 - `supabase` (PGlite con privilegios de Supabase): 47 ✓
 - `@contafi/jarvis`: 21 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 21 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 22 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC
