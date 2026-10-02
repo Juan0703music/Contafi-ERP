@@ -106,15 +106,27 @@ export async function desactivarConcepto(base: BaseLocal, empresa: string, codig
   await base.lote([s('update conceptos_retencion set activo = 0 where empresa_id = ? and codigo = ?', empresa, codigo)]);
 }
 
+/** Retenciones aprendidas para un proveedor ([] si nunca se aprendieron). */
 export async function retencionesDeProveedor(base: BaseLocal, empresa: string, nit: string): Promise<string[]> {
-  return (await base.consultar<{ codigo: string }>('select codigo from retenciones_proveedor where empresa_id = ? and nit = ? order by codigo',
-    [empresa, limpiarNit(nit)])).map((f) => f.codigo);
+  const [f] = await base.consultar<{ retenciones: string | null }>('select retenciones from reglas_proveedor where empresa_id = ? and nit = ?',
+    [empresa, limpiarNit(nit)]);
+  return f?.retenciones ? (JSON.parse(f.retenciones) as string[]) : [];
 }
 
-export function sentenciasRetencionesProveedor(empresa: string, nit: string, codigos: readonly string[]) {
+/**
+ * Lo que la importación aprende de un proveedor (la cuenta, las retenciones o ambas) y su envío al
+ * servidor, que lo comparte con los demás PC. Lo que no se pasa (undefined) no cambia.
+ */
+export function sentenciasAprenderRegla(empresa: string, nit: string, a: { cuenta?: string; retenciones?: readonly string[] }) {
+  if (a.cuenta === undefined && a.retenciones === undefined) return [];
   const n = limpiarNit(nit);
+  const ahora = new Date().toISOString();
   return [
-    s('delete from retenciones_proveedor where empresa_id = ? and nit = ?', empresa, n),
-    ...codigos.map((c) => s('insert into retenciones_proveedor (empresa_id, nit, codigo) values (?, ?, ?)', empresa, n, c)),
+    s(`insert into reglas_proveedor (empresa_id, nit, cuenta, retenciones, actualizado_en) values (?, ?, ?, ?, ?)
+       on conflict (empresa_id, nit) do update set cuenta = coalesce(excluded.cuenta, reglas_proveedor.cuenta),
+         retenciones = coalesce(excluded.retenciones, reglas_proveedor.retenciones), actualizado_en = excluded.actualizado_en`,
+      empresa, n, a.cuenta ?? null, a.retenciones === undefined ? null : JSON.stringify([...a.retenciones].sort()), ahora),
+    s(`insert into cola_salida (empresa_id, tipo, registro_id, creado_en) values (?, 'regla', ?, ?)
+       on conflict (empresa_id, tipo, registro_id) do nothing`, empresa, n, ahora),
   ];
 }

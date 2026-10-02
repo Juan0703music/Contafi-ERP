@@ -154,6 +154,33 @@ export const MIGRACIONES: readonly string[][] = [
     `drop table cola_salida`,
     `alter table cola_salida_nueva rename to cola_salida`,
   ],
+  // 7 · Reglas por proveedor compartidas entre PC (como en el servidor): cuenta y retenciones aprendidas en
+  // una sola tabla. null = no se ha aprendido (no borra lo que aprenda otro PC). Viajan en la cola ('regla').
+  [
+    `create table reglas_proveedor_nueva (
+       empresa_id text not null, nit text not null, cuenta text, retenciones text, actualizado_en text not null,
+       primary key (empresa_id, nit)
+     ) strict`,
+    `insert into reglas_proveedor_nueva (empresa_id, nit, cuenta, actualizado_en)
+       select empresa_id, nit, cuenta, actualizado_en from reglas_proveedor`,
+    `insert into reglas_proveedor_nueva (empresa_id, nit, retenciones, actualizado_en)
+       select empresa_id, nit, json_group_array(codigo), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+         from (select empresa_id, nit, codigo from retenciones_proveedor order by empresa_id, nit, codigo)
+        where true group by empresa_id, nit
+       on conflict (empresa_id, nit) do update set retenciones = excluded.retenciones`,
+    `drop table reglas_proveedor`,
+    `drop table retenciones_proveedor`,
+    `alter table reglas_proveedor_nueva rename to reglas_proveedor`,
+    `create table cola_salida_nueva (
+       seq integer primary key autoincrement, empresa_id text not null,
+       tipo text not null check (tipo in ('comprobante', 'tercero', 'producto', 'cuenta', 'regla')), registro_id text not null,
+       intentos integer not null default 0, ultimo_error text, creado_en text not null,
+       unique (empresa_id, tipo, registro_id)
+     ) strict`,
+    `insert into cola_salida_nueva select * from cola_salida`,
+    `drop table cola_salida`,
+    `alter table cola_salida_nueva rename to cola_salida`,
+  ],
 ];
 
 export const VERSION_ESQUEMA = MIGRACIONES.length;

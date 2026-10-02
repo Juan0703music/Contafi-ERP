@@ -2,8 +2,8 @@ import { aCentavos, aDecimal, esFechaValida } from '@contafi/shared';
 import { aMilesimas } from '@contafi/motor';
 import {
   VERSION_PROTOCOLO,
-  type ComprobanteSync, type ConsultaCambios, type CuentaSync, type LoteEnvio, type ProductoSync, type RespuestaCambios, type RespuestaEnvio,
-  type TerceroSync,
+  type ComprobanteSync, type ConsultaCambios, type CuentaSync, type LoteEnvio, type ProductoSync, type ReglaProveedorSync, type RespuestaCambios,
+  type RespuestaEnvio, type TerceroSync,
 } from '@contafi/sync';
 import { s, type BaseLocal, type Sentencia } from './base.ts';
 import { sentenciaConcepto } from './retenciones.ts';
@@ -76,6 +76,13 @@ async function leerCuenta(base: BaseLocal, empresa: string, codigo: string): Pro
   };
 }
 
+async function leerRegla(base: BaseLocal, empresa: string, nit: string): Promise<ReglaProveedorSync | null> {
+  const [r] = await base.consultar<{ cuenta: string | null; retenciones: string | null }>(
+    'select cuenta, retenciones from reglas_proveedor where empresa_id = ? and nit = ?', [empresa, nit]);
+  if (!r) return null;
+  return { nit, cuenta: r.cuenta, retenciones: r.retenciones ? (JSON.parse(r.retenciones) as string[]) : null };
+}
+
 async function leerProducto(base: BaseLocal, id: string): Promise<ProductoSync | null> {
   const [p] = await base.consultar<Record<string, string | number | null>>(
     'select *, cast(precio_venta as text) as precio from productos where id = ?', [id]);
@@ -113,7 +120,7 @@ async function leerComprobanteSync(base: BaseLocal, id: string): Promise<Comprob
 
 /** Arma el siguiente lote respetando los límites. Cuentas, terceros y productos primero: los comprobantes pueden usarlos. */
 async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Dispositivo): Promise<LoteEnvio | null> {
-  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero' | 'producto' | 'cuenta'; registro_id: string }>(
+  const cola = await base.consultar<{ tipo: 'comprobante' | 'tercero' | 'producto' | 'cuenta' | 'regla'; registro_id: string }>(
     'select tipo, registro_id from cola_salida where empresa_id = ? order by seq', [empresa]);
   const cuentas: CuentaSync[] = [];
   const terceros: TerceroSync[] = [];
@@ -126,6 +133,13 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     const c = await leerCuenta(base, empresa, item.registro_id);
     if (!c) { huerfanos.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'cuenta' and registro_id = ?`, empresa, item.registro_id)); continue; }
     cuentas.push(c);
+  }
+  const reglas: ReglaProveedorSync[] = [];
+  for (const item of cola.filter((i) => i.tipo === 'regla')) {
+    if (reglas.length >= LIMITES.tercerosPorLote) break;
+    const r = await leerRegla(base, empresa, item.registro_id);
+    if (!r) { huerfanos.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'regla' and registro_id = ?`, empresa, item.registro_id)); continue; }
+    reglas.push(r);
   }
   for (const item of cola.filter((i) => i.tipo === 'tercero')) {
     if (terceros.length >= LIMITES.tercerosPorLote) break;
@@ -143,7 +157,8 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     bytes += JSON.stringify(p).length;
   }
   // Si quedaron cuentas, terceros o productos sin enviar, este lote no lleva comprobantes (podrían depender de ellos).
-  const quedanMaestros = cola.filter((i) => i.tipo !== 'comprobante').length > cuentas.length + terceros.length + productos.length + huerfanos.length;
+  const quedanMaestros = cola.filter((i) => i.tipo !== 'comprobante').length
+    > cuentas.length + reglas.length + terceros.length + productos.length + huerfanos.length;
   if (!quedanMaestros) {
     for (const item of cola.filter((i) => i.tipo === 'comprobante')) {
       if (comprobantes.length >= LIMITES.comprobantesPorLote) break;
@@ -156,9 +171,8 @@ async function siguienteLote(base: BaseLocal, empresa: string, dispositivo: Disp
     }
   }
   if (huerfanos.length) await base.lote(huerfanos);
-  if (cuentas.length + terceros.length + productos.length + comprobantes.length === 0) return null;
-  // Las reglas aprendidas por proveedor todavía no se envían desde el PC (pendiente: migración local 7).
-  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, cuentas, reglas: [], terceros, productos, comprobantes };
+  if (cuentas.length + reglas.length + terceros.length + productos.length + comprobantes.length === 0) return null;
+  return { version_protocolo: VERSION_PROTOCOLO, empresa_id: empresa, dispositivo, cuentas, reglas, terceros, productos, comprobantes };
 }
 
 function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSincronizacion): Sentencia[] {
@@ -176,6 +190,8 @@ function aplicarRespuesta(empresa: string, r: RespuestaEnvio, resumen: ResumenSi
     }
     out.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'cuenta' and registro_id = ?`, empresa, x.codigo));
   }
+  // Una regla rechazada (p. ej. su cuenta ya no es auxiliar en el servidor) queda como preferencia de este PC.
+  for (const x of r.reglas ?? []) out.push(s(`delete from cola_salida where empresa_id = ? and tipo = 'regla' and registro_id = ?`, empresa, x.nit));
   for (const x of r.terceros) {
     if (x.estado === 'registrado' && x.id_servidor) {
       if (x.id_servidor !== x.id) {
@@ -248,7 +264,7 @@ async function enviarCola(base: BaseLocal, transporte: Transporte, empresa: stri
     } catch (e) {
       // Nada se pierde: todo sigue en la cola y se reintenta en la próxima sincronización.
       const mensaje = e instanceof Error ? e.message : String(e);
-      const ids = [...lote.cuentas.map((c) => c.codigo), ...lote.terceros.map((t) => t.id), ...lote.productos.map((p) => p.id), ...lote.comprobantes.map((c) => c.id)];
+      const ids = [...lote.cuentas.map((c) => c.codigo), ...lote.reglas.map((x) => x.nit), ...lote.terceros.map((t) => t.id), ...lote.productos.map((p) => p.id), ...lote.comprobantes.map((c) => c.id)];
       await base.lote(ids.map((id) => s('update cola_salida set intentos = intentos + 1, ultimo_error = ? where empresa_id = ? and registro_id = ?', mensaje, empresa, id)));
       resumen.error = mensaje;
       return false;
@@ -296,6 +312,14 @@ function sentenciasRegistros(empresa: string, registros: RespuestaCambios['regis
       codigo: String(c['codigo']), tipo: c['tipo'] as 'RETEFUENTE', nombre: String(c['nombre']), tarifa_ppm: Number(c['tarifa_ppm']),
       base_minima_uvt: String(c['base_minima_uvt']), cuenta: String(c['cuenta']), aplica_en: c['aplica_en'] as 'compras' | 'ventas',
     }, !!c['activo']));
+  }
+  for (const r of registros.reglas_proveedor ?? []) {
+    const ret = r['retenciones'];
+    out.push(s(`insert into reglas_proveedor (empresa_id, nit, cuenta, retenciones, actualizado_en) values (?, ?, ?, ?, ?)
+                on conflict (empresa_id, nit) do update set cuenta = excluded.cuenta, retenciones = excluded.retenciones,
+                  actualizado_en = excluded.actualizado_en
+                where not exists (select 1 from cola_salida q where q.empresa_id = excluded.empresa_id and q.tipo = 'regla' and q.registro_id = excluded.nit)`,
+      empresa, txt(r['nit']), txt(r['cuenta']), Array.isArray(ret) ? JSON.stringify([...(ret as string[])].sort()) : null, ahora()));
   }
   for (const t of registros.tipos_comprobante ?? []) {
     out.push(s(`insert into tipos_comprobante (empresa_id, codigo, nombre, prefijo) values (?, ?, ?, ?)

@@ -142,6 +142,7 @@ export function transporteDemo(base: BaseLocal): Transporte {
         version_protocolo: VERSION_PROTOCOLO,
         // El servidor simulado acepta las cuentas: en la demostración el usuario es el administrador.
         cuentas: lote.cuentas.map((c) => ({ codigo: c.codigo, estado: 'registrado' as const, errores: [] })),
+        reglas: lote.reglas.map((r) => ({ nit: r.nit, estado: 'registrado' as const, errores: [] })),
         terceros: lote.terceros.map((t) => ({ id: t.id, id_servidor: t.id, estado: 'registrado' as const, errores: [] })),
         productos: lote.productos.map((p) => ({ id: p.id, id_servidor: p.id, estado: 'registrado' as const, errores: [] })),
         resultados,

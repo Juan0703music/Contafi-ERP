@@ -6,7 +6,7 @@ import {
 } from '@contafi/dian-xml';
 import { s, type BaseLocal } from './base.ts';
 import { crearComprobante, crearTercero } from './contabilidad.ts';
-import { conceptosRetencion, parametrosDelAnio, retencionesDeProveedor, sentenciasRetencionesProveedor, type ConceptoConfigurado } from './retenciones.ts';
+import { conceptosRetencion, parametrosDelAnio, retencionesDeProveedor, sentenciasAprenderRegla, type ConceptoConfigurado } from './retenciones.ts';
 
 export interface ArchivoEntrada {
   nombre: string;
@@ -31,7 +31,8 @@ const texto = (b: Uint8Array) => new TextDecoder('utf-8').decode(b);
 const esZip = (b: Uint8Array) => b[0] === 0x50 && b[1] === 0x4b; // "PK"
 
 export async function reglasProveedor(base: BaseLocal, empresa: string): Promise<ReglasProveedor> {
-  const filas = await base.consultar<{ nit: string; cuenta: string }>('select nit, cuenta from reglas_proveedor where empresa_id = ?', [empresa]);
+  const filas = await base.consultar<{ nit: string; cuenta: string }>(
+    'select nit, cuenta from reglas_proveedor where empresa_id = ? and cuenta is not null', [empresa]);
   return Object.fromEntries(filas.map((f) => [f.nit, f.cuenta]));
 }
 
@@ -183,11 +184,11 @@ export async function contabilizarImportacion(
             s(`insert into documentos_dian (empresa_id, cufe, tipo, sentido, numero, tercero_nit, tercero_nombre, fecha, total, comprobante_id, importado_en)
                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
               empresa.id, d.cufe, d.tipo, p.sentido, d.numero, limpiarNit(p.tercero.nit), p.tercero.razonSocial, d.fechaEmision, total, id, new Date().toISOString()),
-            // Las retenciones elegidas para el proveedor también se aprenden.
-            ...(p.sentido === 'compra' && retencionesCambiadas ? sentenciasRetencionesProveedor(empresa.id, p.tercero.nit, item.retenciones) : []),
-            ...(aprender ? [s(`insert into reglas_proveedor (empresa_id, nit, cuenta, actualizado_en) values (?, ?, ?, ?)
-                               on conflict (empresa_id, nit) do update set cuenta = excluded.cuenta, actualizado_en = excluded.actualizado_en`,
-              empresa.id, limpiarNit(p.tercero.nit), cuentaFinal, new Date().toISOString())] : []),
+            // La cuenta y las retenciones elegidas para el proveedor se aprenden y se comparten con los demás PC.
+            ...sentenciasAprenderRegla(empresa.id, p.tercero.nit, {
+              cuenta: aprender ? cuentaFinal : undefined,
+              retenciones: p.sentido === 'compra' && retencionesCambiadas ? item.retenciones : undefined,
+            }),
           ],
         });
       if (aprender) {

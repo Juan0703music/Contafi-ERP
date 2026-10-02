@@ -139,6 +139,13 @@ empresa se guardan en el servidor (`guardar_uvt`, `guardar_concepto_retencion`, 
 las mismas validaciones de la app) y bajan a todos los PC con la descarga de cambios. Antes eran de cada
 equipo: dos PC podían liquidar la misma compra con tarifas distintas. Se editan solo en línea, como el
 cierre de períodos: son cambios poco frecuentes y deben ser iguales en todos los equipos; sin conexión se
-siguen usando los últimos valores recibidos. En la demostración se guardan en el equipo. Las reglas que
-la importación aprende por proveedor (cuenta y retenciones) siguen siendo de cada PC.
+siguen usando los últimos valores recibidos. En la demostración se guardan en el equipo.
+
+## D-025 · Las reglas que aprende la importación se comparten, también sin conexión (2026-10-02)
+La cuenta y las retenciones que el contador elige para cada proveedor al importar facturas de la DIAN
+viajan en el lote (`reglas`) y el servidor las guarda en `reglas_proveedor`; bajan a los demás PC como
+cambios. A diferencia de la configuración tributaria (D-024), se aprenden sin conexión: son preferencias,
+no tarifas, y gana lo último aprendido. Un valor no aprendido viaja como null y no borra lo que aprendió
+otro PC (un PC puede aprender la cuenta y otro las retenciones del mismo proveedor). Si el servidor
+rechaza una regla (por ejemplo, su cuenta ya no es auxiliar), queda como preferencia de ese PC.
 
