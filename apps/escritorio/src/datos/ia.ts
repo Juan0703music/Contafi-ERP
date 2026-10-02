@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import {
-  calentarModelo, clienteLlamaServer, intencionClara, preguntarConIA, preguntarConReglas,
+  calentarModelo, clienteLlamaServer, intencionClara, preguntarConIA, preguntarConReglas, ErrorRespuestaModelo,
   type ClienteLLM, type ContextoJarvis, type MensajeLLM, type RespuestaJarvis,
 } from '@contafi/jarvis';
 import { enTauri } from './base-tauri.ts';
@@ -137,8 +137,9 @@ export async function preguntarJarvis(pregunta: string, ctx: ContextoJarvis, est
   if (!c) return preguntarConReglas(pregunta, ctx);
   try {
     return await preguntarConIA(pregunta, ctx, c, historial);
-  } catch {
-    cliente = null;
+  } catch (e) {
+    // Una salida inválida del modelo no es una falla del servidor: se conserva el cliente.
+    if (!(e instanceof ErrorRespuestaModelo)) cliente = null;
     return preguntarConReglas(pregunta, ctx);
   } finally {
     programarApagado();

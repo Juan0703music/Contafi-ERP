@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { aCentavos as $ } from '@contafi/shared';
 import {
   cargarDatos, ejecutarHerramienta, verificarCifras, calcularAlertas, preguntarConReglas, preguntarConIA, evaluar,
-  definicionesOpenAI, HERRAMIENTAS, bimestre, type ClienteLLM, type MensajeLLM,
+  definicionesOpenAI, HERRAMIENTAS, bimestre, clienteLlamaServer, ErrorRespuestaModelo, type ClienteLLM, type MensajeLLM,
 } from '../src/index.ts';
 import { guardarCalendario, guardarObligaciones, leerCalendarioCsv } from '@contafi/local';
 import { EMPRESA, HOY, empresaDePrueba } from './ayudas.ts';
@@ -154,6 +154,37 @@ describe('asistente con IA (con un modelo simulado)', () => {
     const r = await preguntarConIA('¿Cuánto nos deben los clientes?', await ctx(), m);
     expect(pedidos).toEqual([undefined, true, undefined]);
     expect(r).toMatchObject({ texto: 'Les deben $ 31.900.000.', cifrasNoVerificadas: [] });
+  });
+
+  it('si escribe la herramienta como texto o inventa una cifra, también se reintenta; un seguimiento conversacional no', async () => {
+    const pedidos: (boolean | undefined)[] = [];
+    const sinDatos = (contenido: string): ClienteLLM => ({
+      async completar(mensajes, _h, o) {
+        pedidos.push(o?.obligarHerramienta);
+        if (mensajes.at(-1)!.role === 'tool') return { contenido: `Les deben ${JSON.parse(mensajes.at(-1)!.content!).total}.`, llamadas: [] };
+        return o?.obligarHerramienta ? { contenido: null, llamadas: [{ id: 'x', nombre: 'cartera_por_edades', argumentos: '{}' }] } : { contenido, llamadas: [] };
+      },
+    });
+    for (const c of ['cartera_por_edades', 'Les deben $12.500.000.']) {
+      pedidos.length = 0;
+      expect((await preguntarConIA('¿Cuánto nos deben?', await ctx(), sinDatos(c))).texto).toBe('Les deben $ 31.900.000.');
+      expect(pedidos).toEqual([undefined, true, undefined]);
+    }
+    // Pregunta nueva sin cifras: igual se exige consultar. Seguimiento sin cifras ("gracias"): no.
+    pedidos.length = 0;
+    await preguntarConIA('¿Y eso es mucho?', await ctx(), sinDatos('Depende del sector.'));
+    expect(pedidos[1]).toBe(true);
+    pedidos.length = 0;
+    const r = await preguntarConIA('Gracias', await ctx(), sinDatos('Con gusto.'), [{ role: 'user', content: 'hola' }, { role: 'assistant', content: 'Hola' }]);
+    expect([r.texto, pedidos]).toEqual(['Con gusto.', [undefined]]);
+  });
+
+  it('una llamada a herramienta cortada (error 500 de llama-server) es un error del modelo, no del servidor', async () => {
+    const con = (status: number, cuerpo: string) => clienteLlamaServer({ url: 'http://x', fetch: (async () => new Response(cuerpo, { status })) as typeof fetch });
+    await expect(con(500, '{"error":{"message":"Failed to parse tool call arguments as JSON"}}').completar([], [])).rejects.toBeInstanceOf(ErrorRespuestaModelo);
+    const otro = await con(503, 'Loading model').completar([], []).catch((e: Error) => e);
+    expect(otro).toBeInstanceOf(Error);
+    expect(otro).not.toBeInstanceOf(ErrorRespuestaModelo);
   });
 
   it('las cifras que vienen escritas en los resultados (alertas) cuentan como verificadas', async () => {

@@ -20,6 +20,14 @@ export interface ClienteLLM {
   completar(mensajes: MensajeLLM[], herramientas: ReturnType<typeof definicionesOpenAI>, opciones?: { obligarHerramienta?: boolean }): Promise<RespuestaLLM>;
 }
 
+/**
+ * El modelo produjo una salida inválida (p. ej. una llamada a herramienta cortada a la mitad). No es una
+ * falla del servidor: esa pregunta se responde por reglas y el modelo sigue disponible para la siguiente.
+ */
+export class ErrorRespuestaModelo extends Error {
+  override name = 'ErrorRespuestaModelo';
+}
+
 /** Cliente para llama-server (API compatible con OpenAI) en 127.0.0.1 con token de sesión (sección 10). */
 export function clienteLlamaServer(o: { url: string; token?: string; fetch?: typeof fetch; tiempoMaximoMs?: number }): ClienteLLM {
   const f = o.fetch ?? globalThis.fetch;
@@ -36,7 +44,11 @@ export function clienteLlamaServer(o: { url: string; token?: string; fetch?: typ
         }),
         signal: AbortSignal.timeout(o.tiempoMaximoMs ?? 120_000),
       });
-      if (!res.ok) throw new Error(`El modelo respondió ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      if (!res.ok) {
+        const cuerpo = (await res.text()).slice(0, 300);
+        if (res.status === 500 && /parse tool call|tool call arguments/i.test(cuerpo)) throw new ErrorRespuestaModelo(`Llamada a herramienta inválida: ${cuerpo}`);
+        throw new Error(`El modelo respondió ${res.status}: ${cuerpo}`);
+      }
       const j = await res.json() as { choices: { message: { content?: string | null; tool_calls?: { id?: string; function: { name: string; arguments: string | object } }[] } }[] };
       const m = j.choices[0]?.message ?? {};
       return {
@@ -117,6 +129,12 @@ export function instruccionesSistema(): string {
 
 const quitarPensamiento = (t: string) => t.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
+/** ¿La respuesta sin herramientas debió consultar los datos? Siempre en una pregunta nueva. */
+function necesitaDatos(contenido: string, esSeguimiento: boolean): boolean {
+  const c = quitarPensamiento(contenido);
+  return !esSeguimiento || c.includes('?') || /\$|\d/.test(c) || HERRAMIENTAS.some((h) => c.includes(h.nombre));
+}
+
 /** Pregunta con IA: el modelo elige herramientas; el motor calcula; se verifican las cifras. */
 export async function preguntarConIA(
   pregunta: string, ctx: ContextoJarvis, cliente: ClienteLLM, historial: MensajeLLM[] = [], maxRondas = 4,
@@ -134,9 +152,10 @@ export async function preguntarConIA(
   let texto = '';
   for (let ronda = 0; ronda < maxRondas; ronda++) {
     let r = await cliente.completar(mensajes, definiciones);
-    // Modelos pequeños a veces "preguntan de vuelta" en lugar de consultar los datos: se reintenta
-    // una vez obligándolo a usar una herramienta.
-    if (ronda === 0 && !r.llamadas.length && (r.contenido ?? '').includes('?')) {
+    // Modelos pequeños a veces responden sin consultar los datos: preguntan de vuelta, escriben el nombre
+    // de la herramienta como texto o inventan cifras. Una respuesta así no puede tener cifras verificadas,
+    // así que se reintenta una vez obligándolo a usar una herramienta (salvo en un seguimiento que no lo necesita).
+    if (ronda === 0 && !r.llamadas.length && necesitaDatos(r.contenido ?? '', historial.length > 0)) {
       r = await cliente.completar(mensajes, definiciones, { obligarHerramienta: true });
     }
     if (!r.llamadas.length) {

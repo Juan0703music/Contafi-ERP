@@ -16,6 +16,8 @@ use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 pub struct EstadoIA(pub Mutex<Option<Child>>);
+/// Reconocimiento de voz (whisper-server), aparte de la IA: se enciende solo cuando se usa el micrófono.
+pub struct EstadoVoz(pub Mutex<Option<Child>>);
 
 fn texto<E: std::fmt::Display>(e: E) -> String {
     e.to_string()
@@ -56,6 +58,8 @@ pub struct ArchivosIA {
     carpeta: String,
     archivos: Vec<String>,
     motor_instalado: bool,
+    voz_instalada: bool,
+    lector_instalado: bool,
 }
 
 fn buscar_archivo(dir: &Path, nombre: &str) -> Option<PathBuf> {
@@ -73,6 +77,19 @@ fn buscar_archivo(dir: &Path, nombre: &str) -> Option<PathBuf> {
 }
 
 const SERVIDOR: &str = if cfg!(windows) { "llama-server.exe" } else { "llama-server" };
+const SERVIDOR_VOZ: &str = if cfg!(windows) { "whisper-server.exe" } else { "whisper-server" };
+const LECTOR: &str = if cfg!(windows) { "piper.exe" } else { "piper" };
+
+/// Carpeta donde se extrae cada motor. Van separados: whisper.cpp y llama.cpp traen DLL de ggml con el
+/// mismo nombre y de versiones distintas.
+fn carpeta_motor(nombre: Option<&str>) -> Result<&'static str, String> {
+    match nombre.unwrap_or("motor") {
+        "motor" => Ok("motor"),
+        "voz" => Ok("voz"),
+        "piper" => Ok("piper"),
+        _ => Err("Carpeta de destino inválida.".into()),
+    }
+}
 
 /// Qué hay descargado (solo archivos completos y verificados; los parciales terminan en ".parcial").
 #[tauri::command]
@@ -86,7 +103,9 @@ pub fn ia_archivos(app: AppHandle) -> Result<ArchivosIA, String> {
         .filter(|n| !n.ends_with(".parcial"))
         .collect();
     let motor_instalado = buscar_archivo(&dir.join("motor"), SERVIDOR).is_some();
-    Ok(ArchivosIA { carpeta: dir.display().to_string(), archivos, motor_instalado })
+    let voz_instalada = buscar_archivo(&dir.join("voz"), SERVIDOR_VOZ).is_some();
+    let lector_instalado = buscar_archivo(&dir.join("piper"), LECTOR).is_some();
+    Ok(ArchivosIA { carpeta: dir.display().to_string(), archivos, motor_instalado, voz_instalada, lector_instalado })
 }
 
 fn sha256_de(ruta: &Path) -> Result<String, String> {
@@ -131,7 +150,7 @@ struct Progreso {
     total: u64,
 }
 
-fn descargar(app: &AppHandle, dir: &Path, url: &str, archivo: &str, sha256: &str, extraer: bool) -> Result<(), String> {
+fn descargar(app: &AppHandle, dir: &Path, url: &str, archivo: &str, sha256: &str, extraer: Option<&str>) -> Result<(), String> {
     let destino = dir.join(archivo);
     if destino.exists() {
         if sha256_de(&destino)?.eq_ignore_ascii_case(sha256) {
@@ -188,22 +207,26 @@ fn descargar(app: &AppHandle, dir: &Path, url: &str, archivo: &str, sha256: &str
         return Err(format!("El archivo descargado no coincide con su huella SHA-256 (esperada {sha256}, obtenida {real}). Se descartó."));
     }
     std::fs::rename(&parcial, &destino).map_err(texto)?;
-    if extraer {
-        extraer_zip(&destino, &dir.join("motor"))?;
+    if let Some(carpeta) = extraer {
+        extraer_zip(&destino, &dir.join(carpeta))?;
     }
     let _ = app.emit("ia-descarga", Progreso { archivo: archivo.to_string(), descargado, total: descargado });
     Ok(())
 }
 
-/// Descarga un archivo del catálogo de IA, verifica su SHA-256 y, si es el motor (zip), lo extrae.
+/// Descarga un archivo del catálogo de IA, verifica su SHA-256 y, si es un motor (zip), lo extrae en su
+/// carpeta ("motor" para llama.cpp, "voz" para whisper.cpp).
 #[tauri::command]
-pub async fn ia_descargar(app: AppHandle, url: String, archivo: String, sha256: String, extraer: bool) -> Result<(), String> {
+pub async fn ia_descargar(
+    app: AppHandle, url: String, archivo: String, sha256: String, extraer: bool, carpeta: Option<String>,
+) -> Result<(), String> {
     nombre_valido(&archivo)?;
+    let destino_zip = if extraer { Some(carpeta_motor(carpeta.as_deref())?) } else { None };
     if !url.starts_with("https://") {
         return Err("Solo se descarga por HTTPS.".into());
     }
     let dir = carpeta_ia(&app)?;
-    tauri::async_runtime::spawn_blocking(move || descargar(&app, &dir, &url, &archivo, &sha256, extraer))
+    tauri::async_runtime::spawn_blocking(move || descargar(&app, &dir, &url, &archivo, &sha256, destino_zip))
         .await
         .map_err(texto)?
 }
@@ -215,7 +238,11 @@ pub struct Servidor {
 }
 
 fn detener(estado: &EstadoIA) {
-    if let Ok(mut guardia) = estado.0.lock() {
+    detener_proceso(&estado.0);
+}
+
+fn detener_proceso(proceso: &Mutex<Option<Child>>) {
+    if let Ok(mut guardia) = proceso.lock() {
         if let Some(mut hijo) = guardia.take() {
             let _ = hijo.kill();
             let _ = hijo.wait();
@@ -272,9 +299,118 @@ pub fn ia_detener(estado: State<'_, EstadoIA>) {
     detener(&estado);
 }
 
-/// Al cerrar la app no puede quedar llama-server corriendo.
+#[derive(Serialize)]
+pub struct ServidorVoz {
+    url: String,
+}
+
+/// Arranca whisper-server (reconocimiento de voz local) solo en 127.0.0.1 y en un puerto aleatorio.
+/// Recibe audio y devuelve texto; el audio no se guarda ni sale del PC.
+#[tauri::command]
+pub fn voz_iniciar(app: AppHandle, estado: State<'_, EstadoVoz>, modelo: String, pista: String, hilos: Option<usize>) -> Result<ServidorVoz, String> {
+    nombre_valido(&modelo)?;
+    if pista.len() > 600 {
+        return Err("Pista de vocabulario demasiado larga.".into());
+    }
+    let dir = carpeta_ia(&app)?;
+    let servidor = buscar_archivo(&dir.join("voz"), SERVIDOR_VOZ).ok_or("El reconocimiento de voz no está instalado.")?;
+    let ruta_modelo = dir.join(&modelo);
+    if !ruta_modelo.exists() {
+        return Err("El modelo de voz no está descargado.".into());
+    }
+    detener_proceso(&estado.0);
+
+    let puerto = std::net::TcpListener::bind("127.0.0.1:0")
+        .and_then(|l| l.local_addr())
+        .map_err(texto)?
+        .port();
+    let hilos = hilos.unwrap_or_else(|| std::thread::available_parallelism().map(|n| n.get().max(2) / 2).unwrap_or(2));
+    let mut comando = Command::new(&servidor);
+    comando
+        .arg("-m").arg(&ruta_modelo)
+        .args(["--host", "127.0.0.1", "--port", &puerto.to_string(), "-l", "es", "-t", &hilos.to_string()])
+        // Preguntas cortas (hasta ~15 s): una ventana de audio menor que la de 30 s hace la respuesta 2× más rápida.
+        .args(["-ac", "768", "--prompt", &pista])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    if let Some(carpeta) = servidor.parent() {
+        comando.current_dir(carpeta);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        comando.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let hijo = comando.spawn().map_err(|e| format!("No se pudo iniciar el reconocimiento de voz: {e}"))?;
+    *estado.0.lock().map_err(texto)? = Some(hijo);
+    Ok(ServidorVoz { url: format!("http://127.0.0.1:{puerto}") })
+}
+
+/// Lee un texto con una voz neuronal local (Piper) y devuelve el WAV. Un proceso por respuesta: carga la
+/// voz (~60 MB) en menos de un segundo y no deja nada corriendo ni ningún puerto abierto.
+#[tauri::command]
+pub async fn voz_sintetizar(app: AppHandle, contenido: String, voz: String) -> Result<tauri::ipc::Response, String> {
+    nombre_valido(&voz)?;
+    if !voz.ends_with(".onnx") {
+        return Err("Voz inválida.".into());
+    }
+    // Piper lee una línea por frase: todo en una sola línea para obtener un solo WAV.
+    let frase = contenido.replace(['\r', '\n'], " ");
+    if frase.trim().is_empty() || frase.len() > 4000 {
+        return Err("No hay texto para leer o es demasiado largo.".into());
+    }
+    let dir = carpeta_ia(&app)?;
+    let lector = buscar_archivo(&dir.join("piper"), LECTOR).ok_or("La voz de Jarvis no está instalada.")?;
+    let modelo = dir.join(&voz);
+    if !modelo.exists() || !dir.join(format!("{voz}.json")).exists() {
+        return Err("Esa voz no está descargada.".into());
+    }
+    let wav = tauri::async_runtime::spawn_blocking(move || -> Result<Vec<u8>, String> {
+        let mut comando = Command::new(&lector);
+        comando
+            .arg("--model").arg(&modelo)
+            .args(["--output_file", "-", "--sentence_silence", "0.25", "--length_scale", "0.95"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null());
+        if let Some(carpeta) = lector.parent() {
+            comando.current_dir(carpeta); // DLL y datos de espeak-ng junto al ejecutable
+        }
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            comando.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+        }
+        let mut hijo = comando.spawn().map_err(|e| format!("No se pudo iniciar la voz: {e}"))?;
+        {
+            let mut entrada = hijo.stdin.take().ok_or("No se pudo enviar el texto a la voz.")?;
+            entrada.write_all(frase.as_bytes()).map_err(texto)?;
+            entrada.write_all(b"\n").map_err(texto)?;
+        } // al soltar la entrada, Piper sabe que no hay más texto
+        let salida = hijo.wait_with_output().map_err(texto)?;
+        if !salida.status.success() || salida.stdout.len() < 44 {
+            return Err("La voz no pudo leer el texto.".into());
+        }
+        Ok(salida.stdout)
+    })
+    .await
+    .map_err(texto)??;
+    Ok(tauri::ipc::Response::new(wav))
+}
+
+/// Apaga el reconocimiento de voz y libera la memoria.
+#[tauri::command]
+pub fn voz_detener(estado: State<'_, EstadoVoz>) {
+    detener_proceso(&estado.0);
+}
+
+/// Al cerrar la app no puede quedar llama-server ni whisper-server corriendo.
 pub fn al_salir(app: &AppHandle) {
     if let Some(estado) = app.try_state::<EstadoIA>() {
         detener(&estado);
+    }
+    if let Some(estado) = app.try_state::<EstadoVoz>() {
+        detener_proceso(&estado.0);
     }
 }

@@ -157,3 +157,22 @@ El calendario es de la firma y año (`guardar_calendario`, en línea como la UVT
 cada empresa marca sus obligaciones (`guardar_obligaciones`). El panel, "Mis empresas" y Jarvis muestran
 lo que vence en los próximos días; las fechas de la plantilla están marcadas como ejemplo.
 
+## D-027 · 4B es el modelo mínimo de la IA; Qwen3 1,7B no entra al catálogo (2026-10-02)
+Evaluado con el banco de 46 preguntas en el mismo i5-8265U: en modo híbrido acierta todo (las reglas
+responden casi todo), pero cuando la pregunta le llega a la IA inventa cifras (números de decenas de
+dígitos) o escribe el nombre de la herramienta como texto en lugar de llamarla: 61 % de herramienta
+correcta y 80 % de cifras verificadas, frente al 100 % del 4B. Un contador no puede trabajar con eso.
+Con menos de 8 GB de RAM, Jarvis usa las reglas, que son exactas.
+
+## D-028 · Voz de Jarvis local: whisper.cpp para oír, Piper para hablar (2026-10-02)
+Como la IA (sección 12), la voz no usa servicios en línea: el reconocimiento lo hace whisper.cpp
+(`whisper-server` v1.9.2, modelo `small` multilingüe cuantizado, con una pista de vocabulario contable y
+ventana de 15 s) en 127.0.0.1, y la lectura una voz neuronal Piper (proceso por respuesta, sin puertos) o,
+como respaldo, una voz local del sistema; las voces "en línea" del navegador se descartan porque
+enviarían el texto de las respuestas, con cifras de la empresa. Todo se descarga dentro de la app desde
+URL fijas y se verifica con SHA-256. Cada motor va en su carpeta: whisper.cpp y llama.cpp traen DLL de
+ggml con el mismo nombre y distinta versión. Licencias (confirmar con el abogado): whisper.cpp y Piper
+son MIT; Piper usa espeak-ng (GPL-3.0) como programa aparte; voces Claude (Apache 2.0), Ald (Unlicense)
+y Daniela (CC BY-SA 4.0, exige atribución). En el navegador de desarrollo se usan un whisper-server y
+`scripts/voz-desarrollo.mjs` locales (VITE_WHISPER_URL, VITE_PIPER_URL).
+

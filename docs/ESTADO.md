@@ -80,6 +80,7 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Proceso auxiliar llama.cpp, descarga del modelo y detección de hardware | ✅ en Rust (compila en Windows): descarga reanudable con SHA-256, RAM, 127.0.0.1 + puerto aleatorio + token, apagado al salir y tras 5 min sin uso · 👤 ⬜ probarlo en un PC con Windows |
 | Herramientas de solo lectura (12.3) y motor de alertas (12.4) | ✅ 15 herramientas (incluye inventario bajo y próximos vencimientos) y alertas por reglas (incluye existencias negativas y vencimientos tributarios de los próximos 7 días) |
 | Banco de preguntas y evaluación (12.5) | ✅ 46 preguntas y `pnpm --filter @contafi/jarvis evaluar` · 👤 ⬜ ampliar a 150 preguntas reales del piloto |
+| Voz (adelantada de la versión 1.x) | ✅ hablarle a Jarvis con el micrófono (whisper.cpp `small`, local, ~3 s por pregunta) y respuestas con voces neuronales locales Piper (Claude, Ald, Daniela) o la del sistema; modo manos libres (D-028) · 👤 ⬜ probar en Windows |
 
 **Medición real** (Qwen3-4B Q4_K_M en un portátil i5-8265U, 4 núcleos, sin tarjeta gráfica; Linux):
 
@@ -88,11 +89,15 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Todo con IA, instrucciones v1 | 76,2 % | 95,2 % | 27,6 s | 98,6 s |
 | Todo con IA, instrucciones v2 | 100 % | 100 % | 30,9 s | 69,3 s |
 | **Híbrido (como la app)** | **100 %** | 97,6 % → 100 % tras dar los totales en la herramienta | **4,2 s** | 74,1 s |
+| Qwen3 1,7B Q8_0, todo con IA | 60,9 % (28,3 % antes del reintento ampliado) | 80,4 % | 22,9 s | 52,3 s |
+| Qwen3 1,7B Q8_0, híbrido | 100 % | 100 % | 2,6 s | 47,1 s |
 
 - Leer instrucciones y herramientas toma ~85 s la primera vez; queda en la caché (después, 4,5 s). La app lo hace al abrir Jarvis.
 - El servidor de IA usa ~4,6 GB de RAM con el modelo de 4B.
 - La verificación de cifras atrapó dos cifras inventadas por el modelo (sumas que no pidió nadie).
-- **Criterio de salida:** con el modo híbrido se cumplen las metas de precisión y el promedio < 10 s; las preguntas que sí requieren la IA tardan 30–80 s en este procesador. Siguiente paso (plan: "se usa un modelo más pequeño"): evaluar Qwen3 1,7B y medir en el PC Windows de 8 GB del piloto.
+- **Criterio de salida:** con el modo híbrido se cumplen las metas de precisión y el promedio < 10 s; las preguntas que sí requieren la IA tardan 30–80 s en este procesador.
+- **Modelo más pequeño (evaluado):** Qwen3 1,7B usa la mitad de RAM (2,2 GB), pero cuando la pregunta le llega a la IA inventa cifras absurdas o escribe la herramienta como texto. No entra al catálogo: 4B es el mínimo para la IA y con menos de 8 GB se usan las reglas (D-027). De la evaluación salieron dos mejoras para todos los modelos: reintento con herramienta obligatoria cuando el modelo responde sin consultar datos, y una llamada a herramienta cortada se responde por reglas sin reiniciar la IA.
+- 👤 ⬜ medir en el PC Windows de 8 GB del piloto.
 
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
@@ -121,14 +126,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 
-## Pruebas automáticas (02/10/2026) — 211 en total
+## Pruebas automáticas (02/10/2026) — 216 en total
 - `@contafi/shared`: 15 ✓
 - `@contafi/motor`: 52 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 24 ✓
 - `@contafi/local`: 48 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
 - `supabase` (PGlite con privilegios de Supabase): 45 ✓
-- `@contafi/jarvis`: 16 ✓
+- `@contafi/jarvis`: 21 ✓
 - `apps/web`: compila; rutas probadas por HTTP
 - `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 19 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

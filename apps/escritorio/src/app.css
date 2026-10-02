@@ -30,3 +30,10 @@
 .fila-puc.inactiva td{opacity:.55;}
 .acciones-fila{text-align:right; white-space:nowrap;}
 .acciones-fila .btn + .btn{margin-left:6px;}
+/* Jarvis por voz: el micrófono "respira" mientras escucha. */
+.btn.mic.activo{background:var(--danger-soft); border-color:var(--danger-border); color:var(--danger);}
+.btn.mic.activo.oye{animation:pulso-mic 1s ease-in-out infinite;}
+@keyframes pulso-mic{0%,100%{box-shadow:0 0 0 0 var(--danger-border);}50%{box-shadow:0 0 0 6px transparent;}}
+@media (prefers-reduced-motion: reduce){.btn.mic.activo.oye{animation:none;}}
+.estado-voz{display:flex; align-items:center; gap:8px; padding:6px 14px; font-size:13px; color:var(--ink-soft);}
+.opciones-voz{display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px;}

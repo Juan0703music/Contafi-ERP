@@ -71,7 +71,12 @@ export async function evaluar(
   let correctas = 0, verificadas = 0, suma = 0, maximo = 0;
   const fallos: ResultadoEvaluacion['fallos'] = [];
   for (const q of banco) {
-    const r = await responder(q.pregunta);
+    const inicio = Date.now();
+    // Un error en una pregunta cuenta como fallo de esa pregunta; la evaluación sigue.
+    const r = await responder(q.pregunta).catch((e: Error): RespuestaJarvis => ({
+      texto: `ERROR: ${e.message.slice(0, 160)}`, herramientas: [], cifrasNoVerificadas: [], provisional: false, motor: 'ia',
+      milisegundos: Date.now() - inicio,
+    }));
     const usadas = r.herramientas.map((h) => h.nombre);
     const ok = usadas.includes(q.herramienta);
     if (ok) correctas++;
