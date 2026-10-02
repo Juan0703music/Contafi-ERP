@@ -28,6 +28,10 @@ Guía para implementar el cliente (app de escritorio, Fase 3). El servidor ya es
    no llega al servidor) y guarda la nueva contraseña con `auth.updateUser`. **En Supabase → Authentication →
    URL Configuration** hay que agregar `<URL_SITIO>/clave` a las *Redirect URLs* (si no, el enlace no funciona).
 
+8. **Términos y política de datos:** al ingresar, la app llama `documentos_pendientes()`; si hay versiones
+   publicadas sin aceptar, las muestra y registra la aceptación con `aceptar_documentos(p_documentos)`.
+   Para publicar una versión: texto en `apps/web/contenido/legal.ts` y `publicado = true` en `documentos_legales`.
+
 **En la app:** la pantalla de acceso tiene "Crear una cuenta" y "¿Olvidaste tu contraseña?". Un usuario sin empresas ve la bienvenida:
 pegar el código de una invitación o crear su firma; al crearla, activa la verificación en dos pasos y
 registra la primera empresa. Después, "Mis empresas → Nueva empresa" y "Equipo de la firma".

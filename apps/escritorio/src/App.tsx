@@ -23,6 +23,7 @@ import { Estados } from './pantallas/Estados.tsx';
 import { Equipo } from './pantallas/Equipo.tsx';
 import { Bienvenida } from './pantallas/Bienvenida.tsx';
 import { DobleCorrida } from './pantallas/DobleCorrida.tsx';
+import { AceptarDocumentos, type DocumentoLegal } from './pantallas/AceptarDocumentos.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
 import { EMPRESA_DEMO, sembrarDemo, transporteDemo } from './datos/demo.ts';
@@ -80,6 +81,8 @@ export function App() {
   const [sesion, setSesion] = useState<Sesion | null>(null);
   /** Usuario de la nube sin empresas: asistente para crear su firma o unirse a una. */
   const [bienvenida, setBienvenida] = useState(false);
+  /** Términos y política de datos vigentes que el usuario aún no ha aceptado. */
+  const [legales, setLegales] = useState<DocumentoLegal[] | null>(null);
 
   const entrarDemo = useCallback(async () => {
     const { base, aviso: a } = await abrirBase();
@@ -98,6 +101,12 @@ export function App() {
 
   const entrarNube = useCallback(async (): Promise<boolean> => {
     const { supabase, api } = nube!;
+    const { data: pendientes } = await supabase.rpc('documentos_pendientes');
+    if (Array.isArray(pendientes) && pendientes.length) {
+      setLegales(pendientes as DocumentoLegal[]);
+      return false;
+    }
+    setLegales(null);
     const empresas = await empresasDelUsuario(supabase);
     if (empresas.length === 0) {
       setBienvenida(true);
@@ -131,6 +140,15 @@ export function App() {
     if (!nube && !enTauri() && new URLSearchParams(location.search).has('demo')) void entrarDemo();
   }, [nube, entrarDemo]);
 
+  if (!sesion && legales && nube) {
+    return <AceptarDocumentos documentos={legales} urlSitio={nube.api}
+      alAceptar={async () => {
+        const { error } = await nube.supabase.rpc('aceptar_documentos', { p_documentos: legales.map((d) => ({ codigo: d.codigo, version: d.version })) });
+        if (error) throw new Error(error.message.includes('fetch') ? 'Se necesita conexión a internet.' : error.message);
+        await entrarNube();
+      }}
+      alSalir={async () => { await nube.supabase.auth.signOut(); setLegales(null); }} />;
+  }
   if (!sesion && bienvenida && nube) {
     return <Bienvenida supabase={nube.supabase} servicio={servicioNube!} alListo={entrarNube}
       alSalir={async () => { await nube.supabase.auth.signOut(); setBienvenida(false); }} />;

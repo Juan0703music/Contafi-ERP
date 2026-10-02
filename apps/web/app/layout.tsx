@@ -27,6 +27,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <footer className="pie">
           <div className="contenedor pie-fila">
             <span>© {new Date().getFullYear()} Contafi</span>
+            <span><Link href="/terminos">Términos</Link> · <Link href="/privacidad">Datos personales</Link></span>
             <span>La responsabilidad profesional sobre la contabilidad es del contador; Contafi es una herramienta.</span>
           </div>
         </footer>

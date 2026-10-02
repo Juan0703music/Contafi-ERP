@@ -17,9 +17,10 @@ describe('auditoría de seguridad de la base', () => {
                      where n.nspname = 'public' and c.relkind = 'r' and not c.relrowsecurity`)).toEqual([]);
   });
 
-  it('sin sesión (anon) solo se leen los precios; nadie tiene TRUNCATE', async () => {
+  it('sin sesión (anon) solo se leen los precios y los documentos legales publicados; nadie tiene TRUNCATE', async () => {
     expect(await q(`select table_name, privilege_type from information_schema.role_table_grants
-                     where grantee = 'anon' and table_schema = 'public' order by 1, 2`)).toEqual([{ table_name: 'planes', privilege_type: 'SELECT' }]);
+                     where grantee = 'anon' and table_schema = 'public' order by 1, 2`)).toEqual([
+      { table_name: 'documentos_legales', privilege_type: 'SELECT' }, { table_name: 'planes', privilege_type: 'SELECT' }]);
     expect(await q(`select table_name, grantee from information_schema.role_table_grants
                      where grantee in ('anon', 'authenticated') and table_schema = 'public' and privilege_type = 'TRUNCATE'`)).toEqual([]);
   });
