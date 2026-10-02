@@ -117,8 +117,27 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 | Sitio web con precios, descarga, documentación y videos | ✅ `apps/web`: inicio, precios (leídos de la tabla `planes`, "+ IVA"), descargar (requisitos y SmartScreen), ayuda con 11 guías y soporte · ⬜ videos · 👤 publicar el instalador y configurar correo, WhatsApp y horario (`.env.example`) |
 | Cobro recurrente y facturación electrónica de las suscripciones | 🟡 planes y límites en el servidor (prueba de 30 días, Independiente, Firma, Firma Plus, empresas adicionales; precios en una tabla), aviso de vencimiento y modo consulta (D-029) · ⬜ conectar la pasarela de pagos (marca `pagado_hasta`) · 👤 cuenta en Wompi o ePayco y facturación electrónica propia |
 | Canal de soporte y base de conocimiento | ✅ página de soporte (tiempos de respuesta del plan, diagnóstico) y base de conocimiento · 👤 WhatsApp Business y correo de soporte |
-| Checklist de la sección 22 | ⬜ (ver el plan) |
+| Checklist de la sección 22 | 🟡 ver la tabla siguiente |
 | Campaña a contadores | 👤 ⬜ |
+
+### Checklist de lanzamiento (sección 22)
+
+| Punto | Estado |
+|---|---|
+| Empresa constituida, RUT, cuenta bancaria y facturación electrónica propia | 👤 ⬜ |
+| Marca solicitada y software registrado en la DNDA | 👤 ⬜ |
+| Términos, licencia, política de datos y contrato de transmisión publicados, con registro de cada aceptación | 👤 ⬜ textos del abogado · ⬜ registrar la aceptación en la app |
+| IVA del servicio definido; precios publicados indicando si incluyen IVA | ✅ el sitio muestra "+ IVA" · 👤 ⬜ confirmar con el contador |
+| Instalador firmado; actualizaciones probadas (beta y luego estable) | ⬜ actualizador (llaves) · 👤 ⬜ certificado de firma de código |
+| Respaldos automáticos y una restauración probada en el último mes | 🟡 respaldo diario en el PC con restauración automática · 👤 ⬜ Supabase Pro y prueba mensual (ver el plan de incidentes) |
+| Pruebas de RLS y revisión de seguridad | ✅ auditoría automática de toda la base (`supabase/test/seguridad.test.ts`) y pruebas de RLS por función · 👤 ⬜ revisión externa opcional |
+| 3 pilotos con 2 cierres sin diferencias, y testimonios | ✅ herramienta de doble corrida · 👤 ⬜ los pilotos |
+| Parámetros tributarios del año cargados (UVT, calendario, tarifas) | ✅ pantallas para cargarlos y compartirlos por firma · 👤 ⬜ cargar los del año con el asesor |
+| Documentación y videos de las tareas principales | ✅ 11 guías en el sitio · 👤 ⬜ videos |
+| Soporte con horario y tiempos de respuesta publicados | ✅ página de soporte · 👤 ⬜ configurar canales y horario |
+| Monitoreo (Sentry y disponibilidad) con alertas activas | 🟡 `/api/salud` para el monitor de disponibilidad · ⬜ Sentry (DSN) |
+| Cobro recurrente probado de punta a punta | 🟡 planes, límites y modo consulta · ⬜ pasarela de pagos |
+| Plan de incidentes de seguridad escrito | ✅ `docs/seguridad/plan-incidentes.md` · 👤 ⬜ completar contactos y confirmar lo legal |
 
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
