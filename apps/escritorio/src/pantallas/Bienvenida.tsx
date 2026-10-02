@@ -27,7 +27,6 @@ export function Bienvenida({ supabase, servicio, alListo, alSalir }: {
   const [codigo, setCodigo] = useState('');
   const [empresa, setEmpresa] = useState(EMPRESA_VACIA);
   const [error, setError] = useState<string | null>(null);
-  const [nota, setNota] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
 
   /** Decide el paso según el estado en el servidor (así se retoma si se cerró la app a mitad). */
@@ -35,10 +34,12 @@ export function Bienvenida({ supabase, servicio, alListo, alSalir }: {
     const { data: requiere, error: e1 } = await supabase.rpc('requiere_mfa');
     if (e1) throw new Error(mensajeServidor(e1));
     if (requiere) return setPaso({ tipo: 'mfa' });
+    // Un administrador recién verificado (o alguien a quien ya le asignaron empresas) entra directo.
+    if (await alListo()) return;
     const firmas = await servicio.misFirmas();
     const admin = firmas.find(esAdministrador);
     setPaso(admin ? { tipo: 'empresa', firma: admin } : { tipo: 'inicio', firmas });
-  }, [supabase, servicio]);
+  }, [supabase, servicio, alListo]);
 
   useEffect(() => { evaluar().catch((e: Error) => { setError(e.message); setPaso({ tipo: 'inicio', firmas: [] }); }); }, [evaluar]);
 
@@ -59,10 +60,9 @@ export function Bienvenida({ supabase, servicio, alListo, alSalir }: {
 
   const unirse = trabajar(async () => {
     await servicio.aceptarInvitacion(codigo);
-    if (!(await alListo())) {
-      setNota('Ya eres parte de la firma, pero todavía no te asignaron empresas. Pide a un administrador que te dé acceso.');
-      await evaluar();
-    }
+    setCodigo('');
+    // Entra si ya tiene empresas; si es administrador, primero la verificación en dos pasos.
+    await evaluar();
   });
 
   const crearEmpresa = trabajar(async () => {
@@ -88,7 +88,6 @@ export function Bienvenida({ supabase, servicio, alListo, alSalir }: {
               <p className="login-lead">{paso.firmas.length
                 ? `Eres parte de ${paso.firmas.map((f) => f.nombre).join(', ')}, pero aún no tienes empresas asignadas.`
                 : 'Tu cuenta todavía no pertenece a ninguna firma.'}</p></div>
-            {nota && <div className="notice">{nota}</div>}
             <form onSubmit={unirse} style={{ display: 'contents' }}>
               <div className="field"><label htmlFor="bCodigo">¿Te invitaron? Código de la invitación</label>
                 <input type="text" id="bCodigo" className="mono" autoComplete="off" value={codigo} onChange={(e) => setCodigo(e.target.value)} placeholder="Pega el código del enlace del correo" /></div>

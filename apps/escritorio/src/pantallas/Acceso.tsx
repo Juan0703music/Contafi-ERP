@@ -149,7 +149,12 @@ export function PasoMfa({ supabase, alVerificar, motivo }: { supabase: SupabaseC
       const { data: factores } = await supabase.auth.mfa.listFactors();
       const totp = factores?.totp.find((f) => f.status === 'verified');
       if (totp) { if (vivo) setEstado({ factorId: totp.id }); return; }
-      const { data, error: err } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Contafi ${new Date().toISOString().slice(0, 10)}` });
+      // Un intento anterior que no se terminó deja un factor sin verificar; Supabase no admite dos con el
+      // mismo nombre, así que se quitan antes de crear el nuevo.
+      for (const f of factores?.all ?? []) {
+        if (f.factor_type === 'totp' && f.status === 'unverified') await supabase.auth.mfa.unenroll({ factorId: f.id });
+      }
+      const { data, error: err } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Contafi' });
       if (!vivo) return;
       if (err) setError(err.message);
       else setEstado({ factorId: data.id, qr: data.totp.qr_code, secreto: data.totp.secret });
