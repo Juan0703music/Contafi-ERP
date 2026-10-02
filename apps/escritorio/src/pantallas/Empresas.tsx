@@ -13,6 +13,9 @@ export function Empresas() {
   const [sincronizando, setSincronizando] = useState<string | null>(null);
   const [nueva, setNueva] = useState(false);
   const admin = esAdministrador(firmas.find((f) => f.id === empresa.firma_id));
+  const { firma } = useApp();
+  const { datos: suscripcion } = useDatos(() => firma.suscripcion(empresa.firma_id), [firma, empresa.firma_id, empresas.length]);
+  const alLimite = !!suscripcion && suscripcion.empresas >= suscripcion.empresas_max;
   const { datos } = useDatos(() => Promise.all(empresas.map((e) => resumenEmpresa(base, e.id))), [base, empresas, version]);
 
   async function sincronizarTodas() {
@@ -34,7 +37,9 @@ export function Empresas() {
       <div className="page-head split">
         <div><h1>Mis empresas</h1><p>{empresas.length} empresa(s){conAlertas ? ` · ${conAlertas} requieren atención` : ' · todo al día'}.</p></div>
         <div className="btn-row">
-          {admin && <button className="btn" onClick={() => setNueva(true)}><Icono nombre="plus" />Nueva empresa</button>}
+          {suscripcion && <span className="chip" title={`Plan ${suscripcion.nombre}`}>{suscripcion.empresas} de {suscripcion.empresas_max} empresas</span>}
+          {admin && <button className="btn" disabled={alLimite || suscripcion?.activa === false}
+            title={alLimite ? 'Llegaste al límite de empresas de tu plan' : undefined} onClick={() => setNueva(true)}><Icono nombre="plus" />Nueva empresa</button>}
           <button className="btn primary" disabled={sincronizando !== null} onClick={() => void sincronizarTodas()}>
             <Icono nombre="arrowUpRight" />{sincronizando ? 'Sincronizando…' : 'Sincronizar todas'}</button></div>
       </div>

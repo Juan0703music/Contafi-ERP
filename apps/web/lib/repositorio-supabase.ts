@@ -44,6 +44,11 @@ export function repositorioSupabase(sb: SupabaseClient): RepositorioSync {
   return {
     puedeRegistrar: (e) => puede(e, 'CREATE'),
     puedeLeer: (e) => puede(e, 'READ'),
+    async suscripcionActiva(empresa) {
+      const { data, error } = await sb.rpc('suscripcion_activa', { p_empresa: empresa });
+      if (error) throw traducirError(error);
+      return data === true;
+    },
 
     async contexto(empresa) {
       const cuentas: Cuenta[] = [];

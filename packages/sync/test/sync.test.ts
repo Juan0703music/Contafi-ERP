@@ -4,7 +4,7 @@ import type { PGlite } from '@electric-sql/pglite';
 import { plantillaCompletaPuc } from '@contafi/shared';
 import { crearBaseDePrueba, como, registrarUsuario, type Sesion } from '@contafi/supabase/test/entorno';
 import {
-  ErrorAcceso, loteEnvio, obtenerCambios, procesarEnvio, VERSION_PROTOCOLO,
+  ErrorAcceso, ErrorSuscripcion, loteEnvio, obtenerCambios, procesarEnvio, VERSION_PROTOCOLO,
   type ComprobanteSync, type LoteEnvio, type RespuestaCambios,
 } from '../src/index.ts';
 import { repositorioPglite } from './repositorio-pglite.ts';
@@ -301,5 +301,18 @@ describe('reglas aprendidas por proveedor (importación DIAN)', () => {
     // Llegan a los demás PC como cambios
     const c = await obtenerCambios(repo, { empresa_id: empresa, desde: 0, limite: 1000 });
     expect(c.registros.reglas_proveedor).toEqual([{ nit: '901223556', cuenta: '519595', retenciones: ['RF-COMPRAS'] }]);
+  });
+});
+
+describe('suscripción vencida (modo consulta)', () => {
+  it('el lote falla entero con un mensaje claro y nada se rechaza; al renovar, entra', async () => {
+    const repo = repositorioPglite(db, ana);
+    const l = lote([cg('2026-09-20', [['519595', '1000', '0'], ['111005', '0', '1000']])]);
+    await db.query(`update public.firmas set pagado_hasta = current_date - 30 where id = (select firma_id from public.empresas where id = $1)`, [empresa]);
+    await expect(procesarEnvio(repo, l)).rejects.toThrow(ErrorSuscripcion);
+    await expect(procesarEnvio(repo, l)).rejects.toThrow(/modo consulta/);
+    expect((await obtenerCambios(repo, { empresa_id: empresa, desde: 0, limite: 10 })).registros).toBeDefined(); // leer sí
+    await db.query(`update public.firmas set pagado_hasta = current_date + 30 where id = (select firma_id from public.empresas where id = $1)`, [empresa]);
+    expect((await procesarEnvio(repo, l)).resultados[0]!.estado).toBe('contabilizado');
   });
 });

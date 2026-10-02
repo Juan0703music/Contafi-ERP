@@ -53,6 +53,7 @@ export function repositorioPglite(db: PGlite, sesion: Sesion): RepositorioSync {
   return {
     puedeRegistrar: (e) => puede(e, 'CREATE'),
     puedeLeer: (e) => puede(e, 'READ'),
+    suscripcionActiva: async (e) => (await q<{ a: boolean }>('select public.suscripcion_activa($1) as a', [e]))[0]!.a,
     async contexto(empresa) {
       const cuentas = await q<{ codigo: string; nombre: string; naturaleza: 'D' | 'C'; acepta_movimiento: boolean; exige_tercero: boolean; exige_centro_costo: boolean; activa: boolean }>(
         'select codigo, nombre, naturaleza, acepta_movimiento, exige_tercero, exige_centro_costo, activa from public.cuentas where empresa_id = $1', [empresa]);

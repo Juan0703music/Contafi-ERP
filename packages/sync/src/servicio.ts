@@ -21,6 +21,8 @@ export interface ResultadoRegistro {
 export interface RepositorioSync {
   puedeRegistrar(empresaId: string): Promise<boolean>;
   puedeLeer(empresaId: string): Promise<boolean>;
+  /** false = la firma tiene acceso, pero la suscripción venció (modo consulta). */
+  suscripcionActiva(empresaId: string): Promise<boolean>;
   contexto(empresaId: string): Promise<{ cuentas: Cuenta[]; periodosCerrados: string[] }>;
   buscarPorClave(empresaId: string, clave: string): Promise<ResultadoRegistro | null>;
   registrar(p: ComprobanteSync & { empresa_id: string; dispositivo_id: string }): Promise<ResultadoRegistro>;
@@ -39,6 +41,11 @@ export interface RepositorioSync {
 
 export class ErrorAcceso extends Error {
   override name = 'ErrorAcceso';
+}
+
+/** La suscripción de la firma venció: modo consulta. Lo pendiente se queda en la cola del PC. */
+export class ErrorSuscripcion extends Error {
+  override name = 'ErrorSuscripcion';
 }
 
 /** Error de datos de un registro puntual (no de sesión ni de red): se informa en su resultado y el lote sigue. */
@@ -114,6 +121,9 @@ const aResultado = (idEnviado: string, clave: string, r: ResultadoRegistro): Res
  */
 export async function procesarEnvio(repo: RepositorioSync, lote: LoteEnvio): Promise<RespuestaEnvio> {
   if (!(await repo.puedeRegistrar(lote.empresa_id))) {
+    if ((await repo.puedeLeer(lote.empresa_id)) && !(await repo.suscripcionActiva(lote.empresa_id))) {
+      throw new ErrorSuscripcion('La suscripción de la firma venció: Contafi quedó en modo consulta. Lo registrado en este equipo está a salvo y se enviará al renovar.');
+    }
     throw new ErrorAcceso('No tiene permiso para registrar comprobantes en esta empresa.');
   }
   // 1. Cuentas, terceros y productos primero: los comprobantes del lote pueden usarlos.

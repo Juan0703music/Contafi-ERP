@@ -44,6 +44,7 @@ function ChipSincronizacion() {
   let texto = 'Sincronizado';
   let clase = 'posted';
   if (sync.enCurso) { texto = 'Sincronizando…'; clase = 'open'; }
+  else if (sync.ultimo?.error?.includes('modo consulta')) { texto = 'Modo consulta'; clase = 'annulled'; }
   else if (sync.ultimo?.error) { texto = 'Sin conexión'; clase = 'draft'; }
   else if (e && (e.rechazados || e.tercerosConError)) { texto = `${e.rechazados + e.tercerosConError} con error`; clase = 'annulled'; }
   else if (e?.pendientes) { texto = `${e.pendientes} pendiente(s)`; clase = 'draft'; }
@@ -53,6 +54,23 @@ function ChipSincronizacion() {
       <span className={`pill ${clase}`}>{texto}</span>
     </button>
   );
+}
+
+/** Aviso de la suscripción: días de prueba, vencimiento cercano o modo consulta (sección 17). */
+function AvisoSuscripcion() {
+  const { firma, empresa } = useApp();
+  const { datos: s } = useDatos(() => firma.suscripcion(empresa.firma_id), [firma, empresa.firma_id]);
+  if (!s) return null;
+  if (!s.activa) {
+    return <div className="notice danger" role="alert"><b>La suscripción venció: Contafi está en modo consulta.</b> Puedes ver y exportar todo; lo que registres en este equipo queda guardado y se enviará al renovar.</div>;
+  }
+  if (s.plan === 'prueba' && s.dias_restantes !== null) {
+    return <div className="notice info">Prueba gratis: {s.dias_restantes === 0 ? 'termina hoy' : `quedan ${s.dias_restantes} día(s)`}. Incluye 1 empresa real y los datos de demostración.</div>;
+  }
+  if (s.dias_restantes !== null && s.dias_restantes <= 7) {
+    return <div className="notice warn">La suscripción ({s.nombre}) vence {s.dias_restantes <= 0 ? 'hoy' : `en ${s.dias_restantes} día(s)`}.</div>;
+  }
+  return null;
 }
 
 export function Marco({ children }: { children: ReactNode }) {
@@ -120,7 +138,7 @@ export function Marco({ children }: { children: ReactNode }) {
             <span className="chip-col"><span className="who">{usuario.nombre}</span><span className="role">{usuario.correo}</span></span>
           </span>
         </header>
-        <div className="content">{children}</div>
+        <div className="content"><AvisoSuscripcion />{children}</div>
         <footer className="appfoot">Contafi · {modo === 'demo' ? 'Datos de demostración en este equipo; no se envían a ningún servidor.' : 'Los datos se guardan cifrados en este equipo y se sincronizan con la nube.'}</footer>
       </div>
     </>

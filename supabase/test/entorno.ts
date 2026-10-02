@@ -33,6 +33,9 @@ export async function crearBaseDePrueba(): Promise<PGlite> {
   for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
     await db.exec(readFileSync(new URL(f, dir), 'utf8'));
   }
+  // Las pruebas que no tratan de planes no deben chocar con los límites de la prueba gratis (1 empresa):
+  // las firmas nacen con el plan más amplio. Las pruebas de planes lo cambian explícitamente.
+  await db.exec(`alter table public.firmas alter column plan set default 'firma_plus'`);
   return db;
 }
 

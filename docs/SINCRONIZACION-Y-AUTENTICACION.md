@@ -66,7 +66,7 @@ Encabezado `Authorization: Bearer <access_token de la sesión>`. Cuerpo (`@conta
   - `borrador`: queda esperando aprobación de un contador.
   - `rechazado`: lo muestra con los errores (por línea si aplica). Al corregirlo, genera una **nueva** clave.
 - Si el envío se corta, se reenvía **igual** (misma clave): el servidor no duplica (`repetido: true`).
-- Errores HTTP: 401 sesión vencida (renovar el token y reintentar), 403 sin permiso, 400 protocolo,
+- Errores HTTP: 401 sesión vencida (renovar el token y reintentar), 402 suscripción vencida (modo consulta: no reintentar hasta renovar; lo pendiente se conserva), 403 sin permiso, 400 protocolo,
   413 lote muy grande, 5xx reintentar con espera creciente.
 
 ## Recibir cambios — `GET /api/sync/cambios?empresa_id=…&desde=<ultima_seq>&limite=500`

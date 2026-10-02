@@ -176,3 +176,13 @@ son MIT; Piper usa espeak-ng (GPL-3.0) como programa aparte; voces Claude (Apach
 y Daniela (CC BY-SA 4.0, exige atribución). En el navegador de desarrollo se usan un whisper-server y
 `scripts/voz-desarrollo.mjs` locales (VITE_WHISPER_URL, VITE_PIPER_URL).
 
+## D-029 · Planes en una tabla y suscripción vencida = modo consulta (2026-10-02)
+Planes, límites y precios (sección 17) están en `planes` (antes de IVA), no en el código. Cada firma
+tiene plan, `prueba_hasta` (30 días), `pagado_hasta` (lo marcará el cobro), empresas adicionales y la
+marca de fundador; solo Contafi los cambia (sin permisos de escritura para los usuarios). Límites: al
+crear empresas y al invitar (las invitaciones pendientes ocupan puesto). Con la suscripción vencida (la
+prueba terminó o pasaron 15 días de gracia desde `pagado_hasta`) la firma queda en modo consulta:
+`puede()` niega todo lo que no sea lectura. Así el servidor rechaza el lote entero (HTTP 402 con un
+mensaje claro) y lo registrado en el PC se queda en la cola hasta renovar: nunca se pierde ni se
+rechaza un comprobante por falta de pago. Ver, exportar e imprimir siguen funcionando.
+

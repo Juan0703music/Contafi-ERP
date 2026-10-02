@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
-import { ErrorAcceso } from '@contafi/sync';
+import { ErrorAcceso, ErrorSuscripcion } from '@contafi/sync';
 
 /** Vercel limita el cuerpo a ~4,5 MB; se corta antes con un mensaje claro (la app debe partir el lote). */
 export const MAX_CUERPO = 4 * 1024 * 1024;
@@ -44,6 +44,7 @@ export function responderError(e: unknown): NextResponse {
   if (e instanceof ZodError) {
     return ok({ error: 'DATOS_INVALIDOS', mensaje: 'La solicitud no cumple el protocolo.', detalle: e.issues.slice(0, 20) }, 400);
   }
+  if (e instanceof ErrorSuscripcion) return ok({ error: 'SUSCRIPCION_VENCIDA', mensaje: e.message }, 402);
   if (e instanceof ErrorAcceso) return ok({ error: 'SIN_PERMISO', mensaje: e.message }, 403);
   console.error(e);
   return ok({ error: 'ERROR_INTERNO', mensaje: 'Error inesperado. Intente de nuevo; si persiste, contacte a soporte.' }, 500);

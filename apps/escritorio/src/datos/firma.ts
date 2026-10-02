@@ -18,6 +18,11 @@ export interface Miembro { usuario_id: string; nombre: string; correo: string; r
 export interface Invitacion { id: string; correo: string; rol_firma: RolFirma; empresas: AccesoEmpresa[]; creado_en: string; expira_en: string }
 export interface Equipo { miembros: Miembro[]; invitaciones: Invitacion[] }
 export interface EmpresaNueva { nit: string; razonSocial: string; grupoNiif: 1 | 2 | 3; municipio: string }
+export interface Suscripcion {
+  plan: string; nombre: string; activa: boolean;
+  usuarios_max: number; empresas_max: number; usuarios: number; invitaciones: number; empresas: number;
+  prueba_hasta: string | null; pagado_hasta: string | null; dias_restantes: number | null;
+}
 
 export interface ServicioFirma {
   misFirmas(): Promise<FirmaUsuario[]>;
@@ -30,6 +35,8 @@ export interface ServicioFirma {
   asignarRol(empresa: string, usuario: string, rol: RolEmpresa | null): Promise<void>;
   cambiarRolFirma(firma: string, usuario: string, rol: Exclude<RolFirma, 'propietario'>): Promise<void>;
   quitarMiembro(firma: string, usuario: string): Promise<void>;
+  /** Plan, límites y vencimiento (null = no se pudo consultar, p. ej. sin conexión). */
+  suscripcion(firma: string): Promise<Suscripcion | null>;
 }
 
 export const esAdministrador = (f: FirmaUsuario | undefined) => f?.rol === 'propietario' || f?.rol === 'administrador';
@@ -97,6 +104,7 @@ export function servicioFirmaNube(sb: SupabaseClient, api: string): ServicioFirm
     asignarRol: (empresa, usuario, rol) => rpc('asignar_rol_empresa', { p_empresa: empresa, p_usuario: usuario, p_rol: rol }),
     cambiarRolFirma: (firma, usuario, rol) => rpc('cambiar_rol_firma', { p_firma: firma, p_usuario: usuario, p_rol: rol }),
     quitarMiembro: (firma, usuario) => rpc('quitar_miembro', { p_firma: firma, p_usuario: usuario }),
+    suscripcion: (firma) => rpc<Suscripcion>('estado_suscripcion', { p_firma: firma }).catch(() => null),
   };
 }
 
@@ -156,5 +164,7 @@ export function servicioFirmaDemo(base: BaseLocal, firma: FirmaUsuario, empresas
       if (miembro(usuario).rol_firma === 'propietario') throw new Error('Al propietario no se le puede quitar de la firma.');
       equipo.miembros = equipo.miembros.filter((m) => m.usuario_id !== usuario);
     },
+    // La demostración no tiene suscripción: no muestra avisos.
+    suscripcion: async () => null,
   };
 }
