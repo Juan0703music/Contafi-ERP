@@ -58,3 +58,13 @@ describe('planes y suscripción (sección 17)', () => {
     await expect(como(db, luis, 'select public.estado_suscripcion($1)', [firma])).rejects.toThrow(/SIN_PERMISO/); // no es miembro (aún no acepta)
   });
 });
+
+describe('precios públicos', () => {
+  it('el sitio web los lee sin sesión, pero no los puede cambiar', async () => {
+    const anon: Sesion = { sub: null };
+    const planes = await como<{ codigo: string; precio_mensual: string }>(db, anon, 'select codigo, precio_mensual::text from public.planes order by orden');
+    expect(planes.map((p) => [p.codigo, p.precio_mensual])).toEqual([['prueba', '0.00'], ['independiente', '119000.00'], ['firma', '299000.00'], ['firma_plus', '649000.00']]);
+    await expect(como(db, anon, 'update public.planes set precio_mensual = 1')).rejects.toThrow(/permission denied/);
+    await expect(como(db, anon, 'select * from public.firmas')).rejects.toThrow(/permission denied/);
+  });
+});

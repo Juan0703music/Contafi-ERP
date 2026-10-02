@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: 'Invitación — Contafi', robots: { 
 
 export default function Invitacion() {
   return (
-    <main>
+    <main className="contenedor seccion" style={{ maxWidth: 640 }}>
       <h1>Te invitaron a Contafi</h1>
       <p>Abre Contafi en tu computador e ingresa (o crea tu cuenta) con el correo al que llegó la invitación.
         En la bienvenida, pega este código y elige <strong>«Unirme a la firma»</strong>:</p>

@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: 'Nueva contraseña — Contafi', robo
 /** Destino del enlace "¿Olvidaste tu contraseña?" que envía Supabase Auth desde la app de escritorio. */
 export default function Clave() {
   return (
-    <main>
+    <main className="contenedor seccion" style={{ maxWidth: 640 }}>
       <h1>Nueva contraseña</h1>
       <p>Escribe tu nueva contraseña de Contafi. Después vuelve a la aplicación e ingresa con ella.</p>
       <NuevaClave />
