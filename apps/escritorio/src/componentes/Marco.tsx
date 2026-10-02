@@ -26,6 +26,7 @@ const NAV: { grupo: string; items: { ruta: Ruta; etiqueta: string; icono: string
   { grupo: 'Reportes', items: [
     { ruta: 'libros', etiqueta: 'Libros', icono: 'bookOpen' },
     { ruta: 'estados', etiqueta: 'Estados financieros', icono: 'barChart' },
+    { ruta: 'comparar', etiqueta: 'Doble corrida', icono: 'fileCheck' },
   ] },
   { grupo: 'Maestros', items: [
     { ruta: 'terceros', etiqueta: 'Terceros', icono: 'users' },

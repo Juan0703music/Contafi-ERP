@@ -99,6 +99,27 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 - **Modelo más pequeño (evaluado):** Qwen3 1,7B usa la mitad de RAM (2,2 GB), pero cuando la pregunta le llega a la IA inventa cifras absurdas o escribe la herramienta como texto. No entra al catálogo: 4B es el mínimo para la IA y con menos de 8 GB se usan las reglas (D-027). De la evaluación salieron dos mejoras para todos los modelos: reintento con herramienta obligatoria cuando el modelo responde sin consultar datos, y una llamada a herramienta cortada se responde por reglas sin reiniciar la IA.
 - 👤 ⬜ medir en el PC Windows de 8 GB del piloto.
 
+## Fase 6 — Piloto (semanas 32–40) · herramientas en curso
+
+| Tarea | Estado |
+|---|---|
+| Instalación y bienvenida de 3 contadores, con migración asistida de sus saldos | 🟡 bienvenida en la nube, saldos iniciales y terceros desde CSV, PUC personalizable · ⬜ crear los terceros que falten al cargar saldos; importar el PUC desde CSV · 👤 instalar con los pilotos |
+| Doble corrida durante 2 cierres mensuales | ✅ pantalla "Doble corrida": compara el balance de Contafi con el del software anterior (CSV de Siigo, World Office, Helisa…) a la fecha de corte, a cualquier nivel del PUC · 👤 hacer los 2 cierres con los pilotos |
+| Corregir errores y medir la sincronización y la carga de soporte | ⬜ diagnóstico para soporte |
+| Recoger testimonios | 👤 ⬜ |
+
+**Criterio de salida:** cero diferencias en los 2 cierres (sección 13) y pilotos dispuestos a pagar (👤).
+
+## Fase 7 — Lanzamiento comercial (semanas 41–46) · ⬜
+
+| Tarea | Estado |
+|---|---|
+| Sitio web con precios, descarga, documentación y videos | ⬜ |
+| Cobro recurrente y facturación electrónica de las suscripciones | ⬜ planes y límites en el servidor · 👤 pasarela de pagos (Wompi o ePayco) y facturación electrónica propia |
+| Canal de soporte y base de conocimiento | ⬜ |
+| Checklist de la sección 22 | ⬜ (ver el plan) |
+| Campaña a contadores | 👤 ⬜ |
+
 ## Hallazgos en el prototipo (corregidos en el motor)
 1. `todayISO()` usaba la hora UTC y registraba el día siguiente después de las 7 p. m. → `hoyBogota()`.
 2. Usaba la cuenta **135515** como "IVA descontable". En el PUC, 135515 es *Retención en la fuente*; el IVA descontable va en **240810**.
@@ -126,14 +147,14 @@ licencia, política de datos y contrato de transmisión; con el contador, IVA de
 16. Un administrador (no propietario) podía quitarle la firma al propietario escribiendo directamente en las membresías. Corregido (D-023).
 17. La base mínima en UVT admite 3 decimales, pero el cálculo la redondeaba a 2 (0,125 UVT se tomaba como 0,13). Ahora usa milésimas exactas.
 
-## Pruebas automáticas (02/10/2026) — 216 en total
+## Pruebas automáticas (02/10/2026) — 223 en total
 - `@contafi/shared`: 15 ✓
-- `@contafi/motor`: 52 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance)
+- `@contafi/motor`: 56 ✓ (propiedades: balance siempre cuadra, activo = pasivo + patrimonio antes y después del cierre, ESF = balance general, todo documento genera un asiento válido, el kardex no pierde centavos, la conciliación nunca usa un movimiento dos veces, el auxiliar de impuestos coincide con el balance, la doble corrida de los libros contra sí mismos da cero diferencias)
 - `@contafi/dian-xml`: 11 ✓
 - `@contafi/sync`: 24 ✓
-- `@contafi/local`: 48 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
+- `@contafi/local`: 51 ✓ (sección 13: dos PC sin conexión, cortes de red y de energía, reinstalación; importación DIAN, retenciones, cierres, saldos iniciales, conciliación, panel multi-empresa, ventas, inventario, importación de terceros, plan de cuentas, configuración tributaria y reglas por proveedor compartidas)
 - `supabase` (PGlite con privilegios de Supabase): 45 ✓
 - `@contafi/jarvis`: 21 ✓
 - `apps/web`: compila; rutas probadas por HTTP
-- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 19 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
+- `apps/escritorio`: compila; en CI se genera el instalador de Windows. Recorrido de punta a punta en Firefox con 20 verificaciones automáticas (`pnpm --filter @contafi/escritorio e2e`)
 - Pruebas verificadas con sabotaje: idempotencia del servidor y copias duplicadas entre PC

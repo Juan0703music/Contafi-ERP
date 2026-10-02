@@ -22,6 +22,7 @@ import { SaldosIniciales } from './pantallas/SaldosIniciales.tsx';
 import { Estados } from './pantallas/Estados.tsx';
 import { Equipo } from './pantallas/Equipo.tsx';
 import { Bienvenida } from './pantallas/Bienvenida.tsx';
+import { DobleCorrida } from './pantallas/DobleCorrida.tsx';
 import { abrirBaseNavegador } from './datos/base-navegador.ts';
 import { abrirBaseTauri, cerrarBaseTauri, enTauri } from './datos/base-tauri.ts';
 import { EMPRESA_DEMO, sembrarDemo, transporteDemo } from './datos/demo.ts';
@@ -67,6 +68,7 @@ function Pantallas() {
       {ruta === 'impuestos' && <Impuestos />}
       {ruta === 'sincronizacion' && <Sincronizacion />}
       {ruta === 'equipo' && <Equipo />}
+      {ruta === 'comparar' && <DobleCorrida />}
       {nuevo && <NuevoComprobante alCerrar={() => setNuevo(false)} />}
     </Marco>
   );

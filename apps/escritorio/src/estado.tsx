@@ -7,7 +7,7 @@ import {
 import type { FirmaUsuario, ServicioFirma } from './datos/firma.ts';
 import type { ConfiguracionImpuestos } from './datos/impuestos.ts';
 
-export type Ruta = 'panel' | 'jarvis' | 'ventas' | 'inventario' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'impuestos' | 'bancos' | 'empresas' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion' | 'equipo';
+export type Ruta = 'panel' | 'jarvis' | 'ventas' | 'inventario' | 'comprobantes' | 'importar' | 'cierres' | 'saldos' | 'impuestos' | 'bancos' | 'empresas' | 'cuentas' | 'balance' | 'libros' | 'estados' | 'terceros' | 'sincronizacion' | 'equipo' | 'comparar';
 
 export interface Sesion {
   base: BaseLocal;

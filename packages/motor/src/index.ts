@@ -12,3 +12,4 @@ export * from './conciliacion.ts';
 export * from './cartera.ts';
 export * from './auxiliar-impuestos.ts';
 export * from './calendario.ts';
+export * from './doble-corrida.ts';

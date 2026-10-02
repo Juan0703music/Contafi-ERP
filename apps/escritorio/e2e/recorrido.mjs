@@ -49,6 +49,20 @@ await page.waitForFunction(() => document.querySelectorAll('.msg.bot').length >=
 const respuestaJarvis = await page.$$eval('.msg.bot', (ms) => ms.at(-1).textContent);
 verificar('Jarvis responde con cifras del motor', /\$ [\d.]+/.test(respuestaJarvis) && respuestaJarvis.includes('Cifras del motor'), respuestaJarvis.slice(0, 90));
 await foto('02c-jarvis');
+// Doble corrida (piloto): balance "del otro software" al 31 de enero, a distintos niveles del PUC
+const anioE2e = new Date().getFullYear();
+const csvOtro = `${S}/balance-otro-software.csv`;
+writeFileSync(csvOtro, ['Código;Nombre de la cuenta;Saldo final', 'ACTIVO;;', '1105;Caja;5.000.000', '111005;Bancos nacionales;50.000.000',
+  '1435;Mercancías;18.000.000', '240810;IVA descontable;3.420.000', '220505;Proveedores nacionales;20.970.000',
+  '236540;Retención en compras;450.000', '31;Capital social;55.000.000', 'TOTALES;;'].join('\n'));
+await ir('Doble corrida');
+await page.waitForSelector('#dCorte');
+await page.$eval('#dCorte', (n, v) => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set; set.call(n, v); n.dispatchEvent(new Event('input', { bubbles: true })); }, `${anioE2e}-01-31`);
+await (await page.$('#dArchivo')).uploadFile(csvOtro);
+await page.waitForSelector('.balance-ok, .balance-bad', { timeout: 5000 });
+const dobleCorrida = await page.$eval('.balance-ok, .balance-bad', (n) => n.textContent);
+await foto('02d-doble-corrida');
+verificar('Doble corrida sin diferencias', dobleCorrida === 'Cero diferencias en 7 cuentas comparadas', dobleCorrida);
 // Ventas y compras: factura de venta manual, cartera y recaudo parcial
 await ir('Ventas y compras');
 await boton('Factura de venta');
